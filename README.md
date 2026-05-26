@@ -9,6 +9,8 @@ contract example.
 
 Implemented now:
 
+- `compiler/ir`: validated V1 AST lowering into deterministic compiler IR with
+  instruction IDs, protocol limits, and integer overflow checks.
 - `compiler/lexer`: position-tagged KaspaScript lexer with keyword, type,
   literal, operator, delimiter, and comment support.
 - `compiler/parser`: V1 contract parser and AST for `contract`, `params`,
@@ -24,7 +26,6 @@ Implemented now:
 
 Not implemented yet:
 
-- IR generation
 - Toccata opcode backend
 - bytecode serializer
 - WASM SDK and TypeScript transaction builder
@@ -34,6 +35,7 @@ Not implemented yet:
 
 ```text
 compiler/
+  ir/         Validated AST to KaspaScript IR lowering
   lexer/      Tokenization with line, column, and byte offsets
   parser/     V1 AST parser for contract source
   protocol/   Kaspa target manifests and feature gating

@@ -1,0 +1,14 @@
+[package]
+name = "kaspascript-ir"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+kaspascript-lexer = { path = "../lexer" }
+kaspascript-parser = { path = "../parser" }
+kaspascript-protocol = { path = "../protocol" }
+kaspascript-semantic = { path = "../semantic" }
+
+[lib]
+path = "src/lib.rs"

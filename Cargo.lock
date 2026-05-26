@@ -3,6 +3,16 @@
 version = 3
 
 [[package]]
+name = "kaspascript-ir"
+version = "0.1.0"
+dependencies = [
+ "kaspascript-lexer",
+ "kaspascript-parser",
+ "kaspascript-protocol",
+ "kaspascript-semantic",
+]
+
+[[package]]
 name = "kaspascript-lexer"
 version = "0.1.0"
 

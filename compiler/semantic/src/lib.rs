@@ -2,7 +2,7 @@ use std::collections::{BTreeSet, HashSet};
 use std::fmt;
 
 use kaspascript_lexer::{Position, TypeName};
-use kaspascript_parser::{parse, Contract, Expr, Ident, ParamValue, ParseError, Program};
+use kaspascript_parser::{parse, BinaryOp, Contract, Expr, Ident, ParamValue, ParseError, Program};
 use kaspascript_protocol::{ProtocolError, ProtocolFeature, ProtocolManifest};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -166,6 +166,7 @@ fn validate_contract(
 
     let mut param_names = HashSet::new();
     let mut contract_scope = HashSet::new();
+    let mut has_finality_depth = false;
 
     for param in &contract.params {
         if !param_names.insert(param.name.name.as_str()) {
@@ -180,11 +181,14 @@ fn validate_contract(
         if param.name.name == "finality_depth" {
             match &param.value {
                 ParamValue::Integer(value) => match value.parse::<u32>() {
-                    Ok(depth) if depth > 0 => finality_depths.push(FinalityDepth {
-                        contract: contract.name.name.clone(),
-                        value: depth,
-                        position: param.name.span.start,
-                    }),
+                    Ok(depth) if depth > 0 => {
+                        has_finality_depth = true;
+                        finality_depths.push(FinalityDepth {
+                            contract: contract.name.name.clone(),
+                            value: depth,
+                            position: param.name.span.start,
+                        });
+                    }
                     Ok(_) => errors.push(SemanticError::new(
                         "`finality_depth` must be greater than zero",
                         param.name.span.start,
@@ -271,6 +275,95 @@ fn validate_contract(
                 }
             }
         }
+
+        if spend_uses_sequencing(spend) {
+            if !has_finality_depth {
+                errors.push(SemanticError::new(
+                    format!(
+                        "spend path `{}` uses sequencing commitments but contract does not declare `finality_depth`",
+                        spend.name.name
+                    ),
+                    spend.name.span.start,
+                ));
+            } else if !spend_has_finality_guard(spend) {
+                errors.push(SemanticError::new(
+                    format!(
+                        "spend path `{}` must guard sequencing reads with `sequencing.depth >= finality_depth`",
+                        spend.name.name
+                    ),
+                    spend.name.span.start,
+                ));
+            }
+        }
+    }
+}
+
+fn spend_uses_sequencing(spend: &kaspascript_parser::Spend) -> bool {
+    spend
+        .requires
+        .iter()
+        .any(|require| expr_contains_identifier(&require.expr, "sequencing"))
+}
+
+fn spend_has_finality_guard(spend: &kaspascript_parser::Spend) -> bool {
+    spend
+        .requires
+        .iter()
+        .any(|require| matches_finality_guard(&require.expr))
+}
+
+fn matches_finality_guard(expr: &Expr) -> bool {
+    match expr {
+        Expr::Binary {
+            left,
+            op: BinaryOp::GreaterEqual,
+            right,
+            ..
+        } => is_path(left, &["sequencing", "depth"]) && is_identifier(right, "finality_depth"),
+        _ => false,
+    }
+}
+
+fn expr_contains_identifier(expr: &Expr, expected: &str) -> bool {
+    match expr {
+        Expr::Identifier(ident) => ident.name == expected,
+        Expr::Integer { .. } | Expr::String { .. } | Expr::Bool { .. } => false,
+        Expr::Array { elements, .. } => elements
+            .iter()
+            .any(|element| expr_contains_identifier(element, expected)),
+        Expr::Member { object, field, .. } => {
+            field.name == expected || expr_contains_identifier(object, expected)
+        }
+        Expr::Call { callee, args, .. } => {
+            expr_contains_identifier(callee, expected)
+                || args
+                    .iter()
+                    .any(|arg| expr_contains_identifier(arg, expected))
+        }
+        Expr::Binary { left, right, .. } => {
+            expr_contains_identifier(left, expected) || expr_contains_identifier(right, expected)
+        }
+    }
+}
+
+fn is_identifier(expr: &Expr, expected: &str) -> bool {
+    matches!(expr, Expr::Identifier(ident) if ident.name == expected)
+}
+
+fn is_path(expr: &Expr, expected: &[&str]) -> bool {
+    let mut parts = Vec::new();
+    collect_path_parts(expr, &mut parts);
+    parts == expected
+}
+
+fn collect_path_parts<'expr>(expr: &'expr Expr, parts: &mut Vec<&'expr str>) {
+    match expr {
+        Expr::Identifier(ident) => parts.push(ident.name.as_str()),
+        Expr::Member { object, field, .. } => {
+            collect_path_parts(object, parts);
+            parts.push(field.name.as_str());
+        }
+        _ => {}
     }
 }
 
@@ -439,6 +532,53 @@ mod tests {
             analysis.required_features,
             vec![ProtocolFeature::BaseScript]
         );
+    }
+
+    #[test]
+    fn rejects_sequencing_without_finality_depth() {
+        let source = r#"
+            contract Broken {
+              params {
+                owner: PublicKey,
+              }
+
+              spend withdraw(sig: Signature) {
+                require sig.verify(owner);
+                require sequencing.depth >= 10;
+              }
+            }
+        "#;
+
+        let errors = analyze(source).expect_err("sequencing requires finality_depth");
+        let AnalysisError::Semantic(errors) = errors else {
+            panic!("expected semantic errors");
+        };
+        assert!(errors.iter().any(|error| error.message
+            == "spend path `withdraw` uses sequencing commitments but contract does not declare `finality_depth`"));
+    }
+
+    #[test]
+    fn rejects_sequencing_without_canonical_finality_guard() {
+        let source = r#"
+            contract Broken {
+              params {
+                owner: PublicKey,
+                finality_depth: 10,
+              }
+
+              spend withdraw(sig: Signature) {
+                require sig.verify(owner);
+                require sequencing.depth > finality_depth;
+              }
+            }
+        "#;
+
+        let errors = analyze(source).expect_err("sequencing requires canonical finality guard");
+        let AnalysisError::Semantic(errors) = errors else {
+            panic!("expected semantic errors");
+        };
+        assert!(errors.iter().any(|error| error.message
+            == "spend path `withdraw` must guard sequencing reads with `sequencing.depth >= finality_depth`"));
     }
 
     #[test]

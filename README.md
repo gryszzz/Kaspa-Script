@@ -281,3 +281,5 @@ verification opcodes, and script-visible sequencing remain gated until primary
 Kaspa sources define them.
 
 Read the audit: [`docs/kaspa-source-audit.md`](docs/kaspa-source-audit.md).
+
+Support Dev <3 : kaspa:qpv7fcvdlz6th4hqjtm9qkkms2dw0raem963x3hm8glu3kjgj7922vy69hv85

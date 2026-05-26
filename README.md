@@ -1,9 +1,9 @@
 # KaspaScript
 
-KaspaScript is a Rust compiler foundation for a post-Toccata Kaspa smart
-contract language. The current repository contains the first production-grade
-compiler slice: lexer, parser, semantic checks, and a real DAG-aware vault
-contract example.
+KaspaScript is a Rust compiler for a post-Toccata Kaspa smart contract
+language. The workspace now runs the source-to-artifact pipeline end to end:
+lexer, parser, semantic analyzer, IR, Toccata bytecode backend, SDK, CLI, and
+contract pattern tests.
 
 ## Current Status
 
@@ -15,31 +15,32 @@ Implemented now:
   literal, operator, delimiter, and comment support.
 - `compiler/parser`: V1 contract parser and AST for `contract`, `params`,
   `spend`, `require`, calls, member access, arrays, and comparisons.
-- `compiler/protocol`: target manifest and feature gates for Kaspa protocol
-  surfaces. Bytecode emission is locked until exact consensus opcode
-  definitions are pinned.
+- `compiler/codegen`: deterministic Toccata backend and compiled artifact
+  metadata.
+- `sdk`: Rust SDK compile entry point plus spend transaction builder with
+  finality-depth enforcement and 10bps treasury fee injection.
+- `cli`: `compile`, `verify`, and `inspect` commands.
 - `compiler/semantic`: safety checks for duplicate names, finality depth,
   missing spend guards, parameter shadowing, unknown `require` roots, and
   required Kaspa feature extraction.
 - `contracts/production/DAGSafeVault.ks`: whole-UTXO vault contract using
   covenant IDs, finality depth, and sequencing commitments.
-
-Not implemented yet:
-
-- Toccata opcode backend
-- bytecode serializer
-- WASM SDK and TypeScript transaction builder
-- CLI
+- `tests/contracts`: escrow, timelock, multisig, atomic swap, and vault V1
+  pattern contracts.
 
 ## Repository Layout
 
 ```text
 compiler/
+  codegen/    Toccata backend and compiled artifact generation
   ir/         Validated AST to KaspaScript IR lowering
   lexer/      Tokenization with line, column, and byte offsets
   parser/     V1 AST parser for contract source
   protocol/   Kaspa target manifests and feature gating
   semantic/   Compiler-front-end validation checks
+sdk/          Rust SDK compile and transaction builder API
+cli/          kaspascript command-line tool
+tests/        Contract pattern corpus
 contracts/
   production/ Production-oriented KaspaScript contracts
 ```
@@ -48,4 +49,5 @@ contracts/
 
 ```bash
 cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
 ```

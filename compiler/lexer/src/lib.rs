@@ -1,5 +1,7 @@
-mod lexer;
+//! KaspaScript lexer.
 
-pub use lexer::{
-    lex, Keyword, LexError, LexErrorKind, Lexer, Position, Span, Token, TokenKind, TypeName,
-};
+pub mod lexer;
+pub mod token;
+
+pub use lexer::{lex, lex_file, locate, LexError};
+pub use token::{SourceLocation, Span, Token, TokenKind, TypeName};

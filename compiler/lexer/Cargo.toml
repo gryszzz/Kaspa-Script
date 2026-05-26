@@ -4,5 +4,10 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
+[dependencies]
+logos.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
 [lib]
 path = "src/lib.rs"

@@ -1,0 +1,16 @@
+[package]
+name = "kaspascript-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+kaspascript-codegen = { path = "../compiler/codegen" }
+kaspascript-ir = { path = "../compiler/ir" }
+kaspascript-sdk = { path = "../sdk" }
+serde_json.workspace = true
+
+[[bin]]
+name = "kaspascript"
+path = "src/main.rs"

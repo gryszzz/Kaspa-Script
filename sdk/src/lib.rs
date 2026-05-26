@@ -1,0 +1,130 @@
+//! KaspaScript SDK surface.
+
+use kaspascript_codegen::{compile_file, CompiledArtifact};
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+/// SDK compile error.
+pub type CompileError = kaspascript_codegen::CodegenError;
+
+/// Spend argument for transaction construction.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SpendArg {
+    Bytes(Vec<u8>),
+    Integer(u64),
+    Bool(bool),
+}
+
+/// UTXO input used by the transaction builder.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Utxo {
+    pub outpoint: String,
+    pub value: u64,
+    pub confirmations: u64,
+    pub script_pubkey: Vec<u8>,
+}
+
+/// Transaction output.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TxOutput {
+    pub value: u64,
+    pub script_pubkey: Vec<u8>,
+}
+
+/// Deterministic transaction model used by the SDK.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Transaction {
+    pub spend_fn: String,
+    pub inputs: Vec<Utxo>,
+    pub outputs: Vec<TxOutput>,
+    pub args: Vec<SpendArg>,
+}
+
+/// Transaction builder error.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum TxBuildError {
+    #[error("finality depth requires {required} confirmations, got {actual}")]
+    InsufficientFinality { required: u64, actual: u64 },
+    #[error("spend value is zero")]
+    EmptySpend,
+}
+
+/// Compiles KaspaScript source.
+pub fn compile(src: &str, file: &str) -> Result<CompiledArtifact, CompileError> {
+    compile_file(src, file)
+}
+
+/// Builds a spend transaction with finality enforcement and 10bps treasury fee injection.
+pub fn build_spend_tx(
+    artifact: &CompiledArtifact,
+    spend_fn: &str,
+    args: Vec<SpendArg>,
+    utxos: Vec<Utxo>,
+) -> Result<Transaction, TxBuildError> {
+    let total_value = utxos.iter().map(|utxo| utxo.value).sum::<u64>();
+    if total_value == 0 {
+        return Err(TxBuildError::EmptySpend);
+    }
+
+    if let Some(required) = artifact.finality_depth {
+        for utxo in &utxos {
+            if utxo.confirmations < required {
+                return Err(TxBuildError::InsufficientFinality {
+                    required,
+                    actual: utxo.confirmations,
+                });
+            }
+        }
+    }
+
+    let treasury_fee = total_value / 1_000;
+    let spend_value = total_value.saturating_sub(treasury_fee);
+
+    Ok(Transaction {
+        spend_fn: spend_fn.to_owned(),
+        inputs: utxos,
+        outputs: vec![
+            TxOutput {
+                value: spend_value,
+                script_pubkey: artifact.bytecode.clone(),
+            },
+            TxOutput {
+                value: treasury_fee,
+                script_pubkey: b"kaspascript-treasury".to_vec(),
+            },
+        ],
+        args,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn enforces_finality_depth() {
+        let artifact = CompiledArtifact {
+            bytecode: vec![1],
+            source_hash: [0; 32],
+            compiler_version: "test".to_owned(),
+            backend: "toccata".to_owned(),
+            finality_depth: Some(10),
+            kip_requirements: vec![17],
+        };
+        let result = build_spend_tx(
+            &artifact,
+            "withdraw",
+            Vec::new(),
+            vec![Utxo {
+                outpoint: "a:0".to_owned(),
+                value: 1_000,
+                confirmations: 9,
+                script_pubkey: Vec::new(),
+            }],
+        );
+        assert!(matches!(
+            result,
+            Err(TxBuildError::InsufficientFinality { .. })
+        ));
+    }
+}

@@ -1,14 +1,27 @@
 [workspace]
 resolver = "2"
 members = [
+    "cli",
+    "compiler/codegen",
     "compiler/ir",
     "compiler/lexer",
     "compiler/parser",
     "compiler/protocol",
     "compiler/semantic",
+    "sdk",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.80"
+
+[workspace.dependencies]
+anyhow = "1.0"
+criterion = "0.5"
+logos = "0.14"
+pretty_assertions = "1.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+thiserror = "1.0"

@@ -8,49 +8,45 @@ use kaspascript_lexer::Span;
 use crate::grounding::{
     record_for_instruction, record_for_kip, GroundingWarning, VerificationStatus,
 };
-use crate::{CodegenError, CompiledArtifact};
+use crate::{CodegenError, CompiledArtifact, Target};
 
-const OP_PUSH_INT: u8 = 0x01;
-const OP_PUSH_BOOL: u8 = 0x02;
-const OP_PUSH_BYTES: u8 = 0x03;
+const OP_FALSE: u8 = 0x00;
+const OP_PUSHDATA1: u8 = 0x4c;
+const OP_PUSHDATA2: u8 = 0x4d;
+const OP_PUSHDATA4: u8 = 0x4e;
+const OP_1: u8 = 0x51;
 const OP_DROP: u8 = 0x75;
 const OP_DUP: u8 = 0x76;
 const OP_EQUAL: u8 = 0x87;
 const OP_VERIFY: u8 = 0x69;
-const OP_CHECKSIG: u8 = 0xac;
-const OP_CHECKMULTISIG: u8 = 0xae;
-const OP_CHECKLOCKTIMEVERIFY: u8 = 0xb1;
+const OP_NOT: u8 = 0x91;
 const OP_ADD: u8 = 0x93;
 const OP_SUB: u8 = 0x94;
-const OP_MUL: u8 = 0x95;
-const OP_DIV: u8 = 0x96;
-const OP_MOD: u8 = 0x97;
+const OP_BOOLAND: u8 = 0x9a;
+const OP_BOOLOR: u8 = 0x9b;
+const OP_NUMNOTEQUAL: u8 = 0x9e;
+const OP_LESSTHAN: u8 = 0x9f;
 const OP_GREATERTHAN: u8 = 0xa0;
+const OP_LESSTHANOREQUAL: u8 = 0xa1;
 const OP_GREATERTHANOREQUAL: u8 = 0xa2;
-const OP_NOT: u8 = 0x91;
-const OP_AND: u8 = 0x9a;
-const OP_OR: u8 = 0x9b;
 const OP_SHA256: u8 = 0xa8;
-const OP_HASH160: u8 = 0xa9;
-const OP_BLAKE2B: u8 = 0xc0;
-const OP_INPUTVALUE: u8 = 0xd0;
-const OP_INPUTSCRIPT: u8 = 0xd1;
-const OP_OUTPUTVALUE: u8 = 0xd2;
-const OP_OUTPUTSCRIPT: u8 = 0xd3;
-const OP_INPUTCOUNT: u8 = 0xd4;
-const OP_OUTPUTCOUNT: u8 = 0xd5;
-const OP_COVENANTID: u8 = 0xe0;
-const OP_COVENANTID_DEPTH: u8 = 0xe1;
-const OP_ZK_GROTH16_VERIFY: u8 = 0xf0;
-const OP_ZK_RISCZERO_VERIFY: u8 = 0xf1;
-const OP_SEQUENCING_COMMITMENT: u8 = 0xf2;
-const OP_CHECK_HASH_PREIMAGE: u8 = 0xf3;
+const OP_BLAKE2B: u8 = 0xaa;
+const OP_CHECKSIG: u8 = 0xac;
+const OP_CHECKMULTISIG: u8 = 0xae;
+const OP_CHECKLOCKTIMEVERIFY: u8 = 0xb0;
+const OP_TXINPUTCOUNT: u8 = 0xb3;
+const OP_TXOUTPUTCOUNT: u8 = 0xb4;
+const OP_TXINPUTAMOUNT: u8 = 0xbe;
+const OP_TXINPUTSPK: u8 = 0xbf;
+const OP_TXOUTPUTAMOUNT: u8 = 0xc2;
+const OP_TXOUTPUTSPK: u8 = 0xc3;
 
-/// Compiles IR into deterministic Toccata-target bytecode.
+/// Compiles IR into deterministic Kaspa transaction script bytecode.
 pub fn compile_toccata(
     source: &str,
     ir: &IrProgram,
     compiler_version: &str,
+    target: Target,
 ) -> Result<CompiledArtifact, CodegenError> {
     let mut bytecode = Vec::new();
     let mut warnings = Vec::new();
@@ -58,7 +54,7 @@ pub fn compile_toccata(
 
     for kip in &ir.kip_requirements {
         if let Some(record) = record_for_kip(*kip) {
-            collect_grounding(&record, &mut warnings, &mut warning_ids)?;
+            collect_grounding(&record, target, &mut warnings, &mut warning_ids)?;
         }
     }
 
@@ -66,7 +62,7 @@ pub fn compile_toccata(
         for spend in &contract.spends {
             for instruction in &spend.instructions {
                 let record = record_for_instruction(&instruction.kind);
-                collect_grounding(&record, &mut warnings, &mut warning_ids)?;
+                collect_grounding(&record, target, &mut warnings, &mut warning_ids)?;
                 encode_instruction(instruction, &mut bytecode)?;
             }
         }
@@ -80,7 +76,8 @@ pub fn compile_toccata(
         bytecode,
         source_hash,
         compiler_version: compiler_version.to_owned(),
-        backend: "toccata".to_owned(),
+        backend: "kaspa-txscript".to_owned(),
+        target: target.as_str().to_owned(),
         finality_depth: ir
             .contracts
             .iter()
@@ -93,17 +90,24 @@ pub fn compile_toccata(
 
 fn collect_grounding(
     record: &crate::grounding::GroundingRecord,
+    target: Target,
     warnings: &mut Vec<GroundingWarning>,
     warning_ids: &mut HashSet<String>,
 ) -> Result<(), CodegenError> {
     match record.status {
         VerificationStatus::Verified => Ok(()),
-        VerificationStatus::Gated => {
+        VerificationStatus::Gated if target.allows_gated_warnings() => {
             if warning_ids.insert(record.id.to_owned()) {
                 warnings.push(record.warning());
             }
             Ok(())
         }
+        VerificationStatus::Gated => Err(CodegenError::GatedGrounding {
+            id: record.id.to_owned(),
+            target: target.as_str().to_owned(),
+            citation: record.citation.clone(),
+            message: record.note.to_owned(),
+        }),
         VerificationStatus::Unsupported => Err(CodegenError::UnsupportedGrounding {
             id: record.id.to_owned(),
             citation: record.citation.clone(),
@@ -117,94 +121,210 @@ fn encode_instruction(instruction: &Instruction, out: &mut Vec<u8>) -> Result<()
         InstructionKind::Push(value) => encode_push(value, instruction.span, out)?,
         InstructionKind::Drop => out.push(OP_DROP),
         InstructionKind::Dup => out.push(OP_DUP),
-        InstructionKind::InputValue(index) => encode_indexed(OP_INPUTVALUE, *index, out),
-        InstructionKind::InputScript(index) => encode_indexed(OP_INPUTSCRIPT, *index, out),
-        InstructionKind::OutputValue(index) => encode_indexed(OP_OUTPUTVALUE, *index, out),
-        InstructionKind::OutputScript(index) => encode_indexed(OP_OUTPUTSCRIPT, *index, out),
-        InstructionKind::OutputCount => out.push(OP_OUTPUTCOUNT),
-        InstructionKind::InputCount => out.push(OP_INPUTCOUNT),
-        InstructionKind::CheckSig { key_slot } => encode_indexed(OP_CHECKSIG, *key_slot, out),
+        InstructionKind::InputValue(index) => encode_indexed(OP_TXINPUTAMOUNT, *index, out)?,
+        InstructionKind::InputScript(index) => encode_indexed(OP_TXINPUTSPK, *index, out)?,
+        InstructionKind::OutputValue(index) => encode_indexed(OP_TXOUTPUTAMOUNT, *index, out)?,
+        InstructionKind::OutputScript(index) => encode_indexed(OP_TXOUTPUTSPK, *index, out)?,
+        InstructionKind::OutputCount => out.push(OP_TXOUTPUTCOUNT),
+        InstructionKind::InputCount => out.push(OP_TXINPUTCOUNT),
+        InstructionKind::CheckSig { .. } => out.push(OP_CHECKSIG),
         InstructionKind::CheckMultiSig {
             required,
             key_count,
         } => {
+            encode_u64(u64::from(*required), instruction.span, out)?;
+            encode_u64(u64::from(*key_count), instruction.span, out)?;
             out.push(OP_CHECKMULTISIG);
-            out.extend(required.to_le_bytes());
-            out.extend(key_count.to_le_bytes());
         }
-        InstructionKind::CheckLockHeight(height) => {
+        InstructionKind::CheckLockHeight(height) | InstructionKind::CheckLockTime(height) => {
+            encode_u64(*height, instruction.span, out)?;
             out.push(OP_CHECKLOCKTIMEVERIFY);
-            out.extend(height.to_le_bytes());
         }
-        InstructionKind::CheckLockTime(time) => {
+        InstructionKind::CheckLockHeightFromStack | InstructionKind::CheckLockTimeFromStack => {
             out.push(OP_CHECKLOCKTIMEVERIFY);
-            out.extend(time.to_le_bytes());
         }
-        InstructionKind::CovenantDepth => out.push(OP_COVENANTID_DEPTH),
-        InstructionKind::CovenantId => out.push(OP_COVENANTID),
-        InstructionKind::ZkVerifyGroth16 => out.push(OP_ZK_GROTH16_VERIFY),
-        InstructionKind::ZkVerifyRiscZero => out.push(OP_ZK_RISCZERO_VERIFY),
-        InstructionKind::SequencingCommitment => out.push(OP_SEQUENCING_COMMITMENT),
+        InstructionKind::CovenantDepth
+        | InstructionKind::CovenantId
+        | InstructionKind::ZkVerifyGroth16
+        | InstructionKind::ZkVerifyRiscZero
+        | InstructionKind::SequencingCommitment
+        | InstructionKind::Hash160
+        | InstructionKind::CheckHashPreimage
+        | InstructionKind::Mul
+        | InstructionKind::Div
+        | InstructionKind::Mod => {
+            let record = record_for_instruction(&instruction.kind);
+            return Err(CodegenError::UnsupportedGrounding {
+                id: record.id.to_owned(),
+                citation: record.citation,
+                message: record.note.to_owned(),
+            });
+        }
         InstructionKind::Sha256 => out.push(OP_SHA256),
         InstructionKind::Blake2b => out.push(OP_BLAKE2B),
-        InstructionKind::Hash160 => out.push(OP_HASH160),
-        InstructionKind::CheckHashPreimage => out.push(OP_CHECK_HASH_PREIMAGE),
         InstructionKind::Verify => out.push(OP_VERIFY),
         InstructionKind::Equal => out.push(OP_EQUAL),
-        InstructionKind::NotEqual => {
-            out.push(OP_EQUAL);
-            out.push(OP_NOT);
-        }
+        InstructionKind::NotEqual => out.push(OP_NUMNOTEQUAL),
         InstructionKind::GreaterThan => out.push(OP_GREATERTHAN),
         InstructionKind::GreaterThanOrEqual => out.push(OP_GREATERTHANOREQUAL),
-        InstructionKind::And => out.push(OP_AND),
-        InstructionKind::Or => out.push(OP_OR),
+        InstructionKind::LessThan => out.push(OP_LESSTHAN),
+        InstructionKind::LessThanOrEqual => out.push(OP_LESSTHANOREQUAL),
+        InstructionKind::And => out.push(OP_BOOLAND),
+        InstructionKind::Or => out.push(OP_BOOLOR),
         InstructionKind::Not => out.push(OP_NOT),
         InstructionKind::Add => out.push(OP_ADD),
         InstructionKind::Sub => out.push(OP_SUB),
-        InstructionKind::Mul => out.push(OP_MUL),
-        InstructionKind::Div => out.push(OP_DIV),
-        InstructionKind::Mod => out.push(OP_MOD),
     }
     Ok(())
 }
 
 fn encode_push(value: &Value, span: Span, out: &mut Vec<u8>) -> Result<(), CodegenError> {
     match value {
-        Value::Integer(value) => {
-            out.push(OP_PUSH_INT);
-            out.extend(value.to_le_bytes());
-        }
-        Value::Bool(value) => {
-            out.push(OP_PUSH_BOOL);
-            out.push(u8::from(*value));
-        }
-        Value::String(value) | Value::Symbol(value) => {
-            let bytes = value.as_bytes();
-            let len = u32::try_from(bytes.len()).map_err(|_| CodegenError::ValueTooLarge {
-                span,
-                message: "push value exceeds u32 length".to_owned(),
-            })?;
-            out.push(OP_PUSH_BYTES);
-            out.extend(len.to_le_bytes());
-            out.extend(bytes);
-        }
+        Value::Integer(value) => encode_u64(*value, span, out)?,
+        Value::Bool(value) => out.push(if *value { OP_1 } else { OP_FALSE }),
+        Value::String(value) | Value::Symbol(value) => encode_data(value.as_bytes(), span, out)?,
         Value::Type(ty) => {
-            out.push(OP_PUSH_BYTES);
             let text = format!("{ty:?}");
-            let bytes = text.as_bytes();
-            let len = u32::try_from(bytes.len()).map_err(|_| CodegenError::ValueTooLarge {
-                span,
-                message: "type push value exceeds u32 length".to_owned(),
-            })?;
-            out.extend(len.to_le_bytes());
-            out.extend(bytes);
+            encode_data(text.as_bytes(), span, out)?;
         }
     }
     Ok(())
 }
 
-fn encode_indexed(opcode: u8, index: u32, out: &mut Vec<u8>) {
+fn encode_indexed(opcode: u8, index: u32, out: &mut Vec<u8>) -> Result<(), CodegenError> {
+    encode_u64(u64::from(index), Span::new(0, 0), out)?;
     out.push(opcode);
-    out.extend(index.to_le_bytes());
+    Ok(())
+}
+
+fn encode_u64(value: u64, span: Span, out: &mut Vec<u8>) -> Result<(), CodegenError> {
+    if value == 0 {
+        out.push(OP_FALSE);
+        return Ok(());
+    }
+    if value <= 16 {
+        out.push(OP_1 + (value as u8) - 1);
+        return Ok(());
+    }
+
+    let bytes = value.to_le_bytes();
+    let trimmed_size = bytes
+        .iter()
+        .rposition(|byte| *byte != 0)
+        .map_or(0, |index| index + 1);
+    encode_data(&bytes[..trimmed_size], span, out)
+}
+
+fn encode_data(bytes: &[u8], span: Span, out: &mut Vec<u8>) -> Result<(), CodegenError> {
+    let len = bytes.len();
+    if len <= 75 {
+        out.push(len as u8);
+    } else if len <= u8::MAX as usize {
+        out.push(OP_PUSHDATA1);
+        out.push(len as u8);
+    } else if len <= u16::MAX as usize {
+        out.push(OP_PUSHDATA2);
+        out.extend((len as u16).to_le_bytes());
+    } else {
+        let len = u32::try_from(len).map_err(|_| CodegenError::ValueTooLarge {
+            span,
+            message: "push value exceeds u32 length".to_owned(),
+        })?;
+        out.push(OP_PUSHDATA4);
+        out.extend(len.to_le_bytes());
+    }
+    out.extend(bytes);
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kaspascript_ir::{IrContract, IrSpend};
+
+    #[test]
+    fn emits_kaspa_canonical_pushes() {
+        let span = Span::new(0, 1);
+        let mut out = Vec::new();
+
+        encode_push(&Value::Integer(0), span, &mut out).expect("zero");
+        encode_push(&Value::Integer(16), span, &mut out).expect("small int");
+        encode_push(&Value::Integer(500), span, &mut out).expect("data int");
+        encode_push(&Value::Symbol("owner".to_owned()), span, &mut out).expect("symbol");
+
+        assert_eq!(
+            out,
+            vec![0x00, 0x60, 0x02, 0xf4, 0x01, 0x05, b'o', b'w', b'n', b'e', b'r']
+        );
+    }
+
+    #[test]
+    fn verified_tn12_rejects_gated_preview_records() {
+        let ir = IrProgram {
+            contracts: vec![IrContract {
+                name: "Preview".to_owned(),
+                finality_depth: Some(1),
+                spends: vec![IrSpend {
+                    name: "spend".to_owned(),
+                    instructions: vec![Instruction::new(
+                        Span::new(0, 1),
+                        InstructionKind::SequencingCommitment,
+                    )],
+                }],
+            }],
+            kip_requirements: vec![15],
+        };
+
+        let err = compile_toccata("preview", &ir, "test", Target::VerifiedTn12)
+            .expect_err("verified target rejects sequencing");
+        assert!(matches!(
+            err,
+            CodegenError::UnsupportedGrounding { ref id, .. } if id == "sequencing-commitment"
+        ));
+    }
+
+    #[test]
+    fn preview_target_warns_for_gated_kips() {
+        let ir = IrProgram {
+            contracts: vec![IrContract {
+                name: "Preview".to_owned(),
+                finality_depth: None,
+                spends: vec![IrSpend {
+                    name: "spend".to_owned(),
+                    instructions: vec![Instruction::new(Span::new(0, 1), InstructionKind::Verify)],
+                }],
+            }],
+            kip_requirements: vec![16],
+        };
+
+        let artifact =
+            compile_toccata("preview", &ir, "test", Target::ToccataPreview).expect("preview");
+        assert!(artifact
+            .warnings
+            .iter()
+            .any(|warning| warning.id == "kip-16"));
+    }
+
+    #[test]
+    fn future_mainnet_rejects_gated_kips_until_sources_are_pinned() {
+        let ir = IrProgram {
+            contracts: vec![IrContract {
+                name: "Future".to_owned(),
+                finality_depth: None,
+                spends: vec![IrSpend {
+                    name: "spend".to_owned(),
+                    instructions: vec![Instruction::new(Span::new(0, 1), InstructionKind::Verify)],
+                }],
+            }],
+            kip_requirements: vec![20],
+        };
+
+        let err = compile_toccata("future", &ir, "test", Target::FutureMainnet)
+            .expect_err("future target is locked");
+        assert!(matches!(
+            err,
+            CodegenError::GatedGrounding { ref id, ref target, .. }
+                if id == "kip-20" && target == "future-mainnet"
+        ));
+    }
 }

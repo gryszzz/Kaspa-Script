@@ -2,15 +2,15 @@ contract Vault {
   params {
     owner: PublicKey,
     recovery: PublicKey,
-    delay: BlockHeight,
+    unlock_height: BlockHeight,
     finality_depth: 10,
   }
 
   spend withdraw(sig: Signature) {
     require sig.verify(owner);
-    require covenant_id.depth >= delay;
+    require block.height >= unlock_height;
     require output(0).value >= input(0).value;
-    require output(0).covenant_id == covenant_id;
+    require output(0).script == owner;
   }
 
   spend cancel(sig: Signature) {

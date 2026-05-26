@@ -1,8 +1,9 @@
 /*
-  DAGSafeVault
+  DAGSafeVault preview fixture
 
-  Production-oriented KaspaScript V1 vault contract targeting the post-Toccata
-  Kaspa execution model.
+  Future-facing KaspaScript vault design. This is not a verified TN12 bytecode
+  target today because covenant IDs and script-level sequencing access are not
+  present in the pinned Kaspa sources audited by this repository.
 
   Security model:
   - Whole-vault spends only. No partial withdrawal path is exposed because V1
@@ -14,10 +15,10 @@
   - Key rotation preserves value and covenant lineage under the same covenant
     ID, avoiding untracked state migration.
 
-  Toccata dependencies:
-  - KIP-17 transaction introspection for input/output value and script checks.
-  - KIP-20 covenant IDs for lineage continuity.
-  - KIP-21 sequencing commitments for DAG-aware ordering gates.
+  Gated dependencies:
+  - KIP-10 transaction introspection for input/output value and script checks.
+  - Future covenant ID source for lineage continuity.
+  - Future script-visible sequencing source for DAG-aware ordering gates.
 */
 
 contract DAGSafeVault {
@@ -63,8 +64,8 @@ contract DAGSafeVault {
     Key rotation path.
 
     Owner rotates both owner and recovery keys while preserving all value and
-    the same covenant ID. This keeps state threaded through KIP-20 lineage
-    instead of silently migrating to an unrelated script.
+    the same covenant ID. This keeps state threaded through future covenant
+    lineage instead of silently migrating to an unrelated script.
   */
   spend rotate(
     sig: Signature,

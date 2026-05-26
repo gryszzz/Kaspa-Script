@@ -1,76 +1,74 @@
 # Source-Grounded Verification Pass
 
-This repository does not currently include upstream Kaspa consensus source files
-or KIP documents. The compiler therefore treats local KaspaScript language and
-SDK behavior as locally verified, treats protocol/opcode/KIP behavior as gated,
-and refuses behavior with no local source-backed lowering.
+The executable registry is `compiler/codegen/src/grounding.rs`. Its local
+evidence base is `docs/kaspa-source-audit.md`, which records the exact pinned
+Kaspa sources used for this pass.
 
 Status meanings:
 
-- `VERIFIED`: defined by a local KaspaScript source file and covered by tests.
-- `GATED`: recognized locally, but dependent on a future local Kaspa consensus
-  source before it can be treated as protocol-verified.
-- `UNSUPPORTED`: present in an enum or syntax surface but not safe to emit.
+- `VERIFIED`: backed by a pinned Kaspa source or a local KaspaScript source and covered by tests.
+- `GATED`: recognized as a future/preview surface, but not allowed for verified TN12 bytecode.
+- `UNSUPPORTED`: must fail compilation before bytecode emission.
 
 ## Backend Opcodes
 
 | Item | Status | Local citation |
 | --- | --- | --- |
-| `OP_PUSH_INT` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_PUSH_BOOL` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_PUSH_BYTES` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_DROP` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_DUP` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_EQUAL` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_VERIFY` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_CHECKSIG` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_CHECKMULTISIG` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_CHECKLOCKTIMEVERIFY` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_ADD`, `OP_SUB`, `OP_MUL` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_DIV`, `OP_MOD` | UNSUPPORTED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_GREATERTHAN`, `OP_GREATERTHANOREQUAL` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_NOT`, `OP_AND`, `OP_OR` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_SHA256`, `OP_BLAKE2B` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_HASH160` | UNSUPPORTED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_INPUTVALUE`, `OP_INPUTSCRIPT` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_OUTPUTVALUE`, `OP_OUTPUTSCRIPT` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_INPUTCOUNT`, `OP_OUTPUTCOUNT` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_COVENANTID`, `OP_COVENANTID_DEPTH` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_ZK_GROTH16_VERIFY` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_ZK_RISCZERO_VERIFY` | UNSUPPORTED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_SEQUENCING_COMMITMENT` | GATED | `compiler/codegen/src/backends/toccata.rs` |
-| `OP_CHECK_HASH_PREIMAGE` | UNSUPPORTED | `compiler/codegen/src/backends/toccata.rs` |
+| Canonical pushes | VERIFIED | `docs/kaspa-source-audit.md` |
+| `OP_DROP`, `OP_DUP`, `OP_EQUAL`, `OP_VERIFY` | VERIFIED | `docs/kaspa-source-audit.md` |
+| `OP_CHECKSIG`, `OP_CHECKMULTISIG` | VERIFIED | `docs/kaspa-source-audit.md` |
+| `OP_CHECKLOCKTIMEVERIFY` | VERIFIED | `docs/kaspa-source-audit.md` |
+| `OP_ADD`, `OP_SUB` | VERIFIED | `docs/kaspa-source-audit.md` |
+| `OP_MUL`, `OP_DIV`, `OP_MOD` | UNSUPPORTED | `docs/kaspa-source-audit.md` |
+| `OP_LESSTHAN`, `OP_GREATERTHAN`, `OP_LESSTHANOREQUAL`, `OP_GREATERTHANOREQUAL` | VERIFIED | `docs/kaspa-source-audit.md` |
+| `OP_NOT`, `OP_BOOLAND`, `OP_BOOLOR`, `OP_NUMNOTEQUAL` | VERIFIED | `docs/kaspa-source-audit.md` |
+| `OP_SHA256`, `OP_BLAKE2B` | VERIFIED | `docs/kaspa-source-audit.md` |
+| KIP-10 input/output introspection opcodes | VERIFIED | `docs/kaspa-source-audit.md` |
+| Covenant ID opcodes | UNSUPPORTED | `docs/kaspa-source-audit.md` |
+| ZK verifier opcodes | UNSUPPORTED | `docs/kaspa-source-audit.md` |
+| Sequencing txscript opcode | UNSUPPORTED | `docs/kaspa-source-audit.md` |
+| Dedicated hash-preimage opcode | UNSUPPORTED | `docs/kaspa-source-audit.md` |
 
 ## Builtins
 
 | Builtin | Status | Local citation |
 | --- | --- | --- |
-| `finality_depth` | VERIFIED | `compiler/parser/src/parser.rs` |
-| `multisig` | VERIFIED | `compiler/semantic/src/checker.rs` |
-| `input`, `output` | GATED | `compiler/semantic/src/checker.rs` |
-| `block` | GATED | `compiler/semantic/src/checker.rs` |
-| `covenant_id` | GATED | `compiler/semantic/src/checker.rs` |
-| `covenant` | UNSUPPORTED | `compiler/semantic/src/checker.rs` |
-| `sequencing` | GATED | `compiler/semantic/src/checker.rs` |
-| `zk_verify` | GATED | `compiler/semantic/src/checker.rs` |
-| `sha256`, `blake2b` | GATED | `compiler/semantic/src/checker.rs` |
-| `hash160` | UNSUPPORTED | `compiler/semantic/src/checker.rs` |
+| `finality_depth` | VERIFIED | `compiler/parser/src/parser.rs`, `compiler/semantic/src/checker.rs`, `sdk/src/lib.rs` |
+| `multisig` | VERIFIED | `compiler/semantic/src/checker.rs`, `compiler/ir/src/gen.rs` |
+| `input`, `output` | VERIFIED | `docs/kaspa-source-audit.md`, `compiler/ir/src/gen.rs` |
+| `block.height`, `block.time` | GATED | `docs/kaspa-source-audit.md` |
+| `sha256`, `blake2b` | VERIFIED | `docs/kaspa-source-audit.md` |
+| `hash160` | UNSUPPORTED | `docs/kaspa-source-audit.md` |
+| `covenant`, `covenant_id` | UNSUPPORTED | `docs/kaspa-source-audit.md` |
+| `zk_verify` | UNSUPPORTED | `docs/kaspa-source-audit.md` |
+| `sequencing` | UNSUPPORTED | `docs/kaspa-source-audit.md` |
 
 ## KIP References
 
 | KIP | Status | Local citation |
 | --- | --- | --- |
-| KIP-16 | GATED | `contracts/production/DAGSafeVault.ks` |
-| KIP-17 | GATED | `contracts/production/DAGSafeVault.ks` |
-| KIP-20 | GATED | `contracts/production/DAGSafeVault.ks` |
-| KIP-21 | GATED | `contracts/production/DAGSafeVault.ks` |
+| KIP-10 | VERIFIED | `docs/kaspa-source-audit.md` |
+| KIP-15 | VERIFIED | `docs/kaspa-source-audit.md` |
+| KIP-16 | GATED | `docs/kaspa-source-audit.md` |
+| KIP-17 | GATED | `docs/kaspa-source-audit.md` |
+| KIP-20 | GATED | `docs/kaspa-source-audit.md` |
+| KIP-21 | GATED | `docs/kaspa-source-audit.md` |
+
+## Target Gates
+
+| Target | Behavior | Local citation |
+| --- | --- | --- |
+| `verified-tn12` | Emits only verified records; gated and unsupported records fail. | `compiler/codegen/src/lib.rs`, `compiler/codegen/src/backends/toccata.rs` |
+| `toccata-preview` | Emits verified records, warns for gated records, fails unsupported records. | `compiler/codegen/src/lib.rs`, `compiler/codegen/src/backends/toccata.rs` |
+| `future-mainnet` | Fails gated and unsupported records until mainnet sources are pinned. | `compiler/codegen/src/lib.rs`, `compiler/codegen/src/backends/toccata.rs` |
 
 ## Transaction Assumptions
 
 | Assumption | Status | Local citation |
 | --- | --- | --- |
 | Refuse UTXOs below `finality_depth` confirmations | VERIFIED | `sdk/src/lib.rs` |
-| Inject 10bps treasury fee at transaction-build time | VERIFIED | `sdk/src/lib.rs` |
+| No hidden treasury fee injection | VERIFIED | `sdk/src/lib.rs` |
+| Real Kaspa transaction construction/submission | GATED | `sdk/src/lib.rs` |
 
 ## Artifact Fields
 
@@ -80,10 +78,12 @@ Status meanings:
 | `source_hash` | VERIFIED | `compiler/codegen/src/lib.rs` |
 | `compiler_version` | VERIFIED | `compiler/codegen/src/lib.rs` |
 | `backend` | VERIFIED | `compiler/codegen/src/lib.rs` |
+| `target` | VERIFIED | `compiler/codegen/src/lib.rs` |
 | `finality_depth` | VERIFIED | `compiler/codegen/src/lib.rs` |
 | `kip_requirements` | VERIFIED | `compiler/codegen/src/lib.rs` |
 | `warnings` | VERIFIED | `compiler/codegen/src/lib.rs` |
 
-The executable registry is `compiler/codegen/src/grounding.rs`. Tests assert
-that all IR instructions have source-grounding records, unsupported instructions
-fail compilation, and gated behavior emits warnings into `CompiledArtifact`.
+Tests assert that all IR instructions have source-grounding records, verified
+contracts compile to committed golden artifact JSON/hex/ASM, unsupported
+features fail compilation, preview-gated features warn only under the preview
+target, and repeated compilation is deterministic.

@@ -343,6 +343,7 @@ dependencies = [
  "kaspascript-lexer",
  "pretty_assertions",
  "serde",
+ "serde_json",
  "sha2",
  "thiserror",
 ]

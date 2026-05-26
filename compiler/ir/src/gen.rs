@@ -175,8 +175,7 @@ fn lower_binary(
     out: &mut Vec<Instruction>,
     file: &str,
 ) -> Result<(), IrError> {
-    if let Some(instruction) = lower_special_binary(left, op, right, span) {
-        out.push(instruction);
+    if lower_special_binary(left, op, right, span, out, file)? {
         return Ok(());
     }
 
@@ -189,8 +188,8 @@ fn lower_binary(
         BinaryOp::NotEqual => InstructionKind::NotEqual,
         BinaryOp::Greater => InstructionKind::GreaterThan,
         BinaryOp::GreaterEqual => InstructionKind::GreaterThanOrEqual,
-        BinaryOp::Less => InstructionKind::GreaterThan,
-        BinaryOp::LessEqual => InstructionKind::GreaterThanOrEqual,
+        BinaryOp::Less => InstructionKind::LessThan,
+        BinaryOp::LessEqual => InstructionKind::LessThanOrEqual,
         BinaryOp::Add => InstructionKind::Add,
         BinaryOp::Sub => InstructionKind::Sub,
         BinaryOp::Mul => InstructionKind::Mul,
@@ -206,24 +205,40 @@ fn lower_special_binary(
     op: BinaryOp,
     right: &Expr,
     span: Span,
-) -> Option<Instruction> {
+    out: &mut Vec<Instruction>,
+    file: &str,
+) -> Result<bool, IrError> {
     if op == BinaryOp::GreaterEqual && is_path(left, &["block", "height"]) {
         if let Expr::Integer { value, .. } = right {
-            return Some(Instruction::new(
+            out.push(Instruction::new(
                 span,
                 InstructionKind::CheckLockHeight(*value),
             ));
+        } else {
+            lower_expr(right, out, file)?;
+            out.push(Instruction::new(
+                span,
+                InstructionKind::CheckLockHeightFromStack,
+            ));
         }
+        return Ok(true);
     }
     if op == BinaryOp::GreaterEqual && is_path(left, &["block", "time"]) {
         if let Expr::Integer { value, .. } = right {
-            return Some(Instruction::new(
+            out.push(Instruction::new(
                 span,
                 InstructionKind::CheckLockTime(*value),
             ));
+        } else {
+            lower_expr(right, out, file)?;
+            out.push(Instruction::new(
+                span,
+                InstructionKind::CheckLockTimeFromStack,
+            ));
         }
+        return Ok(true);
     }
-    None
+    Ok(false)
 }
 
 fn lower_call(
@@ -328,8 +343,11 @@ fn lower_multisig(
         Some(Expr::Array { elements, .. }) => elements.len() as u32,
         _ => 0,
     };
-    for arg in args.iter().skip(1) {
-        lower_expr(arg, out, file)?;
+    if let Some(signatures) = args.get(2) {
+        lower_expr(signatures, out, file)?;
+    }
+    if let Some(keys) = args.get(1) {
+        lower_expr(keys, out, file)?;
     }
     out.push(Instruction::new(
         span,

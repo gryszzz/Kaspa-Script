@@ -7,6 +7,9 @@ use thiserror::Error;
 /// SDK compile error.
 pub type CompileError = kaspascript_codegen::CodegenError;
 
+/// Transaction builder maturity status.
+pub const TRANSACTION_BUILDER_STATUS: &str = "preview";
+
 /// Spend argument for transaction construction.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SpendArg {
@@ -31,7 +34,11 @@ pub struct TxOutput {
     pub script_pubkey: Vec<u8>,
 }
 
-/// Deterministic transaction model used by the SDK.
+/// Deterministic preview transaction model used by the SDK.
+///
+/// This is not yet a `rusty-kaspa` transaction. It exists to test finality
+/// policy and artifact wiring until real Kaspa transaction construction is
+/// integrated.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Transaction {
     pub spend_fn: String,
@@ -54,7 +61,7 @@ pub fn compile(src: &str, file: &str) -> Result<CompiledArtifact, CompileError> 
     compile_file(src, file)
 }
 
-/// Builds a spend transaction with finality enforcement and 10bps treasury fee injection.
+/// Builds a preview spend transaction with finality enforcement and no hidden fees.
 pub fn build_spend_tx(
     artifact: &CompiledArtifact,
     spend_fn: &str,
@@ -77,22 +84,13 @@ pub fn build_spend_tx(
         }
     }
 
-    let treasury_fee = total_value / 1_000;
-    let spend_value = total_value.saturating_sub(treasury_fee);
-
     Ok(Transaction {
         spend_fn: spend_fn.to_owned(),
         inputs: utxos,
-        outputs: vec![
-            TxOutput {
-                value: spend_value,
-                script_pubkey: artifact.bytecode.clone(),
-            },
-            TxOutput {
-                value: treasury_fee,
-                script_pubkey: b"kaspascript-treasury".to_vec(),
-            },
-        ],
+        outputs: vec![TxOutput {
+            value: total_value,
+            script_pubkey: artifact.bytecode.clone(),
+        }],
         args,
     })
 }
@@ -107,9 +105,10 @@ mod tests {
             bytecode: vec![1],
             source_hash: [0; 32],
             compiler_version: "test".to_owned(),
-            backend: "toccata".to_owned(),
+            backend: "kaspa-txscript".to_owned(),
+            target: "verified-tn12".to_owned(),
             finality_depth: Some(10),
-            kip_requirements: vec![17],
+            kip_requirements: vec![10],
             warnings: Vec::new(),
         };
         let result = build_spend_tx(
@@ -130,12 +129,13 @@ mod tests {
     }
 
     #[test]
-    fn injects_ten_basis_point_treasury_fee() {
+    fn does_not_inject_hidden_fee() {
         let artifact = CompiledArtifact {
             bytecode: vec![1],
             source_hash: [0; 32],
             compiler_version: "test".to_owned(),
-            backend: "toccata".to_owned(),
+            backend: "kaspa-txscript".to_owned(),
+            target: "verified-tn12".to_owned(),
             finality_depth: None,
             kip_requirements: Vec::new(),
             warnings: Vec::new(),
@@ -153,8 +153,9 @@ mod tests {
         )
         .expect("transaction builds");
 
-        assert_eq!(tx.outputs[0].value, 99_900);
-        assert_eq!(tx.outputs[1].value, 100);
-        assert_eq!(tx.outputs[1].script_pubkey, b"kaspascript-treasury");
+        assert_eq!(TRANSACTION_BUILDER_STATUS, "preview");
+        assert_eq!(tx.outputs.len(), 1);
+        assert_eq!(tx.outputs[0].value, 100_000);
+        assert_eq!(tx.outputs[0].script_pubkey, vec![1]);
     }
 }

@@ -21,6 +21,7 @@ pub enum FeatureStatus {
     ActiveTestnet,
     PendingActivation,
     Unpinned,
+    Unsupported,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,9 +68,13 @@ pub struct ProtocolManifest {
 
 impl ProtocolManifest {
     pub fn supports(&self, feature: ProtocolFeature) -> bool {
-        self.features
-            .iter()
-            .any(|spec| spec.feature == feature && spec.status != FeatureStatus::Unpinned)
+        self.features.iter().any(|spec| {
+            spec.feature == feature
+                && !matches!(
+                    spec.status,
+                    FeatureStatus::Unpinned | FeatureStatus::Unsupported
+                )
+        })
     }
 
     pub fn feature_status(&self, feature: ProtocolFeature) -> Option<FeatureStatus> {
@@ -88,7 +93,9 @@ impl ProtocolManifest {
 
         for requirement in requirements {
             match self.feature_status(*requirement) {
-                Some(FeatureStatus::Unpinned) => unpinned.push(*requirement),
+                Some(FeatureStatus::Unpinned | FeatureStatus::Unsupported) => {
+                    unpinned.push(*requirement);
+                }
                 Some(_) => {}
                 None => missing.push(*requirement),
             }
@@ -145,40 +152,68 @@ impl fmt::Display for ProtocolError {
 impl std::error::Error for ProtocolError {}
 
 pub fn toccata_tn12_manifest() -> ProtocolManifest {
+    verified_tn12_manifest()
+}
+
+pub fn verified_tn12_manifest() -> ProtocolManifest {
     ProtocolManifest {
-        name: "kaspa-toccata-tn12-unpinned",
+        name: "verified-tn12",
         network: Network::Tn12,
-        source_commit: None,
+        source_commit: Some("rusty-kaspa:a07d8b38d45f38a02a1f35f601e874358f6c7846"),
         features: vec![
             FeatureSpec {
                 feature: ProtocolFeature::BaseScript,
                 status: FeatureStatus::ActiveTestnet,
-                source: "kaspanet/rusty-kaspa",
+                source: "kaspanet/rusty-kaspa crypto/txscript/src/opcodes/mod.rs",
             },
             FeatureSpec {
                 feature: ProtocolFeature::TransactionIntrospection,
-                status: FeatureStatus::Unpinned,
-                source: "Toccata covenant/script-engine opcode set",
+                status: FeatureStatus::ActiveTestnet,
+                source: "kaspanet/kips kip-0010.md and rusty-kaspa txscript opcodes",
             },
             FeatureSpec {
                 feature: ProtocolFeature::CovenantIds,
-                status: FeatureStatus::Unpinned,
-                source: "Toccata covenant ID lineage surface",
+                status: FeatureStatus::Unsupported,
+                source: "no pinned Kaspa source file/opcode",
             },
             FeatureSpec {
                 feature: ProtocolFeature::SequencingCommitments,
-                status: FeatureStatus::Unpinned,
-                source: "Toccata sequencing commitment surface",
+                status: FeatureStatus::Stable,
+                source: "kaspanet/kips kip-0015.md block-header commitment, not script opcode",
             },
             FeatureSpec {
                 feature: ProtocolFeature::ZkVerification,
-                status: FeatureStatus::Unpinned,
-                source: "Toccata verifier precompile surface",
+                status: FeatureStatus::Unsupported,
+                source: "no pinned Kaspa source file/opcode",
             },
         ],
         limits: ProtocolLimits::default(),
-        bytecode_emission_allowed: false,
+        bytecode_emission_allowed: true,
     }
+}
+
+pub fn toccata_preview_manifest() -> ProtocolManifest {
+    let mut manifest = verified_tn12_manifest();
+    manifest.name = "toccata-preview";
+    manifest.bytecode_emission_allowed = true;
+    for feature in &mut manifest.features {
+        if matches!(
+            feature.feature,
+            ProtocolFeature::CovenantIds | ProtocolFeature::ZkVerification
+        ) {
+            feature.status = FeatureStatus::Unpinned;
+            feature.source = "preview-gated; source not pinned";
+        }
+    }
+    manifest
+}
+
+pub fn future_mainnet_manifest() -> ProtocolManifest {
+    let mut manifest = verified_tn12_manifest();
+    manifest.name = "future-mainnet";
+    manifest.network = Network::Mainnet;
+    manifest.bytecode_emission_allowed = false;
+    manifest
 }
 
 fn format_features(f: &mut fmt::Formatter<'_>, features: &[ProtocolFeature]) -> fmt::Result {
@@ -209,20 +244,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tn12_manifest_locks_bytecode_emission_until_opcode_source_is_pinned() {
-        let manifest = toccata_tn12_manifest();
+    fn verified_tn12_manifest_allows_bytecode_for_pinned_features() {
+        let manifest = verified_tn12_manifest();
 
-        assert_eq!(
-            manifest.ensure_bytecode_emission_allowed(),
-            Err(ProtocolError::BytecodeEmissionLocked {
-                manifest: "kaspa-toccata-tn12-unpinned"
-            })
-        );
+        assert_eq!(manifest.ensure_bytecode_emission_allowed(), Ok(()));
+        assert!(manifest.supports(ProtocolFeature::TransactionIntrospection));
+        assert!(!manifest.supports(ProtocolFeature::CovenantIds));
     }
 
     #[test]
-    fn reports_unpinned_toccata_requirements() {
-        let manifest = toccata_tn12_manifest();
+    fn reports_unpinned_or_unsupported_future_requirements() {
+        let manifest = toccata_preview_manifest();
         let requirements = [
             ProtocolFeature::BaseScript,
             ProtocolFeature::CovenantIds,
@@ -232,8 +264,7 @@ mod tests {
         assert_eq!(
             manifest.validate_requirements(&requirements),
             Err(ProtocolError::UnpinnedFeatures(vec![
-                ProtocolFeature::CovenantIds,
-                ProtocolFeature::SequencingCommitments,
+                ProtocolFeature::CovenantIds
             ]))
         );
     }

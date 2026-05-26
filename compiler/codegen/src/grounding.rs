@@ -19,6 +19,7 @@ pub enum GroundingCategory {
     KipReference,
     TransactionAssumption,
     ArtifactField,
+    TargetGate,
 }
 
 /// A local-source citation for a compiler assumption.
@@ -67,47 +68,84 @@ pub fn all_records() -> Vec<GroundingRecord> {
     records.extend(kip_records());
     records.extend(transaction_assumption_records());
     records.extend(artifact_field_records());
+    records.extend(target_gate_records());
     records
 }
 
 /// Returns records for backend opcode assumptions.
 pub fn backend_opcode_records() -> Vec<GroundingRecord> {
     vec![
-        gated_opcode("push-int", "OP_PUSH_INT"),
-        gated_opcode("push-bool", "OP_PUSH_BOOL"),
-        gated_opcode("push-bytes", "OP_PUSH_BYTES"),
-        gated_opcode("drop", "OP_DROP"),
-        gated_opcode("dup", "OP_DUP"),
-        gated_opcode("equal", "OP_EQUAL"),
-        gated_opcode("verify", "OP_VERIFY"),
-        gated_opcode("checksig", "OP_CHECKSIG"),
-        gated_opcode("checkmultisig", "OP_CHECKMULTISIG"),
-        gated_opcode("checklocktimeverify", "OP_CHECKLOCKTIMEVERIFY"),
-        gated_opcode("add", "OP_ADD"),
-        gated_opcode("sub", "OP_SUB"),
-        gated_opcode("mul", "OP_MUL"),
-        unsupported_opcode("div", "OP_DIV"),
-        unsupported_opcode("mod", "OP_MOD"),
-        gated_opcode("greaterthan", "OP_GREATERTHAN"),
-        gated_opcode("greaterthanorequal", "OP_GREATERTHANOREQUAL"),
-        gated_opcode("not", "OP_NOT"),
-        gated_opcode("and", "OP_AND"),
-        gated_opcode("or", "OP_OR"),
-        gated_opcode("sha256", "OP_SHA256"),
-        unsupported_opcode("hash160", "OP_HASH160"),
-        gated_opcode("blake2b", "OP_BLAKE2B"),
-        gated_opcode("inputvalue", "OP_INPUTVALUE"),
-        gated_opcode("inputscript", "OP_INPUTSCRIPT"),
-        gated_opcode("outputvalue", "OP_OUTPUTVALUE"),
-        gated_opcode("outputscript", "OP_OUTPUTSCRIPT"),
-        gated_opcode("inputcount", "OP_INPUTCOUNT"),
-        gated_opcode("outputcount", "OP_OUTPUTCOUNT"),
-        gated_opcode("covenantid", "OP_COVENANTID"),
-        gated_opcode("covenantid-depth", "OP_COVENANTID_DEPTH"),
-        gated_opcode("zk-groth16-verify", "OP_ZK_GROTH16_VERIFY"),
-        unsupported_opcode("zk-risczero-verify", "OP_ZK_RISCZERO_VERIFY"),
-        gated_opcode("sequencing-commitment", "OP_SEQUENCING_COMMITMENT"),
-        unsupported_opcode("check-hash-preimage", "OP_CHECK_HASH_PREIMAGE"),
+        verified_opcode(
+            "push-int",
+            "canonical script-number pushes via OP_0, OP_1..OP_16, OP_DATA_N",
+        ),
+        verified_opcode("push-bool", "boolean pushes via OP_0 and OP_1"),
+        verified_opcode("push-bytes", "canonical pushdata OP_DATA_N/OP_PUSHDATA_N"),
+        verified_opcode("drop", "OpDrop (0x75)"),
+        verified_opcode("dup", "OpDup (0x76)"),
+        verified_opcode("equal", "OpEqual (0x87)"),
+        verified_opcode("verify", "OpVerify (0x69)"),
+        verified_opcode("checksig", "OpCheckSig (0xac)"),
+        verified_opcode("checkmultisig", "OpCheckMultiSig (0xae)"),
+        verified_opcode("checklocktimeverify", "OpCheckLockTimeVerify (0xb0)"),
+        verified_opcode("add", "OpAdd (0x93)"),
+        verified_opcode("sub", "OpSub (0x94)"),
+        unsupported_opcode(
+            "mul",
+            "OpMul exists at 0x95 but rusty-kaspa marks it disabled",
+        ),
+        unsupported_opcode(
+            "div",
+            "OpDiv exists at 0x96 but rusty-kaspa marks it disabled",
+        ),
+        unsupported_opcode(
+            "mod",
+            "OpMod exists at 0x97 but rusty-kaspa marks it disabled",
+        ),
+        verified_opcode("lessthan", "OpLessThan (0x9f)"),
+        verified_opcode("lessthanorequal", "OpLessThanOrEqual (0xa1)"),
+        verified_opcode("greaterthan", "OpGreaterThan (0xa0)"),
+        verified_opcode("greaterthanorequal", "OpGreaterThanOrEqual (0xa2)"),
+        verified_opcode("not", "OpNot (0x91)"),
+        verified_opcode("and", "OpBoolAnd (0x9a)"),
+        verified_opcode("or", "OpBoolOr (0x9b)"),
+        verified_opcode("notequal", "OpNumNotEqual (0x9e)"),
+        verified_opcode("sha256", "OpSHA256 (0xa8)"),
+        unsupported_opcode(
+            "hash160",
+            "no Hash160 opcode is present; 0xa9 is OpCheckMultiSigECDSA",
+        ),
+        verified_opcode("blake2b", "OpBlake2b (0xaa)"),
+        verified_opcode("inputvalue", "OpTxInputAmount (0xbe), KIP-10"),
+        verified_opcode("inputscript", "OpTxInputSpk (0xbf), KIP-10"),
+        verified_opcode("outputvalue", "OpTxOutputAmount (0xc2), KIP-10"),
+        verified_opcode("outputscript", "OpTxOutputSpk (0xc3), KIP-10"),
+        verified_opcode("inputcount", "OpTxInputCount (0xb3), KIP-10"),
+        verified_opcode("outputcount", "OpTxOutputCount (0xb4), KIP-10"),
+        unsupported_opcode(
+            "covenantid",
+            "no covenant ID opcode is present in pinned sources",
+        ),
+        unsupported_opcode(
+            "covenantid-depth",
+            "no covenant ID depth opcode is present in pinned sources",
+        ),
+        unsupported_opcode(
+            "zk-groth16-verify",
+            "no Groth16 verifier opcode is present in pinned sources",
+        ),
+        unsupported_opcode(
+            "zk-risczero-verify",
+            "no RISC Zero verifier opcode is present in pinned sources",
+        ),
+        unsupported_opcode(
+            "sequencing-commitment",
+            "KIP-15 defines a header commitment, not a script opcode",
+        ),
+        unsupported_opcode(
+            "check-hash-preimage",
+            "no dedicated hash-preimage opcode is present in pinned sources",
+        ),
     ]
 }
 
@@ -122,58 +160,71 @@ pub fn builtin_records() -> Vec<GroundingRecord> {
         verified_builtin(
             "multisig",
             "compiler/semantic/src/checker.rs",
-            "multisig arity and static threshold checks are implemented locally",
+            "multisig arity and static threshold checks are implemented locally; backend emits OpCheckMultiSig",
         ),
-        gated_builtin(
+        verified_builtin(
             "input",
-            "KIP-17 transaction introspection is not backed by a local Kaspa opcode source",
+            "docs/kaspa-source-audit.md",
+            "input(n).value/script lower to KIP-10 OpTxInputAmount/OpTxInputSpk",
         ),
-        gated_builtin(
+        verified_builtin(
             "output",
-            "KIP-17 transaction introspection is not backed by a local Kaspa opcode source",
+            "docs/kaspa-source-audit.md",
+            "output(n).value/script lower to KIP-10 OpTxOutputAmount/OpTxOutputSpk",
         ),
         gated_builtin(
             "block",
-            "lock-height/time lowering is not backed by a local Kaspa opcode source",
+            "block.height/time syntax is recognized; parameterized lock values are still emitted as script-template data",
         ),
-        gated_builtin(
-            "covenant_id",
-            "KIP-20 covenant ID behavior is not backed by a local Kaspa source",
-        ),
+        unsupported_builtin("covenant_id", "no pinned Kaspa source defines covenant ID opcodes"),
+        unsupported_builtin("covenant", "no pinned Kaspa source defines covenant.with_keys lowering"),
         unsupported_builtin(
-            "covenant",
-            "no local source defines covenant.with_keys lowering",
-        ),
-        gated_builtin(
             "sequencing",
-            "KIP-21 sequencing behavior is not backed by a local Kaspa source",
-        ),
-        gated_builtin(
-            "zk_verify",
-            "KIP-16 verifier behavior is not backed by a local Kaspa source",
-        ),
-        gated_builtin(
-            "sha256",
-            "hash opcode byte mapping is not backed by a local Kaspa source",
-        ),
-        gated_builtin(
-            "blake2b",
-            "hash opcode byte mapping is not backed by a local Kaspa source",
+            "KIP-15 sequencing commitment is a header/archival-node commitment, not a txscript opcode",
         ),
         unsupported_builtin(
-            "hash160",
-            "no provided Kaspa source verifies Hash160 backend support",
+            "zk_verify",
+            "no pinned Kaspa source defines a txscript ZK verifier opcode",
         ),
+        verified_builtin("sha256", "docs/kaspa-source-audit.md", "OpSHA256 is present at 0xa8"),
+        verified_builtin("blake2b", "docs/kaspa-source-audit.md", "OpBlake2b is present at 0xaa"),
+        unsupported_builtin("hash160", "no Hash160 opcode is present in pinned txscript sources"),
     ]
 }
 
 /// Returns records for KIP references.
 pub fn kip_records() -> Vec<GroundingRecord> {
     vec![
-        gated_kip(16, "contracts/production/DAGSafeVault.ks", "ZK verifier dependency is mentioned locally but no Kaspa KIP source file is present"),
-        gated_kip(17, "contracts/production/DAGSafeVault.ks", "transaction introspection dependency is mentioned locally but no Kaspa KIP source file is present"),
-        gated_kip(20, "contracts/production/DAGSafeVault.ks", "covenant ID dependency is mentioned locally but no Kaspa KIP source file is present"),
-        gated_kip(21, "contracts/production/DAGSafeVault.ks", "sequencing dependency is mentioned locally but no Kaspa KIP source file is present"),
+        verified_kip(
+            10,
+            "docs/kaspa-source-audit.md",
+            "KIP-10 is present in kaspanet/kips and marked Active; rusty-kaspa has matching txscript opcodes",
+        ),
+        verified_kip(
+            15,
+            "docs/kaspa-source-audit.md",
+            "KIP-15 is present in kaspanet/kips and marked Active as a block-header commitment",
+        ),
+        gated_kip(
+            16,
+            "docs/kaspa-source-audit.md",
+            "no KIP-16 file or txscript ZK opcode is present in the pinned source set",
+        ),
+        gated_kip(
+            17,
+            "docs/kaspa-source-audit.md",
+            "no KIP-17 file is present; previous introspection claims map to KIP-10",
+        ),
+        gated_kip(
+            20,
+            "docs/kaspa-source-audit.md",
+            "no KIP-20 file or covenant ID opcode is present in the pinned source set",
+        ),
+        gated_kip(
+            21,
+            "docs/kaspa-source-audit.md",
+            "no KIP-21 file is present; sequencing source is KIP-15 and is not a txscript opcode",
+        ),
     ]
 }
 
@@ -188,11 +239,18 @@ pub fn transaction_assumption_records() -> Vec<GroundingRecord> {
             "local SDK behavior is tested; no Kaspa RPC submission source is present",
         ),
         verified_record(
-            "sdk-10bps-fee-injection",
+            "sdk-no-hidden-fee",
             GroundingCategory::TransactionAssumption,
             "sdk/src/lib.rs",
-            "build_spend_tx computes total_value / 1_000 and routes it to kaspascript-treasury",
-            "local SDK behavior is tested; treasury policy is not a Kaspa consensus rule",
+            "build_spend_tx routes the full spend value to the contract output and creates no treasury output",
+            "hidden treasury fee injection has been removed",
+        ),
+        gated_record(
+            "sdk-transaction-builder-preview",
+            GroundingCategory::TransactionAssumption,
+            "sdk/src/lib.rs",
+            "Transaction is a deterministic SDK model, not a rusty-kaspa Transaction",
+            "real Kaspa transaction construction/submission remains preview-gated",
         ),
     ]
 }
@@ -204,6 +262,7 @@ pub fn artifact_field_records() -> Vec<GroundingRecord> {
         "source_hash",
         "compiler_version",
         "backend",
+        "target",
         "finality_depth",
         "kip_requirements",
         "warnings",
@@ -219,6 +278,33 @@ pub fn artifact_field_records() -> Vec<GroundingRecord> {
         )
     })
     .collect()
+}
+
+/// Returns records for target gate behavior.
+pub fn target_gate_records() -> Vec<GroundingRecord> {
+    vec![
+        verified_record(
+            "target-verified-tn12",
+            GroundingCategory::TargetGate,
+            "compiler/codegen/src/lib.rs",
+            "Target::VerifiedTn12 rejects gated and unsupported records",
+            "verified TN12 emits only behavior backed by pinned sources",
+        ),
+        verified_record(
+            "target-toccata-preview",
+            GroundingCategory::TargetGate,
+            "compiler/codegen/src/lib.rs",
+            "Target::ToccataPreview warns for gated records and rejects unsupported records",
+            "preview behavior is explicit in artifact warnings",
+        ),
+        verified_record(
+            "target-future-mainnet",
+            GroundingCategory::TargetGate,
+            "compiler/codegen/src/lib.rs",
+            "Target::FutureMainnet rejects gated and unsupported records",
+            "future mainnet emission stays locked until sources are pinned",
+        ),
+    ]
 }
 
 /// Returns the source-grounding record for an instruction.
@@ -239,9 +325,10 @@ pub fn record_for_instruction(kind: &InstructionKind) -> GroundingRecord {
         InstructionKind::InputCount => opcode_record("inputcount"),
         InstructionKind::CheckSig { .. } => opcode_record("checksig"),
         InstructionKind::CheckMultiSig { .. } => opcode_record("checkmultisig"),
-        InstructionKind::CheckLockHeight(_) | InstructionKind::CheckLockTime(_) => {
-            opcode_record("checklocktimeverify")
-        }
+        InstructionKind::CheckLockHeight(_)
+        | InstructionKind::CheckLockTime(_)
+        | InstructionKind::CheckLockHeightFromStack
+        | InstructionKind::CheckLockTimeFromStack => opcode_record("checklocktimeverify"),
         InstructionKind::CovenantDepth => opcode_record("covenantid-depth"),
         InstructionKind::CovenantId => opcode_record("covenantid"),
         InstructionKind::ZkVerifyGroth16 => opcode_record("zk-groth16-verify"),
@@ -253,11 +340,14 @@ pub fn record_for_instruction(kind: &InstructionKind) -> GroundingRecord {
         InstructionKind::CheckHashPreimage => opcode_record("check-hash-preimage"),
         InstructionKind::Verify => opcode_record("verify"),
         InstructionKind::Equal => opcode_record("equal"),
-        InstructionKind::NotEqual | InstructionKind::Not => opcode_record("not"),
+        InstructionKind::NotEqual => opcode_record("notequal"),
+        InstructionKind::LessThan => opcode_record("lessthan"),
+        InstructionKind::LessThanOrEqual => opcode_record("lessthanorequal"),
         InstructionKind::GreaterThan => opcode_record("greaterthan"),
         InstructionKind::GreaterThanOrEqual => opcode_record("greaterthanorequal"),
         InstructionKind::And => opcode_record("and"),
         InstructionKind::Or => opcode_record("or"),
+        InstructionKind::Not => opcode_record("not"),
         InstructionKind::Add => opcode_record("add"),
         InstructionKind::Sub => opcode_record("sub"),
         InstructionKind::Mul => opcode_record("mul"),
@@ -288,23 +378,23 @@ fn opcode_record(id: &str) -> GroundingRecord {
         })
 }
 
-fn gated_opcode(id: &'static str, constant: &'static str) -> GroundingRecord {
-    gated_record(
+fn verified_opcode(id: &'static str, detail: &'static str) -> GroundingRecord {
+    verified_record(
         id,
         GroundingCategory::BackendOpcode,
-        "compiler/codegen/src/backends/toccata.rs",
-        constant,
-        "opcode byte mapping is gated because no local Kaspa consensus opcode table is present",
+        "docs/kaspa-source-audit.md",
+        detail,
+        "opcode byte mapping is verified against pinned Kaspa txscript sources",
     )
 }
 
-fn unsupported_opcode(id: &'static str, constant: &'static str) -> GroundingRecord {
+fn unsupported_opcode(id: &'static str, detail: &'static str) -> GroundingRecord {
     unsupported_record(
         id,
         GroundingCategory::BackendOpcode,
-        "compiler/codegen/src/backends/toccata.rs",
-        constant,
-        "opcode byte mapping is unsupported until a local Kaspa source verifies it",
+        "docs/kaspa-source-audit.md",
+        detail,
+        "backend emission is unsupported until a pinned Kaspa source verifies it",
     )
 }
 
@@ -314,7 +404,7 @@ fn verified_builtin(id: &'static str, path: &'static str, detail: &'static str) 
         GroundingCategory::Builtin,
         path,
         detail,
-        "builtin behavior is defined by local compiler source and covered by tests",
+        "builtin behavior is source-grounded and covered by tests",
     )
 }
 
@@ -333,26 +423,43 @@ fn unsupported_builtin(id: &'static str, note: &'static str) -> GroundingRecord 
         id,
         GroundingCategory::Builtin,
         "compiler/semantic/src/checker.rs",
-        "builtin is not fully lowered by the compiler",
+        "builtin has no verified backend emission",
+        note,
+    )
+}
+
+fn verified_kip(kip: u16, path: &'static str, note: &'static str) -> GroundingRecord {
+    let id = kip_id(kip);
+    verified_record(
+        id,
+        GroundingCategory::KipReference,
+        path,
+        "KIP source is present in the pinned Kaspa KIP repository",
         note,
     )
 }
 
 fn gated_kip(kip: u16, path: &'static str, note: &'static str) -> GroundingRecord {
-    let id = match kip {
+    let id = kip_id(kip);
+    gated_record(
+        id,
+        GroundingCategory::KipReference,
+        path,
+        "KIP source is absent or does not define txscript emission in pinned sources",
+        note,
+    )
+}
+
+fn kip_id(kip: u16) -> &'static str {
+    match kip {
+        10 => "kip-10",
+        15 => "kip-15",
         16 => "kip-16",
         17 => "kip-17",
         20 => "kip-20",
         21 => "kip-21",
         _ => "kip-unknown",
-    };
-    gated_record(
-        id,
-        GroundingCategory::KipReference,
-        path,
-        "local contract/doc references this KIP",
-        note,
-    )
+    }
 }
 
 fn verified_record(
@@ -435,6 +542,8 @@ mod tests {
             },
             InstructionKind::CheckLockHeight(1),
             InstructionKind::CheckLockTime(1),
+            InstructionKind::CheckLockHeightFromStack,
+            InstructionKind::CheckLockTimeFromStack,
             InstructionKind::CovenantDepth,
             InstructionKind::CovenantId,
             InstructionKind::ZkVerifyGroth16,
@@ -447,6 +556,8 @@ mod tests {
             InstructionKind::Verify,
             InstructionKind::Equal,
             InstructionKind::NotEqual,
+            InstructionKind::LessThan,
+            InstructionKind::LessThanOrEqual,
             InstructionKind::GreaterThan,
             InstructionKind::GreaterThanOrEqual,
             InstructionKind::And,
@@ -468,11 +579,24 @@ mod tests {
 
     #[test]
     fn unsupported_instruction_status_is_explicit() {
-        let record = record_for_instruction(&InstructionKind::Hash160);
-        assert_eq!(record.status, VerificationStatus::Unsupported);
+        let hash160 = record_for_instruction(&InstructionKind::Hash160);
+        let covenant = record_for_instruction(&InstructionKind::CovenantId);
+        let mul = record_for_instruction(&InstructionKind::Mul);
+        assert_eq!(hash160.status, VerificationStatus::Unsupported);
+        assert_eq!(covenant.status, VerificationStatus::Unsupported);
+        assert_eq!(mul.status, VerificationStatus::Unsupported);
+        assert_eq!(hash160.citation.path, "docs/kaspa-source-audit.md");
+    }
+
+    #[test]
+    fn verified_kip10_and_gated_future_kips_are_separated() {
         assert_eq!(
-            record.citation.path,
-            "compiler/codegen/src/backends/toccata.rs"
+            record_for_kip(10).expect("kip10").status,
+            VerificationStatus::Verified
+        );
+        assert_eq!(
+            record_for_kip(20).expect("kip20").status,
+            VerificationStatus::Gated
         );
     }
 
@@ -485,6 +609,7 @@ mod tests {
             GroundingCategory::KipReference,
             GroundingCategory::TransactionAssumption,
             GroundingCategory::ArtifactField,
+            GroundingCategory::TargetGate,
         ] {
             assert!(records.iter().any(|record| record.category == category));
         }
@@ -497,27 +622,24 @@ mod tests {
             .iter()
             .find(|record| record.id == "multisig")
             .expect("multisig record");
-        let input = records
+        let block = records
             .iter()
-            .find(|record| record.id == "input")
-            .expect("input record");
+            .find(|record| record.id == "block")
+            .expect("block record");
         let covenant = records
             .iter()
             .find(|record| record.id == "covenant")
             .expect("covenant record");
 
         assert_eq!(multisig.status, VerificationStatus::Verified);
-        assert_eq!(input.status, VerificationStatus::Gated);
+        assert_eq!(block.status, VerificationStatus::Gated);
         assert_eq!(covenant.status, VerificationStatus::Unsupported);
     }
 
     #[test]
     fn warning_preserves_exact_local_citation() {
-        let warning = record_for_instruction(&InstructionKind::InputValue(0)).warning();
-        assert_eq!(
-            warning.citation.path,
-            "compiler/codegen/src/backends/toccata.rs"
-        );
-        assert_eq!(warning.category, GroundingCategory::BackendOpcode);
+        let warning = record_for_kip(16).expect("kip16").warning();
+        assert_eq!(warning.citation.path, "docs/kaspa-source-audit.md");
+        assert_eq!(warning.category, GroundingCategory::KipReference);
     }
 }

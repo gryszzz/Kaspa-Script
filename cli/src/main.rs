@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::{bail, Context, Result};
-use kaspascript_codegen::{verify_artifact, CompiledArtifact};
+use kaspascript_codegen::{bytecode_asm, bytecode_hex, verify_artifact, CompiledArtifact};
 use kaspascript_ir::lower_file;
 use kaspascript_sdk::compile;
 
@@ -35,8 +35,11 @@ fn verify_command(path: &str) -> Result<()> {
     let artifact = read_artifact(path)?;
     verify_artifact(&artifact).map_err(|error| anyhow::anyhow!("error: {error}"))?;
     println!("backend: {}", artifact.backend);
+    println!("target: {}", artifact.target);
     println!("compiler: {}", artifact.compiler_version);
     println!("bytecode_bytes: {}", artifact.bytecode.len());
+    println!("bytecode_hex: {}", bytecode_hex(&artifact.bytecode));
+    println!("bytecode_asm: {}", bytecode_asm(&artifact.bytecode)?);
     println!("finality_depth: {:?}", artifact.finality_depth);
     println!("kip_requirements: {:?}", artifact.kip_requirements);
     for warning in &artifact.warnings {
@@ -67,5 +70,5 @@ fn read_artifact(path: &str) -> Result<CompiledArtifact> {
 }
 
 fn artifact_path(path: &str) -> std::path::PathBuf {
-    Path::new(path).with_extension("artifact")
+    Path::new(path).with_extension("artifact.json")
 }

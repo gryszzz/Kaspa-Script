@@ -499,7 +499,7 @@ fn collect_expr_kips(expr: &Expr, kips: &mut HashSet<u16>) {
     match expr {
         Expr::Ident(ident) => match ident.name.as_str() {
             "input" | "output" => {
-                kips.insert(17);
+                kips.insert(10);
             }
             "covenant_id" => {
                 kips.insert(20);
@@ -508,7 +508,7 @@ fn collect_expr_kips(expr: &Expr, kips: &mut HashSet<u16>) {
                 kips.insert(16);
             }
             "sequencing" => {
-                kips.insert(21);
+                kips.insert(15);
             }
             _ => {}
         },

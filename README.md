@@ -1,7 +1,6 @@
 # KaspaScript
+<img width="102" height="102" alt="ChatGPT Image May 26, 2026, 05_49_58 PM" src="https://github.com/user-attachments/assets/38bda815-9294-4d78-ac13-36a240c6fd66" />
 
-
-<img width="1536" height="1024" alt="ChatGPT Image May 26, 2026, 05_47_32 PM" src="https://github.com/user-attachments/assets/3fa3780d-29bc-46cb-b753-45e4de78b275" />
 
 > Production-grade contract compiler architecture for Kaspa's covenant era.
 

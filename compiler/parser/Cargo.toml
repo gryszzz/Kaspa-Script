@@ -1,0 +1,11 @@
+[package]
+name = "kaspascript-parser"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+kaspascript-lexer = { path = "../lexer" }
+
+[lib]
+path = "src/lib.rs"

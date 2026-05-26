@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = [
+    "compiler/lexer",
+    "compiler/parser",
+    "compiler/semantic",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"

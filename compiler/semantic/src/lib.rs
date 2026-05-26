@@ -1,8 +1,9 @@
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use std::fmt;
 
-use kaspascript_lexer::Position;
+use kaspascript_lexer::{Position, TypeName};
 use kaspascript_parser::{parse, Contract, Expr, Ident, ParamValue, ParseError, Program};
+use kaspascript_protocol::{ProtocolError, ProtocolFeature, ProtocolManifest};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Analysis {
@@ -10,6 +11,7 @@ pub struct Analysis {
     pub spend_count: usize,
     pub require_count: usize,
     pub finality_depths: Vec<FinalityDepth>,
+    pub required_features: Vec<ProtocolFeature>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,6 +25,7 @@ pub struct FinalityDepth {
 pub enum AnalysisError {
     Parse(ParseError),
     Semantic(Vec<SemanticError>),
+    Protocol(ProtocolError),
 }
 
 impl fmt::Display for AnalysisError {
@@ -32,6 +35,7 @@ impl fmt::Display for AnalysisError {
             AnalysisError::Semantic(errors) => {
                 write!(f, "semantic analysis failed with {} error(s)", errors.len())
             }
+            AnalysisError::Protocol(error) => write!(f, "{error}"),
         }
     }
 }
@@ -70,9 +74,21 @@ pub fn analyze(source: &str) -> Result<Analysis, AnalysisError> {
     analyze_program(&program).map_err(AnalysisError::Semantic)
 }
 
+pub fn analyze_with_manifest(
+    source: &str,
+    manifest: &ProtocolManifest,
+) -> Result<Analysis, AnalysisError> {
+    let analysis = analyze(source)?;
+    manifest
+        .validate_requirements(&analysis.required_features)
+        .map_err(AnalysisError::Protocol)?;
+    Ok(analysis)
+}
+
 pub fn analyze_program(program: &Program) -> Result<Analysis, Vec<SemanticError>> {
     let mut errors = Vec::new();
     let mut finality_depths = Vec::new();
+    let mut required_features = BTreeSet::new();
 
     if program.contracts.is_empty() {
         errors.push(SemanticError::new(
@@ -90,7 +106,12 @@ pub fn analyze_program(program: &Program) -> Result<Analysis, Vec<SemanticError>
             ));
         }
 
-        validate_contract(contract, &mut finality_depths, &mut errors);
+        validate_contract(
+            contract,
+            &mut finality_depths,
+            &mut required_features,
+            &mut errors,
+        );
     }
 
     if errors.is_empty() {
@@ -108,6 +129,7 @@ pub fn analyze_program(program: &Program) -> Result<Analysis, Vec<SemanticError>
                 .map(|spend| spend.requires.len())
                 .sum(),
             finality_depths,
+            required_features: required_features.into_iter().collect(),
         })
     } else {
         Err(errors)
@@ -117,8 +139,11 @@ pub fn analyze_program(program: &Program) -> Result<Analysis, Vec<SemanticError>
 fn validate_contract(
     contract: &Contract,
     finality_depths: &mut Vec<FinalityDepth>,
+    required_features: &mut BTreeSet<ProtocolFeature>,
     errors: &mut Vec<SemanticError>,
 ) {
+    required_features.insert(ProtocolFeature::BaseScript);
+
     if !contract.has_params_block {
         errors.push(SemanticError::new(
             format!(
@@ -174,7 +199,7 @@ fn validate_contract(
                     param.name.span.start,
                 )),
             }
-        } else if !matches!(param.value, ParamValue::Type(_)) {
+        } else if !matches!(&param.value, ParamValue::Type(_)) {
             errors.push(SemanticError::new(
                 format!(
                     "parameter `{}` must declare a KaspaScript type",
@@ -182,6 +207,8 @@ fn validate_contract(
                 ),
                 param.name.span.start,
             ));
+        } else if let ParamValue::Type(ty) = &param.value {
+            collect_type_features(*ty, required_features);
         }
     }
 
@@ -208,6 +235,8 @@ fn validate_contract(
         let mut spend_param_names = HashSet::new();
 
         for param in &spend.params {
+            collect_type_features(param.ty, required_features);
+
             if contract_scope.contains(&param.name.name) {
                 errors.push(SemanticError::new(
                     format!(
@@ -229,6 +258,8 @@ fn validate_contract(
         }
 
         for require in &spend.requires {
+            collect_expr_features(&require.expr, required_features);
+
             let mut roots = Vec::new();
             collect_root_identifiers(&require.expr, &mut roots);
             for root in roots {
@@ -240,6 +271,71 @@ fn validate_contract(
                 }
             }
         }
+    }
+}
+
+fn collect_type_features(ty: TypeName, required_features: &mut BTreeSet<ProtocolFeature>) {
+    match ty {
+        TypeName::CovenantID => {
+            required_features.insert(ProtocolFeature::CovenantIds);
+        }
+        TypeName::ZKProof => {
+            required_features.insert(ProtocolFeature::ZkVerification);
+        }
+        TypeName::PublicKey
+        | TypeName::Signature
+        | TypeName::Hash
+        | TypeName::BlockHeight
+        | TypeName::Amount
+        | TypeName::Bool
+        | TypeName::Bytes
+        | TypeName::UTXO
+        | TypeName::Output
+        | TypeName::Input => {}
+    }
+}
+
+fn collect_expr_features(expr: &Expr, required_features: &mut BTreeSet<ProtocolFeature>) {
+    match expr {
+        Expr::Identifier(ident) => collect_identifier_features(&ident.name, required_features),
+        Expr::Integer { .. } | Expr::String { .. } | Expr::Bool { .. } => {}
+        Expr::Array { elements, .. } => {
+            for element in elements {
+                collect_expr_features(element, required_features);
+            }
+        }
+        Expr::Member { object, field, .. } => {
+            collect_expr_features(object, required_features);
+            collect_identifier_features(&field.name, required_features);
+        }
+        Expr::Call { callee, args, .. } => {
+            collect_expr_features(callee, required_features);
+            for arg in args {
+                collect_expr_features(arg, required_features);
+            }
+        }
+        Expr::Binary { left, right, .. } => {
+            collect_expr_features(left, required_features);
+            collect_expr_features(right, required_features);
+        }
+    }
+}
+
+fn collect_identifier_features(name: &str, required_features: &mut BTreeSet<ProtocolFeature>) {
+    match name {
+        "input" | "output" => {
+            required_features.insert(ProtocolFeature::TransactionIntrospection);
+        }
+        "covenant" | "covenant_id" => {
+            required_features.insert(ProtocolFeature::CovenantIds);
+        }
+        "sequencing" => {
+            required_features.insert(ProtocolFeature::SequencingCommitments);
+        }
+        "zk_verify" => {
+            required_features.insert(ProtocolFeature::ZkVerification);
+        }
+        _ => {}
     }
 }
 
@@ -294,6 +390,55 @@ mod tests {
         assert_eq!(analysis.require_count, 17);
         assert_eq!(analysis.finality_depths.len(), 1);
         assert_eq!(analysis.finality_depths[0].value, 10);
+        assert!(analysis
+            .required_features
+            .contains(&ProtocolFeature::BaseScript));
+        assert!(analysis
+            .required_features
+            .contains(&ProtocolFeature::TransactionIntrospection));
+        assert!(analysis
+            .required_features
+            .contains(&ProtocolFeature::CovenantIds));
+        assert!(analysis
+            .required_features
+            .contains(&ProtocolFeature::SequencingCommitments));
+    }
+
+    #[test]
+    fn manifest_blocks_unpinned_toccata_features() {
+        let source = include_str!("../../../contracts/production/DAGSafeVault.ks");
+        let manifest = kaspascript_protocol::toccata_tn12_manifest();
+
+        let error = analyze_with_manifest(source, &manifest)
+            .expect_err("unpinned Toccata features must block target validation");
+
+        assert!(matches!(
+            error,
+            AnalysisError::Protocol(ProtocolError::UnpinnedFeatures(_))
+        ));
+    }
+
+    #[test]
+    fn manifest_allows_base_script_only_analysis() {
+        let source = r#"
+            contract SimpleSig {
+              params {
+                owner: PublicKey,
+              }
+
+              spend withdraw(sig: Signature) {
+                require sig.verify(owner);
+              }
+            }
+        "#;
+        let manifest = kaspascript_protocol::toccata_tn12_manifest();
+        let analysis = analyze_with_manifest(source, &manifest)
+            .expect("base-script-only contract should validate against the manifest");
+
+        assert_eq!(
+            analysis.required_features,
+            vec![ProtocolFeature::BaseScript]
+        );
     }
 
     #[test]

@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "compiler/lexer",
     "compiler/parser",
+    "compiler/protocol",
     "compiler/semantic",
 ]
 

@@ -14,9 +14,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "kaspascript-protocol"
+version = "0.1.0"
+
+[[package]]
 name = "kaspascript-semantic"
 version = "0.1.0"
 dependencies = [
  "kaspascript-lexer",
  "kaspascript-parser",
+ "kaspascript-protocol",
 ]

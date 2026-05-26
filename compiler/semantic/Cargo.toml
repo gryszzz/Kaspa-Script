@@ -7,6 +7,7 @@ rust-version.workspace = true
 [dependencies]
 kaspascript-lexer = { path = "../lexer" }
 kaspascript-parser = { path = "../parser" }
+kaspascript-protocol = { path = "../protocol" }
 
 [lib]
 path = "src/lib.rs"

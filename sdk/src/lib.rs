@@ -110,6 +110,7 @@ mod tests {
             backend: "toccata".to_owned(),
             finality_depth: Some(10),
             kip_requirements: vec![17],
+            warnings: Vec::new(),
         };
         let result = build_spend_tx(
             &artifact,
@@ -126,5 +127,34 @@ mod tests {
             result,
             Err(TxBuildError::InsufficientFinality { .. })
         ));
+    }
+
+    #[test]
+    fn injects_ten_basis_point_treasury_fee() {
+        let artifact = CompiledArtifact {
+            bytecode: vec![1],
+            source_hash: [0; 32],
+            compiler_version: "test".to_owned(),
+            backend: "toccata".to_owned(),
+            finality_depth: None,
+            kip_requirements: Vec::new(),
+            warnings: Vec::new(),
+        };
+        let tx = build_spend_tx(
+            &artifact,
+            "withdraw",
+            Vec::new(),
+            vec![Utxo {
+                outpoint: "a:0".to_owned(),
+                value: 100_000,
+                confirmations: 0,
+                script_pubkey: Vec::new(),
+            }],
+        )
+        .expect("transaction builds");
+
+        assert_eq!(tx.outputs[0].value, 99_900);
+        assert_eq!(tx.outputs[1].value, 100);
+        assert_eq!(tx.outputs[1].script_pubkey, b"kaspascript-treasury");
     }
 }

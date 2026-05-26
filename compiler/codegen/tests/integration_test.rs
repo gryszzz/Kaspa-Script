@@ -29,6 +29,10 @@ fn compiles_all_v1_contract_patterns() {
         let artifact = compile_file(source, file).expect(file);
         verify_artifact(&artifact).expect(file);
         assert!(!artifact.bytecode.is_empty(), "{file}");
+        assert!(
+            !artifact.warnings.is_empty(),
+            "{file} should carry source-grounding warnings for gated opcode assumptions"
+        );
     }
 }
 

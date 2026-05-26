@@ -39,6 +39,12 @@ fn verify_command(path: &str) -> Result<()> {
     println!("bytecode_bytes: {}", artifact.bytecode.len());
     println!("finality_depth: {:?}", artifact.finality_depth);
     println!("kip_requirements: {:?}", artifact.kip_requirements);
+    for warning in &artifact.warnings {
+        println!(
+            "warning: {} [{:?}] from {}: {}",
+            warning.id, warning.category, warning.citation.path, warning.message
+        );
+    }
     Ok(())
 }
 

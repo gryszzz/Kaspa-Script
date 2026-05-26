@@ -1,8 +1,13 @@
+use std::collections::HashSet;
+
 use sha2::{Digest, Sha256};
 
 use kaspascript_ir::{Instruction, InstructionKind, IrProgram, Value};
 use kaspascript_lexer::Span;
 
+use crate::grounding::{
+    record_for_instruction, record_for_kip, GroundingWarning, VerificationStatus,
+};
 use crate::{CodegenError, CompiledArtifact};
 
 const OP_PUSH_INT: u8 = 0x01;
@@ -48,9 +53,20 @@ pub fn compile_toccata(
     compiler_version: &str,
 ) -> Result<CompiledArtifact, CodegenError> {
     let mut bytecode = Vec::new();
+    let mut warnings = Vec::new();
+    let mut warning_ids = HashSet::new();
+
+    for kip in &ir.kip_requirements {
+        if let Some(record) = record_for_kip(*kip) {
+            collect_grounding(&record, &mut warnings, &mut warning_ids)?;
+        }
+    }
+
     for contract in &ir.contracts {
         for spend in &contract.spends {
             for instruction in &spend.instructions {
+                let record = record_for_instruction(&instruction.kind);
+                collect_grounding(&record, &mut warnings, &mut warning_ids)?;
                 encode_instruction(instruction, &mut bytecode)?;
             }
         }
@@ -71,7 +87,29 @@ pub fn compile_toccata(
             .filter_map(|contract| contract.finality_depth)
             .max(),
         kip_requirements: ir.kip_requirements.clone(),
+        warnings,
     })
+}
+
+fn collect_grounding(
+    record: &crate::grounding::GroundingRecord,
+    warnings: &mut Vec<GroundingWarning>,
+    warning_ids: &mut HashSet<String>,
+) -> Result<(), CodegenError> {
+    match record.status {
+        VerificationStatus::Verified => Ok(()),
+        VerificationStatus::Gated => {
+            if warning_ids.insert(record.id.to_owned()) {
+                warnings.push(record.warning());
+            }
+            Ok(())
+        }
+        VerificationStatus::Unsupported => Err(CodegenError::UnsupportedGrounding {
+            id: record.id.to_owned(),
+            citation: record.citation.clone(),
+            message: record.note.to_owned(),
+        }),
+    }
 }
 
 fn encode_instruction(instruction: &Instruction, out: &mut Vec<u8>) -> Result<(), CodegenError> {

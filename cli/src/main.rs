@@ -52,7 +52,7 @@ fn verify_command(path: &str) -> Result<()> {
 }
 
 fn inspect_command(path: &str) -> Result<()> {
-    if path.ends_with(".artifact") {
+    if path.ends_with(".artifact") || path.ends_with(".artifact.json") {
         let artifact = read_artifact(path)?;
         println!("{}", serde_json::to_string_pretty(&artifact)?);
         return Ok(());

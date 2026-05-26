@@ -1,5 +1,8 @@
 //! KaspaScript SDK surface.
 
+#[cfg(feature = "tn12-integration")]
+pub mod tn12;
+
 use kaspascript_codegen::{compile_file, CompiledArtifact};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

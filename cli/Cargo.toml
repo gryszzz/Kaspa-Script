@@ -11,6 +11,10 @@ kaspascript-ir = { path = "../compiler/ir" }
 kaspascript-sdk = { path = "../sdk" }
 serde_json.workspace = true
 
+[features]
+default = []
+tn12-integration = ["kaspascript-sdk/tn12-integration"]
+
 [[bin]]
 name = "kaspascript"
 path = "src/main.rs"

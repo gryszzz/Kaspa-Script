@@ -138,6 +138,7 @@ branch.
 | CLI | `compile`, `inspect`, and `verify`. |
 | Golden artifacts | JSON, hex, and ASM snapshots for every example contract. |
 | SDK preview model | Compile API plus finality-depth checks; not a real Kaspa transaction builder yet. |
+| TN12 test harness | Feature-gated live RPC/wallet preflight with gated proof files. |
 
 ### Verified
 
@@ -255,9 +256,15 @@ $ cargo test --workspace
 $ cargo clippy --workspace --all-targets -- -D warnings
 # warning-clean workspace
 
+$ cargo test --features tn12-integration -- --ignored
+# live TN12 RPC/wallet preflight and gated proof files
+
 $ cargo bench -p kaspascript-codegen --bench escrow
 # escrow full-pipeline benchmark
 ```
+
+See `docs/TESTNET.md` for the exact TN12 setup, required environment
+variables, and proof-file format.
 
 Current benchmark target: full escrow compile pipeline under 1 ms on a typical
 developer machine.

@@ -9,5 +9,9 @@ logos.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 
+[features]
+default = []
+tn12-integration = []
+
 [lib]
 path = "src/lib.rs"

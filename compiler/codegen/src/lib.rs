@@ -4,8 +4,9 @@ pub mod backends;
 pub mod grounding;
 
 use grounding::{GroundingWarning, SourceCitation};
-use kaspascript_ir::{lower_file, IrError};
+use kaspascript_ir::{lower_file, Instruction, IrError};
 use kaspascript_lexer::Span;
+use kaspascript_lexer::TypeName;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
@@ -54,6 +55,31 @@ pub struct CompiledArtifact {
     pub finality_depth: Option<u64>,
     pub kip_requirements: Vec<u16>,
     pub warnings: Vec<GroundingWarning>,
+    pub contracts: Vec<ArtifactContract>,
+}
+
+/// Contract ABI and per-spend IR embedded in artifacts for transaction builders.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArtifactContract {
+    pub name: String,
+    pub params: Vec<ArtifactParam>,
+    pub finality_depth: Option<u64>,
+    pub spends: Vec<ArtifactSpend>,
+}
+
+/// Parameter ABI metadata.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArtifactParam {
+    pub name: String,
+    pub ty: TypeName,
+}
+
+/// Spend-path artifact metadata.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArtifactSpend {
+    pub name: String,
+    pub params: Vec<ArtifactParam>,
+    pub instructions: Vec<Instruction>,
 }
 
 /// Code generation error.
@@ -324,9 +350,11 @@ mod tests {
         let ir = IrProgram {
             contracts: vec![IrContract {
                 name: "Manual".to_owned(),
+                params: Vec::new(),
                 finality_depth: None,
                 spends: vec![IrSpend {
                     name: "s".to_owned(),
+                    params: Vec::new(),
                     instructions: vec![Instruction {
                         span: Span::new(0, 1),
                         kind: InstructionKind::ZkVerifyRiscZero,

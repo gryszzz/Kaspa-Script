@@ -13,7 +13,8 @@ thiserror.workspace = true
 
 [features]
 default = []
-tn12-integration = []
+testnet-integration = []
+tn12-integration = ["testnet-integration"]
 
 [dev-dependencies]
 criterion.workspace = true

@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub enum Value {
     Integer(u64),
     Bool(bool),
+    Bytes(Vec<u8>),
     String(String),
     Symbol(String),
     Type(TypeName),

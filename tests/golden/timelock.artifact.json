@@ -27,6 +27,7 @@
     104,
     116,
     176,
+    81,
     105
   ],
   "source_hash": [
@@ -68,5 +69,99 @@
   "target": "verified-tn12",
   "finality_depth": null,
   "kip_requirements": [],
-  "warnings": []
+  "warnings": [],
+  "contracts": [
+    {
+      "name": "Timelock",
+      "params": [
+        {
+          "name": "owner",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "unlock_height",
+          "ty": "BlockHeight"
+        }
+      ],
+      "finality_depth": null,
+      "spends": [
+        {
+          "name": "claim",
+          "params": [
+            {
+              "name": "sig",
+              "ty": "Signature"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 134,
+                "end": 137
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 145,
+                "end": 150
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "owner"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 134,
+                "end": 151
+              },
+              "kind": {
+                "CheckSig": {
+                  "key_slot": 0
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 126,
+                "end": 152
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 181,
+                "end": 194
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "unlock_height"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 165,
+                "end": 194
+              },
+              "kind": "CheckLockHeightFromStack"
+            },
+            {
+              "span": {
+                "start": 157,
+                "end": 195
+              },
+              "kind": "Verify"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

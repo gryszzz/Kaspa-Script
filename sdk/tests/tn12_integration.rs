@@ -1,4 +1,4 @@
-#![cfg(feature = "tn12-integration")]
+#![cfg(any(feature = "tn12-integration", feature = "testnet-integration"))]
 
 use kaspascript_sdk::tn12::{
     ContractDeploymentPlan, ProofResult, TestWallet, Tn12Config, Tn12ContractHarness, Tn12Error,
@@ -90,15 +90,18 @@ async fn tn12_rpc_wallet_preflight() {
 }
 
 #[tokio::test]
-#[ignore = "requires live TN12 env; writes gated proof files and does not broadcast"]
-async fn tn12_contract_suite_is_gated_until_real_transaction_backend() {
+#[ignore = "requires live testnet env; dry-run by default unless KASPA_BROADCAST=true"]
+async fn tn12_contract_suite_builds_real_transaction_previews() {
     let config = Tn12Config::from_env().expect("TN12 env");
     let rpc = Tn12RpcClient::connect(&config).await.expect("TN12 RPC");
     let wallet = TestWallet::from_env().expect("test wallet");
     let harness = Tn12ContractHarness::new(&rpc, &wallet);
 
     for (name, file, source) in CONTRACTS {
-        let proof = match harness.deploy_and_execute(name, file, source).await {
+        let proof = match harness
+            .deploy_and_execute(name, file, source, 1_000_000, &config)
+            .await
+        {
             Err(Tn12Error::Unsupported(_)) => harness
                 .gated_proof(name, file, source)
                 .await
@@ -107,12 +110,18 @@ async fn tn12_contract_suite_is_gated_until_real_transaction_backend() {
             Err(error) => panic!("{file}: unexpected TN12 harness error: {error}"),
         };
 
-        assert_eq!(proof.result, ProofResult::Gated, "{file}");
+        if config.broadcast {
+            assert_eq!(proof.result, ProofResult::Pass, "{file}");
+            assert!(proof.lock_txid.is_some(), "{file}");
+            assert!(proof.spend_txid.is_some(), "{file}");
+        } else {
+            assert_eq!(proof.result, ProofResult::Gated, "{file}");
+            assert!(proof.lock_txid.is_none(), "{file}");
+            assert!(proof.spend_txid.is_none(), "{file}");
+        }
         assert_eq!(proof.network, TN12_NETWORK_ID, "{file}");
-        assert!(proof.lock_txid.is_none(), "{file}");
-        assert!(proof.spend_txid.is_none(), "{file}");
         proof
-            .write_json(format!("tests/proofs/{name}.tn12.proof.json"))
+            .write_json(format!("tests/proofs/tn12/{name}.proof.json"))
             .expect("proof write");
     }
 

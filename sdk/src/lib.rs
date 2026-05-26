@@ -1,6 +1,8 @@
 //! KaspaScript SDK surface.
 
-#[cfg(feature = "tn12-integration")]
+#[cfg(any(feature = "tn12-integration", feature = "testnet-integration"))]
+pub mod testnet;
+#[cfg(any(feature = "tn12-integration", feature = "testnet-integration"))]
 pub mod tn12;
 
 use kaspascript_codegen::{compile_file, CompiledArtifact};
@@ -113,6 +115,7 @@ mod tests {
             finality_depth: Some(10),
             kip_requirements: vec![10],
             warnings: Vec::new(),
+            contracts: Vec::new(),
         };
         let result = build_spend_tx(
             &artifact,
@@ -142,6 +145,7 @@ mod tests {
             finality_depth: None,
             kip_requirements: Vec::new(),
             warnings: Vec::new(),
+            contracts: Vec::new(),
         };
         let tx = build_spend_tx(
             &artifact,

@@ -312,9 +312,9 @@ pub fn record_for_instruction(kind: &InstructionKind) -> GroundingRecord {
     match kind {
         InstructionKind::Push(Value::Integer(_)) => opcode_record("push-int"),
         InstructionKind::Push(Value::Bool(_)) => opcode_record("push-bool"),
-        InstructionKind::Push(Value::String(_) | Value::Symbol(_) | Value::Type(_)) => {
-            opcode_record("push-bytes")
-        }
+        InstructionKind::Push(
+            Value::Bytes(_) | Value::String(_) | Value::Symbol(_) | Value::Type(_),
+        ) => opcode_record("push-bytes"),
         InstructionKind::Drop => opcode_record("drop"),
         InstructionKind::Dup => opcode_record("dup"),
         InstructionKind::InputValue(_) => opcode_record("inputvalue"),

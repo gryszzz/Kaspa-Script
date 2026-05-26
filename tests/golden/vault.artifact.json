@@ -27,6 +27,7 @@
     104,
     116,
     176,
+    81,
     105,
     0,
     194,
@@ -114,5 +115,254 @@
   "kip_requirements": [
     10
   ],
-  "warnings": []
+  "warnings": [],
+  "contracts": [
+    {
+      "name": "Vault",
+      "params": [
+        {
+          "name": "owner",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "recovery",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "unlock_height",
+          "ty": "BlockHeight"
+        }
+      ],
+      "finality_depth": 10,
+      "spends": [
+        {
+          "name": "withdraw",
+          "params": [
+            {
+              "name": "sig",
+              "ty": "Signature"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 183,
+                "end": 186
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 194,
+                "end": 199
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "owner"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 183,
+                "end": 200
+              },
+              "kind": {
+                "CheckSig": {
+                  "key_slot": 0
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 175,
+                "end": 201
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 230,
+                "end": 243
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "unlock_height"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 214,
+                "end": 243
+              },
+              "kind": "CheckLockHeightFromStack"
+            },
+            {
+              "span": {
+                "start": 206,
+                "end": 244
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 257,
+                "end": 272
+              },
+              "kind": {
+                "OutputValue": 0
+              }
+            },
+            {
+              "span": {
+                "start": 276,
+                "end": 290
+              },
+              "kind": {
+                "InputValue": 0
+              }
+            },
+            {
+              "span": {
+                "start": 257,
+                "end": 290
+              },
+              "kind": "GreaterThanOrEqual"
+            },
+            {
+              "span": {
+                "start": 249,
+                "end": 291
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 304,
+                "end": 320
+              },
+              "kind": {
+                "OutputScript": 0
+              }
+            },
+            {
+              "span": {
+                "start": 324,
+                "end": 329
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "owner"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 304,
+                "end": 329
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 296,
+                "end": 330
+              },
+              "kind": "Verify"
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "params": [
+            {
+              "name": "sig",
+              "ty": "Signature"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 381,
+                "end": 384
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 392,
+                "end": 400
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "recovery"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 381,
+                "end": 401
+              },
+              "kind": {
+                "CheckSig": {
+                  "key_slot": 0
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 373,
+                "end": 402
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 415,
+                "end": 431
+              },
+              "kind": {
+                "OutputScript": 0
+              }
+            },
+            {
+              "span": {
+                "start": 435,
+                "end": 443
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "recovery"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 415,
+                "end": 443
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 407,
+                "end": 444
+              },
+              "kind": "Verify"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

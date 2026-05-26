@@ -8,7 +8,9 @@ use kaspascript_lexer::Span;
 use crate::grounding::{
     record_for_instruction, record_for_kip, GroundingWarning, VerificationStatus,
 };
-use crate::{CodegenError, CompiledArtifact, Target};
+use crate::{
+    ArtifactContract, ArtifactParam, ArtifactSpend, CodegenError, CompiledArtifact, Target,
+};
 
 const OP_FALSE: u8 = 0x00;
 const OP_PUSHDATA1: u8 = 0x4c;
@@ -60,11 +62,13 @@ pub fn compile_toccata(
 
     for contract in &ir.contracts {
         for spend in &contract.spends {
-            for instruction in &spend.instructions {
-                let record = record_for_instruction(&instruction.kind);
-                collect_grounding(&record, target, &mut warnings, &mut warning_ids)?;
-                encode_instruction(instruction, &mut bytecode)?;
-            }
+            collect_instruction_grounding(
+                &spend.instructions,
+                target,
+                &mut warnings,
+                &mut warning_ids,
+            )?;
+            encode_instruction_sequence_into(&spend.instructions, &mut bytecode)?;
         }
     }
 
@@ -85,7 +89,46 @@ pub fn compile_toccata(
             .max(),
         kip_requirements: ir.kip_requirements.clone(),
         warnings,
+        contracts: ir
+            .contracts
+            .iter()
+            .map(|contract| ArtifactContract {
+                name: contract.name.clone(),
+                params: contract
+                    .params
+                    .iter()
+                    .map(|param| ArtifactParam {
+                        name: param.name.clone(),
+                        ty: param.ty,
+                    })
+                    .collect(),
+                finality_depth: contract.finality_depth,
+                spends: contract
+                    .spends
+                    .iter()
+                    .map(|spend| ArtifactSpend {
+                        name: spend.name.clone(),
+                        params: spend
+                            .params
+                            .iter()
+                            .map(|param| ArtifactParam {
+                                name: param.name.clone(),
+                                ty: param.ty,
+                            })
+                            .collect(),
+                        instructions: spend.instructions.clone(),
+                    })
+                    .collect(),
+            })
+            .collect(),
     })
+}
+
+/// Compiles a single instruction sequence into Kaspa script bytes.
+pub fn compile_instruction_sequence(instructions: &[Instruction]) -> Result<Vec<u8>, CodegenError> {
+    let mut bytecode = Vec::new();
+    encode_instruction_sequence_into(instructions, &mut bytecode)?;
+    Ok(bytecode)
 }
 
 fn collect_grounding(
@@ -116,6 +159,29 @@ fn collect_grounding(
     }
 }
 
+fn collect_instruction_grounding(
+    instructions: &[Instruction],
+    target: Target,
+    warnings: &mut Vec<GroundingWarning>,
+    warning_ids: &mut HashSet<String>,
+) -> Result<(), CodegenError> {
+    for instruction in instructions {
+        let record = record_for_instruction(&instruction.kind);
+        collect_grounding(&record, target, warnings, warning_ids)?;
+    }
+    Ok(())
+}
+
+fn encode_instruction_sequence_into(
+    instructions: &[Instruction],
+    out: &mut Vec<u8>,
+) -> Result<(), CodegenError> {
+    for instruction in instructions {
+        encode_instruction(instruction, out)?;
+    }
+    Ok(())
+}
+
 fn encode_instruction(instruction: &Instruction, out: &mut Vec<u8>) -> Result<(), CodegenError> {
     match &instruction.kind {
         InstructionKind::Push(value) => encode_push(value, instruction.span, out)?,
@@ -128,20 +194,18 @@ fn encode_instruction(instruction: &Instruction, out: &mut Vec<u8>) -> Result<()
         InstructionKind::OutputCount => out.push(OP_TXOUTPUTCOUNT),
         InstructionKind::InputCount => out.push(OP_TXINPUTCOUNT),
         InstructionKind::CheckSig { .. } => out.push(OP_CHECKSIG),
-        InstructionKind::CheckMultiSig {
-            required,
-            key_count,
-        } => {
-            encode_u64(u64::from(*required), instruction.span, out)?;
+        InstructionKind::CheckMultiSig { key_count, .. } => {
             encode_u64(u64::from(*key_count), instruction.span, out)?;
             out.push(OP_CHECKMULTISIG);
         }
         InstructionKind::CheckLockHeight(height) | InstructionKind::CheckLockTime(height) => {
             encode_u64(*height, instruction.span, out)?;
             out.push(OP_CHECKLOCKTIMEVERIFY);
+            out.push(OP_1);
         }
         InstructionKind::CheckLockHeightFromStack | InstructionKind::CheckLockTimeFromStack => {
             out.push(OP_CHECKLOCKTIMEVERIFY);
+            out.push(OP_1);
         }
         InstructionKind::CovenantDepth
         | InstructionKind::CovenantId
@@ -182,6 +246,7 @@ fn encode_push(value: &Value, span: Span, out: &mut Vec<u8>) -> Result<(), Codeg
     match value {
         Value::Integer(value) => encode_u64(*value, span, out)?,
         Value::Bool(value) => out.push(if *value { OP_1 } else { OP_FALSE }),
+        Value::Bytes(value) => encode_data(value, span, out)?,
         Value::String(value) | Value::Symbol(value) => encode_data(value.as_bytes(), span, out)?,
         Value::Type(ty) => {
             let text = format!("{ty:?}");
@@ -263,9 +328,11 @@ mod tests {
         let ir = IrProgram {
             contracts: vec![IrContract {
                 name: "Preview".to_owned(),
+                params: Vec::new(),
                 finality_depth: Some(1),
                 spends: vec![IrSpend {
                     name: "spend".to_owned(),
+                    params: Vec::new(),
                     instructions: vec![Instruction::new(
                         Span::new(0, 1),
                         InstructionKind::SequencingCommitment,
@@ -288,9 +355,11 @@ mod tests {
         let ir = IrProgram {
             contracts: vec![IrContract {
                 name: "Preview".to_owned(),
+                params: Vec::new(),
                 finality_depth: None,
                 spends: vec![IrSpend {
                     name: "spend".to_owned(),
+                    params: Vec::new(),
                     instructions: vec![Instruction::new(Span::new(0, 1), InstructionKind::Verify)],
                 }],
             }],
@@ -310,9 +379,11 @@ mod tests {
         let ir = IrProgram {
             contracts: vec![IrContract {
                 name: "Future".to_owned(),
+                params: Vec::new(),
                 finality_depth: None,
                 spends: vec![IrSpend {
                     name: "spend".to_owned(),
+                    params: Vec::new(),
                     instructions: vec![Instruction::new(Span::new(0, 1), InstructionKind::Verify)],
                 }],
             }],

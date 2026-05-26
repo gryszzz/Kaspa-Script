@@ -12,6 +12,7 @@
     103,
     95,
     98,
+    82,
     5,
     98,
     117,
@@ -33,7 +34,6 @@
     116,
     101,
     114,
-    82,
     83,
     174,
     105,
@@ -64,6 +64,7 @@
     117,
     116,
     176,
+    81,
     105,
     0,
     195,
@@ -117,5 +118,273 @@
   "kip_requirements": [
     10
   ],
-  "warnings": []
+  "warnings": [],
+  "contracts": [
+    {
+      "name": "Escrow",
+      "params": [
+        {
+          "name": "buyer",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "seller",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "arbiter",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "timeout",
+          "ty": "BlockHeight"
+        }
+      ],
+      "finality_depth": 10,
+      "spends": [
+        {
+          "name": "release",
+          "params": [
+            {
+              "name": "sig_a",
+              "ty": "Signature"
+            },
+            {
+              "name": "sig_b",
+              "ty": "Signature"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 258,
+                "end": 263
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig_a"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 265,
+                "end": 270
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig_b"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 219,
+                "end": 272
+              },
+              "kind": {
+                "Push": {
+                  "Integer": 2
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 232,
+                "end": 237
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "buyer"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 239,
+                "end": 245
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "seller"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 247,
+                "end": 254
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "arbiter"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 219,
+                "end": 272
+              },
+              "kind": {
+                "CheckMultiSig": {
+                  "required": 2,
+                  "key_count": 3
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 211,
+                "end": 273
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 286,
+                "end": 301
+              },
+              "kind": {
+                "OutputValue": 0
+              }
+            },
+            {
+              "span": {
+                "start": 305,
+                "end": 319
+              },
+              "kind": {
+                "InputValue": 0
+              }
+            },
+            {
+              "span": {
+                "start": 286,
+                "end": 319
+              },
+              "kind": "GreaterThanOrEqual"
+            },
+            {
+              "span": {
+                "start": 278,
+                "end": 320
+              },
+              "kind": "Verify"
+            }
+          ]
+        },
+        {
+          "name": "refund",
+          "params": [
+            {
+              "name": "sig",
+              "ty": "Signature"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 371,
+                "end": 374
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 382,
+                "end": 387
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "buyer"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 371,
+                "end": 388
+              },
+              "kind": {
+                "CheckSig": {
+                  "key_slot": 0
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 363,
+                "end": 389
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 418,
+                "end": 425
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "timeout"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 402,
+                "end": 425
+              },
+              "kind": "CheckLockHeightFromStack"
+            },
+            {
+              "span": {
+                "start": 394,
+                "end": 426
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 439,
+                "end": 455
+              },
+              "kind": {
+                "OutputScript": 0
+              }
+            },
+            {
+              "span": {
+                "start": 459,
+                "end": 464
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "buyer"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 439,
+                "end": 464
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 431,
+                "end": 465
+              },
+              "kind": "Verify"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

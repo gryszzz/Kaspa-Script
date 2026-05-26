@@ -10,10 +10,12 @@ kaspascript-codegen = { path = "../compiler/codegen" }
 kaspascript-ir = { path = "../compiler/ir" }
 kaspascript-sdk = { path = "../sdk" }
 serde_json.workspace = true
+tokio = { version = "1.48.0", features = ["rt-multi-thread"], optional = true }
 
 [features]
 default = []
-tn12-integration = ["kaspascript-sdk/tn12-integration"]
+testnet-integration = ["kaspascript-sdk/testnet-integration", "dep:tokio"]
+tn12-integration = ["testnet-integration"]
 
 [[bin]]
 name = "kaspascript"

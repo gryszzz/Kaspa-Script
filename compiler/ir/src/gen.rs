@@ -1,6 +1,7 @@
 use std::fmt;
 
 use kaspascript_lexer::Span;
+use kaspascript_lexer::TypeName;
 use kaspascript_parser::{parse_file, BinaryOp, Expr, Program, Stmt, UnaryOp};
 use kaspascript_semantic::{analyze_program, AnalyzeFailure};
 use thiserror::Error;
@@ -19,14 +20,23 @@ pub struct IrProgram {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct IrContract {
     pub name: String,
+    pub params: Vec<IrParam>,
     pub finality_depth: Option<u64>,
     pub spends: Vec<IrSpend>,
+}
+
+/// Parameter metadata carried through the IR for artifact ABI generation.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct IrParam {
+    pub name: String,
+    pub ty: TypeName,
 }
 
 /// Spend-level IR.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct IrSpend {
     pub name: String,
+    pub params: Vec<IrParam>,
     pub instructions: Vec<Instruction>,
 }
 
@@ -92,11 +102,27 @@ pub fn lower_program(
             }
             spends.push(IrSpend {
                 name: spend.name.name.clone(),
+                params: spend
+                    .params
+                    .iter()
+                    .map(|param| IrParam {
+                        name: param.name.name.clone(),
+                        ty: param.ty,
+                    })
+                    .collect(),
                 instructions,
             });
         }
         contracts.push(IrContract {
             name: contract.name.name.clone(),
+            params: contract
+                .params
+                .iter()
+                .map(|param| IrParam {
+                    name: param.name.name.clone(),
+                    ty: param.ty,
+                })
+                .collect(),
             finality_depth: contract.finality_depth,
             spends,
         });
@@ -346,6 +372,10 @@ fn lower_multisig(
     if let Some(signatures) = args.get(2) {
         lower_expr(signatures, out, file)?;
     }
+    out.push(Instruction::new(
+        span,
+        InstructionKind::Push(Value::Integer(u64::from(required))),
+    ));
     if let Some(keys) = args.get(1) {
         lower_expr(keys, out, file)?;
     }

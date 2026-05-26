@@ -52,6 +52,7 @@
     117,
     116,
     176,
+    81,
     105
   ],
   "source_hash": [
@@ -93,5 +94,205 @@
   "target": "verified-tn12",
   "finality_depth": null,
   "kip_requirements": [],
-  "warnings": []
+  "warnings": [],
+  "contracts": [
+    {
+      "name": "AtomicSwap",
+      "params": [
+        {
+          "name": "receiver",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "refund",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "hash",
+          "ty": "Hash"
+        },
+        {
+          "name": "timeout",
+          "ty": "BlockHeight"
+        }
+      ],
+      "finality_depth": null,
+      "spends": [
+        {
+          "name": "claim",
+          "params": [
+            {
+              "name": "sig",
+              "ty": "Signature"
+            },
+            {
+              "name": "secret",
+              "ty": "Bytes"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 187,
+                "end": 190
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 198,
+                "end": 206
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "receiver"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 187,
+                "end": 207
+              },
+              "kind": {
+                "CheckSig": {
+                  "key_slot": 0
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 179,
+                "end": 208
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 228,
+                "end": 234
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "secret"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 221,
+                "end": 235
+              },
+              "kind": "Sha256"
+            },
+            {
+              "span": {
+                "start": 239,
+                "end": 243
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "hash"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 221,
+                "end": 243
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 213,
+                "end": 244
+              },
+              "kind": "Verify"
+            }
+          ]
+        },
+        {
+          "name": "refund_path",
+          "params": [
+            {
+              "name": "sig",
+              "ty": "Signature"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 300,
+                "end": 303
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 311,
+                "end": 317
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "refund"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 300,
+                "end": 318
+              },
+              "kind": {
+                "CheckSig": {
+                  "key_slot": 0
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 292,
+                "end": 319
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 348,
+                "end": 355
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "timeout"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 332,
+                "end": 355
+              },
+              "kind": "CheckLockHeightFromStack"
+            },
+            {
+              "span": {
+                "start": 324,
+                "end": 356
+              },
+              "kind": "Verify"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

@@ -1,6 +1,8 @@
-# KaspaScript
+<p align="center">
+  <img src="./logo.png" alt="Kaspa AI Agent Skill Logo" width="220">
+</p>
 
-
+<h1 align="center">Kaspa AI Agent Skill</h1>
 > Production-grade contract compiler architecture for Kaspa's covenant era.
 
 ![Rust](https://img.shields.io/badge/Rust-1.80+-111111?style=flat-square&logo=rust)

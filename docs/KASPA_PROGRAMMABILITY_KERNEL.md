@@ -56,6 +56,9 @@ The output JSON includes:
 - readiness report
 - Toccata fee estimate and explicit fee assumptions
 
+See [`KERNEL_PACKAGE_SCHEMA.md`](KERNEL_PACKAGE_SCHEMA.md) for the current
+emitted JSON shape.
+
 ## Why This Is A Kernel
 
 The compiler answers: "Can this source become deterministic Kaspa txscript?"
@@ -108,9 +111,12 @@ activation schedule, and support posture are pinned.
 
 ## Next Kernel Upgrades
 
-1. Add target selection to `kaspascript kernel package`.
-2. Add Toccata git-tag compatibility fixtures to validate Kaspa crate APIs.
-3. Add wallet-preview golden tests for each production contract pattern.
-4. Add indexer fixtures for covenant genesis, continuation, reorg, and
+1. Add kernel package golden snapshots for `escrow.ks` and `vault.ks`.
+2. Add target selection to `kaspascript kernel package`.
+3. Add Toccata git-tag compatibility fixtures to validate Kaspa crate APIs.
+4. Add wallet-preview golden tests for each production contract pattern.
+5. Add indexer fixtures for covenant genesis, continuation, reorg, and
    wrong-network cases.
-5. Feed real node/RPC fee estimates into the package when available.
+6. Feed real node/RPC fee estimates into the package when available.
+
+See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the completion roadmap.

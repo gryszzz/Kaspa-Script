@@ -21,6 +21,16 @@ The project is built for reviewers, tooling, and coding agents that need stable
 compiler surfaces: golden artifacts, explicit target gates, bytecode
 verification, and no hidden transaction behavior.
 
+Current status:
+
+- Verified compiler and golden test suite for the V1 txscript subset.
+- First Kaspa programmability kernel crate and CLI package command.
+- Toccata upgrade prep is tracked, but mainnet activation remains unclaimed.
+
+Read the status roadmap: [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
+Kernel package schema:
+[`docs/KERNEL_PACKAGE_SCHEMA.md`](docs/KERNEL_PACKAGE_SCHEMA.md).
+
 ---
 
 ## Architecture
@@ -247,6 +257,10 @@ the latest upstream KIP and Rusty Kaspa checkpoints without unlocking
 unsupported bytecode paths prematurely.
 For the new framework layer, see
 [`docs/KASPA_PROGRAMMABILITY_KERNEL.md`](docs/KASPA_PROGRAMMABILITY_KERNEL.md).
+For the kernel package JSON shape, see
+[`docs/KERNEL_PACKAGE_SCHEMA.md`](docs/KERNEL_PACKAGE_SCHEMA.md).
+For the completion roadmap, see
+[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
 The crate compatibility spike is in
 [`docs/TOCCATA_CRATE_COMPATIBILITY.md`](docs/TOCCATA_CRATE_COMPATIBILITY.md).
 

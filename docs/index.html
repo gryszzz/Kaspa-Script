@@ -6,7 +6,7 @@
     <title>KaspaScript - Kaspa Contract Compiler And Kernel</title>
     <meta
       name="description"
-      content="KaspaScript is a source-gated Rust compiler and programmability kernel for deterministic Kaspa contract artifacts, wallet previews, indexer schema, readiness reports, and Toccata-era upgrade prep."
+      content="KaspaScript is a source-gated Rust compiler and programmability kernel for deterministic Kaspa contract artifacts, capability profiles, wallet previews, indexer schema, readiness reports, and Toccata-era upgrade prep."
     >
     <meta property="og:title" content="KaspaScript">
     <meta
@@ -44,8 +44,9 @@
           <h1 id="hero-title">Kaspa contract artifacts with bytecode, kernel metadata, and upgrade gates.</h1>
           <p class="hero-copy">
             KaspaScript compiles a verified V1 contract subset into deterministic
-            Kaspa txscript artifacts, then packages each contract with wallet
-            previews, indexer schema, fee estimates, and a readiness report.
+            Kaspa txscript artifacts, then packages each contract with a
+            capability profile, wallet previews, indexer schema, fee estimates,
+            and a readiness report.
           </p>
           <div class="hero-actions" aria-label="Project actions">
             <a class="button primary" href="https://github.com/gryszzz/Kaspa-Script">View Repo</a>
@@ -80,6 +81,7 @@ schema_version: kaspascript.kernel.package.v0
 package_target: verified-tn12
 artifact.target: verified-tn12
 bytecode_bytes: 76
+kernel.capabilities: kaspa-utxo-state-machine
 kernel.wallet_previews: 2
 kernel.indexer_schema: covenant_lineage
 readiness.level: verified
@@ -117,6 +119,14 @@ minimum_fee_sompi: 100000</code></pre>
           </p>
         </div>
         <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Capability Profile</h3>
+            <p>
+              Summarizes execution model, feature evidence, spend-path signers,
+              wallet duties, indexer duties, and policy limits for SDKs and
+              automation agents.
+            </p>
+          </article>
           <article class="feature-card">
             <h3>Wallet Preview</h3>
             <p>
@@ -172,7 +182,7 @@ minimum_fee_sompi: 100000</code></pre>
             </div>
             <div>
               <span>kernel</span>
-              <p>Blueprint, wallet previews, indexer schema, readiness, and fee policy.</p>
+              <p>Blueprint, capabilities, wallet previews, indexer schema, readiness, and fee policy.</p>
             </div>
             <div>
               <span>fee_estimate</span>
@@ -192,6 +202,9 @@ minimum_fee_sompi: 100000</code></pre>
     "readiness": {
       "level": "verified",
       "ready": true
+    },
+    "capabilities": {
+      "execution_model": "kaspa-utxo-state-machine"
     },
     "wallet_previews": ["release", "refund"],
     "indexer_schema": "covenant_lineage"

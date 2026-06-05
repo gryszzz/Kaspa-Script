@@ -7,8 +7,8 @@ Kaspa-native programmability kernel.
 
 The project can compile the verified V1 KaspaScript subset, produce
 deterministic txscript artifacts, and package a contract with kernel metadata:
-wallet previews, indexer schema, readiness report, bytecode ASM/hex, and a
-Toccata fee estimate.
+capability profile, wallet previews, indexer schema, readiness report,
+bytecode ASM/hex, and a Toccata fee estimate.
 
 ## What Works Today
 
@@ -34,6 +34,8 @@ Kernel:
 - Compiled kernel package JSON.
 - Kernel Package v0 schema version.
 - Golden package snapshots for `escrow.ks` and `vault.ks`.
+- Capability profile with execution model, feature evidence, transition
+  profiles, wallet requirements, indexer requirements, and policy limits.
 - Wallet preview metadata.
 - Covenant lineage indexer schema.
 - Readiness report with mainnet activation guard.
@@ -91,13 +93,15 @@ Until those exist, `future-mainnet` remains locked.
 
 ## Immediate Next Tasks
 
-1. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
-2. Update CI to run format, clippy, workspace tests, and kernel package golden
+1. Add constraint extraction for signatures, timelocks, value conservation, and
+   script binding in the capability profile.
+2. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
+3. Update CI to run format, clippy, workspace tests, and kernel package golden
    checks.
-3. Add a small SDK wrapper for generating kernel packages without invoking the
+4. Add a small SDK wrapper for generating kernel packages without invoking the
    CLI.
-4. Add TN10-oriented package fixtures for Toccata readiness.
-5. Add wallet-preview and indexer fixtures for each production contract pattern.
+5. Add TN10-oriented package fixtures for Toccata readiness.
+6. Add wallet-preview and indexer fixtures for each production contract pattern.
 
 ## Maintainer Commands
 

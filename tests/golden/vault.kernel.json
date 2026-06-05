@@ -324,6 +324,95 @@
         }
       ]
     },
+    "capabilities": {
+      "schema_version": "kaspascript.kernel.package.v0",
+      "contract": "Vault",
+      "network": "Tn12",
+      "readiness_level": "verified",
+      "ready": true,
+      "execution_model": "kaspa-utxo-state-machine",
+      "scope": [
+        "compile-to-kaspa-txscript",
+        "wallet-preview",
+        "indexer-lineage",
+        "fee-estimate",
+        "readiness-report"
+      ],
+      "features": [
+        {
+          "feature": "BaseScript",
+          "level": "verified",
+          "best_evidence": "BranchCode",
+          "description": "deterministic Kaspa txscript bytecode emission"
+        },
+        {
+          "feature": "WalletPreview",
+          "level": "verified",
+          "best_evidence": "BranchCode",
+          "description": "wallets receive sign-time transition preview metadata"
+        },
+        {
+          "feature": "IndexerLineage",
+          "level": "verified",
+          "best_evidence": "BranchCode",
+          "description": "indexers receive tables for contract lineage and audit trails"
+        },
+        {
+          "feature": "TransactionIntrospection",
+          "level": "verified",
+          "best_evidence": "MergedCode",
+          "description": "spend logic can inspect selected transaction inputs or outputs"
+        }
+      ],
+      "transition_profiles": [
+        {
+          "transition": "withdraw",
+          "kind": "Spend",
+          "signer_count": 1,
+          "signers": [
+            "sig"
+          ],
+          "proof_verifier": "None",
+          "required_features": [
+            "BaseScript",
+            "WalletPreview",
+            "IndexerLineage",
+            "TransactionIntrospection"
+          ],
+          "wallet_effect": "Consumes Vault compiled locking state and creates transaction outputs selected by the spend path."
+        },
+        {
+          "transition": "cancel",
+          "kind": "Spend",
+          "signer_count": 1,
+          "signers": [
+            "sig"
+          ],
+          "proof_verifier": "None",
+          "required_features": [
+            "BaseScript",
+            "WalletPreview",
+            "IndexerLineage",
+            "TransactionIntrospection"
+          ],
+          "wallet_effect": "Consumes Vault compiled locking state and creates transaction outputs selected by the spend path."
+        }
+      ],
+      "wallet_requirements": [
+        "render contract spends as state transitions, not ordinary payments",
+        "show consumed state, created outputs, required signers, and warnings before signing",
+        "collect spend-path signatures named by the transition profile"
+      ],
+      "indexer_requirements": [
+        "track `covenant_lineage` records",
+        "track `covenant_transition` records",
+        "track `wallet_preview_audit` records"
+      ],
+      "policy_limits": [
+        "package metadata does not replace node, wallet, standardness, or consensus validation",
+        "contract model is UTXO/state-transition oriented, not an account-runtime VM"
+      ]
+    },
     "wallet_previews": [
       {
         "contract": "Vault",

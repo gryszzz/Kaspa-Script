@@ -709,6 +709,13 @@ mod tests {
             Value::String("verified".to_owned())
         );
         assert_eq!(
+            package["kernel"]["capabilities"]["execution_model"],
+            Value::String("kaspa-utxo-state-machine".to_owned())
+        );
+        assert!(package["kernel"]["capabilities"]["transition_profiles"]
+            .as_array()
+            .is_some_and(|profiles| profiles.len() == 2));
+        assert_eq!(
             package["source_snapshots"][0]["tag"],
             Value::String("v1.3.0-toc.5".to_owned())
         );

@@ -102,6 +102,7 @@ node validation.
   "schema_version": "kaspascript.kernel.package.v0",
   "blueprint": {},
   "readiness": {},
+  "capabilities": {},
   "wallet_previews": [],
   "indexer_schema": {},
   "fee_policy": {
@@ -115,6 +116,7 @@ node validation.
 | `schema_version` | string | Current value: `kaspascript.kernel.package.v0`. |
 | `blueprint` | object | Contract state-machine model. |
 | `readiness` | object | Evidence-based readiness report. |
+| `capabilities` | object | Machine-readable contract capability profile for wallets, SDKs, indexers, and agents. |
 | `wallet_previews` | array<object> | Wallet-facing transition previews. |
 | `indexer_schema` | object | Suggested indexer tables and columns. |
 | `fee_policy.sompi_per_unit` | number | Toccata pre-activation minimum fee unit. |
@@ -298,6 +300,75 @@ Feature readiness line:
 `ready` is true only when every transition requirement is satisfied by the
 available evidence for the package network. Mainnet packages remain blocked
 until `MainnetActivation` evidence exists for required mainnet features.
+
+## Capabilities
+
+```json
+{
+  "schema_version": "kaspascript.kernel.package.v0",
+  "contract": "Escrow",
+  "network": "Tn12",
+  "readiness_level": "verified",
+  "ready": true,
+  "execution_model": "kaspa-utxo-state-machine",
+  "scope": [
+    "compile-to-kaspa-txscript",
+    "wallet-preview",
+    "indexer-lineage",
+    "fee-estimate",
+    "readiness-report"
+  ],
+  "features": [],
+  "transition_profiles": [],
+  "wallet_requirements": [],
+  "indexer_requirements": [],
+  "policy_limits": []
+}
+```
+
+The capability profile is a compact contract digest for app tooling. It does
+not add consensus behavior. It describes what the package can support and what
+external systems must still verify or render.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `execution_model` | string | Current value: `kaspa-utxo-state-machine`. |
+| `scope` | array<string> | Package surfaces currently emitted by the kernel. |
+| `features` | array<object> | KaspaScript/Kaspa features required by the transition set with readiness and evidence. |
+| `transition_profiles` | array<object> | Per-spend digest with kind, signers, proof verifier, required features, and wallet effect. |
+| `wallet_requirements` | array<string> | Sign-time wallet duties derived from the package. |
+| `indexer_requirements` | array<string> | Indexer duties derived from emitted schema tables. |
+| `policy_limits` | array<string> | Hard boundaries, including the fact that packages do not replace node or consensus validation. |
+
+Feature capability:
+
+```json
+{
+  "feature": "TransactionIntrospection",
+  "level": "verified",
+  "best_evidence": "MergedCode",
+  "description": "spend logic can inspect selected transaction inputs or outputs"
+}
+```
+
+Transition profile:
+
+```json
+{
+  "transition": "release",
+  "kind": "Spend",
+  "signer_count": 2,
+  "signers": ["sig_a", "sig_b"],
+  "proof_verifier": "None",
+  "required_features": [
+    "BaseScript",
+    "WalletPreview",
+    "IndexerLineage",
+    "TransactionIntrospection"
+  ],
+  "wallet_effect": "Consumes Escrow compiled locking state and creates transaction outputs selected by the spend path."
+}
+```
 
 ## Fee Estimate
 

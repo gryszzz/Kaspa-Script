@@ -15,7 +15,8 @@
 KaspaScript is a Rust compiler workspace for deterministic Kaspa contract
 artifacts. It exists to make covenant-era contract construction inspectable:
 source becomes typed IR, IR becomes target-gated txscript bytes, and every
-protocol-sensitive claim is pinned to a source.
+protocol-sensitive claim is pinned to a source. Kernel packages now also emit a
+capability profile for wallets, SDKs, indexers, and agents.
 
 The project is built for reviewers, tooling, and coding agents that need stable
 compiler surfaces: golden artifacts, explicit target gates, bytecode
@@ -53,8 +54,9 @@ Project site: [`https://gryszzz.github.io/Kaspa-Script/`](https://gryszzz.github
 
 ┌────────────────────────────────────────────────────────┐
 │ Programmability Kernel                                 │
-│ contract blueprints, wallet previews, indexer schema,  │
-│ source evidence, Toccata fee policy, readiness reports │
+│ contract blueprints, capability profile, wallet        │
+│ previews, indexer schema, source evidence, Toccata fee │
+│ policy, readiness reports                              │
 └────────────────────────────────────────────────────────┘
 
 Optimization passes are planned; today the compiler favors verifiable lowering
@@ -69,7 +71,7 @@ and deterministic emission over speculative transformation.
 | Typed IR | Opcode-agnostic instruction layer for contract verification and backend selection. |
 | Backend Gates | Emits only source-grounded txscript for `verified-tn12`; gates preview surfaces. |
 | Artifact | Deterministic JSON containing bytecode, source hash, target, KIP requirements, and warnings. |
-| Kernel | Packages Kaspa-native contract blueprints with wallet previews, covenant lineage schema, fee policy, and network readiness. |
+| Kernel | Packages Kaspa-native contract blueprints with capability profiles, wallet previews, covenant lineage schema, fee policy, and network readiness. |
 
 ---
 
@@ -161,7 +163,7 @@ branch.
 | Kernel package goldens | v0 `.kernel.json` snapshots for escrow and vault. |
 | SDK preview model | Compile API plus finality-depth checks; not a real Kaspa transaction builder yet. |
 | TN12 test harness | Feature-gated live RPC/wallet preflight with gated proof files. |
-| Programmability kernel | `kaspascript-kernel` crate plus `kaspascript kernel package <contract.ks>` for bytecode, wallet previews, indexer schema, readiness levels, source snapshots, and fee estimates. |
+| Programmability kernel | `kaspascript-kernel` crate plus `kaspascript kernel package <contract.ks>` for bytecode, capability profiles, wallet previews, indexer schema, readiness levels, source snapshots, and fee estimates. |
 
 ### Verified
 

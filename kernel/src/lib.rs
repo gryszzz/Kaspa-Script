@@ -486,7 +486,43 @@ impl ContractBlueprint {
         covenant_lineage_schema(self.name.clone(), self.network)
     }
 
+    pub fn capability_profile(&self) -> CapabilityProfile {
+        let readiness = self.readiness_report();
+        let features = self.capability_features(&readiness);
+        let indexer_schema = self.indexer_schema();
+
+        CapabilityProfile {
+            schema_version: KERNEL_PACKAGE_SCHEMA_VERSION.to_owned(),
+            contract: self.name.clone(),
+            network: self.network,
+            readiness_level: readiness.level,
+            ready: readiness.ready,
+            execution_model: "kaspa-utxo-state-machine".to_owned(),
+            scope: vec![
+                "compile-to-kaspa-txscript".to_owned(),
+                "wallet-preview".to_owned(),
+                "indexer-lineage".to_owned(),
+                "fee-estimate".to_owned(),
+                "readiness-report".to_owned(),
+            ],
+            features,
+            transition_profiles: self
+                .transitions
+                .iter()
+                .map(TransitionCapability::from_transition)
+                .collect(),
+            wallet_requirements: self.wallet_requirements(),
+            indexer_requirements: indexer_schema
+                .tables
+                .iter()
+                .map(|table| format!("track `{}` records", table.name))
+                .collect(),
+            policy_limits: self.policy_limits(&readiness),
+        }
+    }
+
     pub fn package(&self) -> Result<KernelPackage, KernelError> {
+        let readiness = self.readiness_report();
         let wallet_previews = self
             .transitions
             .iter()
@@ -495,7 +531,8 @@ impl ContractBlueprint {
         Ok(KernelPackage {
             schema_version: KERNEL_PACKAGE_SCHEMA_VERSION.to_owned(),
             blueprint: self.clone(),
-            readiness: self.readiness_report(),
+            readiness,
+            capabilities: self.capability_profile(),
             wallet_previews,
             indexer_schema: self.indexer_schema(),
             fee_policy: ToccataFeePolicy::default(),
@@ -508,6 +545,91 @@ impl ContractBlueprint {
             .filter(|evidence| evidence.covers(feature, self.network))
             .max_by_key(|evidence| evidence.level)
             .cloned()
+    }
+
+    fn capability_features(&self, readiness: &ReadinessReport) -> Vec<CapabilityFeature> {
+        let mut features = Vec::new();
+        for transition in &self.transitions {
+            for requirement in &transition.requirements {
+                push_unique_feature(&mut features, requirement.feature);
+            }
+        }
+
+        features
+            .into_iter()
+            .map(|feature| {
+                let related = readiness
+                    .features
+                    .iter()
+                    .filter(|report| report.feature == feature)
+                    .collect::<Vec<_>>();
+                let level = if related
+                    .iter()
+                    .any(|report| report.level == ReadinessLevel::Blocked)
+                {
+                    ReadinessLevel::Blocked
+                } else if related
+                    .iter()
+                    .any(|report| report.level == ReadinessLevel::Preview)
+                {
+                    ReadinessLevel::Preview
+                } else {
+                    ReadinessLevel::Verified
+                };
+                CapabilityFeature {
+                    feature,
+                    level,
+                    best_evidence: self.best_evidence(feature).map(|evidence| evidence.level),
+                    description: feature_description(feature).to_owned(),
+                }
+            })
+            .collect()
+    }
+
+    fn wallet_requirements(&self) -> Vec<String> {
+        let mut requirements = vec![
+            "render contract spends as state transitions, not ordinary payments".to_owned(),
+            "show consumed state, created outputs, required signers, and warnings before signing"
+                .to_owned(),
+        ];
+
+        if self
+            .transitions
+            .iter()
+            .any(|transition| !transition.signers.is_empty())
+        {
+            requirements
+                .push("collect spend-path signatures named by the transition profile".to_owned());
+        }
+
+        if self
+            .transitions
+            .iter()
+            .any(|transition| transition.proof.verifier != ProofVerifier::None)
+        {
+            requirements
+                .push("attach proof payloads and public inputs before broadcast".to_owned());
+        }
+
+        requirements
+    }
+
+    fn policy_limits(&self, readiness: &ReadinessReport) -> Vec<String> {
+        let mut limits = vec![
+            "package metadata does not replace node, wallet, standardness, or consensus validation"
+                .to_owned(),
+            "contract model is UTXO/state-transition oriented, not an account-runtime VM"
+                .to_owned(),
+        ];
+
+        if self.network == Network::Unknown {
+            limits.push("preview target is for analysis and integration design only".to_owned());
+        }
+        if readiness.level == ReadinessLevel::Blocked {
+            limits.push("blocked readiness level prevents production treatment".to_owned());
+        }
+
+        limits
     }
 }
 
@@ -628,12 +750,70 @@ pub struct FeatureReadiness {
     pub source_label: Option<String>,
 }
 
+/// Machine-readable capability summary for wallets, SDKs, indexers, and agents.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CapabilityProfile {
+    pub schema_version: String,
+    pub contract: String,
+    pub network: Network,
+    pub readiness_level: ReadinessLevel,
+    pub ready: bool,
+    pub execution_model: String,
+    pub scope: Vec<String>,
+    pub features: Vec<CapabilityFeature>,
+    pub transition_profiles: Vec<TransitionCapability>,
+    pub wallet_requirements: Vec<String>,
+    pub indexer_requirements: Vec<String>,
+    pub policy_limits: Vec<String>,
+}
+
+/// Feature capability with current package evidence.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CapabilityFeature {
+    pub feature: KernelFeature,
+    pub level: ReadinessLevel,
+    pub best_evidence: Option<EvidenceLevel>,
+    pub description: String,
+}
+
+/// Per-transition contract capability digest.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransitionCapability {
+    pub transition: String,
+    pub kind: TransitionKind,
+    pub signer_count: usize,
+    pub signers: Vec<String>,
+    pub proof_verifier: ProofVerifier,
+    pub required_features: Vec<KernelFeature>,
+    pub wallet_effect: String,
+}
+
+impl TransitionCapability {
+    fn from_transition(transition: &Transition) -> Self {
+        let mut required_features = Vec::new();
+        for requirement in &transition.requirements {
+            push_unique_feature(&mut required_features, requirement.feature);
+        }
+
+        Self {
+            transition: transition.name.clone(),
+            kind: transition.kind.clone(),
+            signer_count: transition.signers.len(),
+            signers: transition.signers.clone(),
+            proof_verifier: transition.proof.verifier.clone(),
+            required_features,
+            wallet_effect: transition_wallet_effect(transition),
+        }
+    }
+}
+
 /// Complete kernel package for an app builder.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KernelPackage {
     pub schema_version: String,
     pub blueprint: ContractBlueprint,
     pub readiness: ReadinessReport,
+    pub capabilities: CapabilityProfile,
     pub wallet_previews: Vec<WalletPreview>,
     pub indexer_schema: IndexerSchema,
     pub fee_policy: ToccataFeePolicy,
@@ -763,6 +943,49 @@ pub fn package_compiled_contract(
         kernel: blueprint.package()?,
         fee_estimate: fee_policy.estimate(compute_grams, transaction_bytes, fee_assumption)?,
     })
+}
+
+fn push_unique_feature(features: &mut Vec<KernelFeature>, feature: KernelFeature) {
+    if !features.contains(&feature) {
+        features.push(feature);
+    }
+}
+
+fn feature_description(feature: KernelFeature) -> &'static str {
+    match feature {
+        KernelFeature::BaseScript => "deterministic Kaspa txscript bytecode emission",
+        KernelFeature::TransactionIntrospection => {
+            "spend logic can inspect selected transaction inputs or outputs"
+        }
+        KernelFeature::CovenantIds => "state lineage can be keyed by covenant identifiers",
+        KernelFeature::SequencingCommitments => {
+            "contract policy can reason about accepted BlockDAG ordering commitments"
+        }
+        KernelFeature::ZkVerification => {
+            "transition policy can require zero-knowledge proof verification"
+        }
+        KernelFeature::FeePolicy => "package can estimate fees with the pinned Toccata policy",
+        KernelFeature::WalletPreview => "wallets receive sign-time transition preview metadata",
+        KernelFeature::IndexerLineage => {
+            "indexers receive tables for contract lineage and audit trails"
+        }
+    }
+}
+
+fn transition_wallet_effect(transition: &Transition) -> String {
+    format!(
+        "Consumes {} and creates {}.",
+        join_or_default(&transition.consumes, "no declared input state"),
+        join_or_default(&transition.creates, "no declared successor output")
+    )
+}
+
+fn join_or_default(values: &[String], empty: &str) -> String {
+    if values.is_empty() {
+        empty.to_owned()
+    } else {
+        values.join(", ")
+    }
 }
 
 /// Current upstream snapshots embedded in v0 packages.
@@ -1021,6 +1244,20 @@ mod tests {
         assert!(package.readiness.ready, "{:?}", package.readiness.blockers);
         assert_eq!(package.schema_version, KERNEL_PACKAGE_SCHEMA_VERSION);
         assert_eq!(package.readiness.level, ReadinessLevel::Verified);
+        assert_eq!(
+            package.capabilities.execution_model,
+            "kaspa-utxo-state-machine"
+        );
+        assert!(package
+            .capabilities
+            .features
+            .iter()
+            .any(|feature| feature.feature == KernelFeature::CovenantIds));
+        assert!(package
+            .capabilities
+            .wallet_requirements
+            .iter()
+            .any(|requirement| requirement.contains("state transitions")));
         assert_eq!(package.wallet_previews.len(), 3);
         assert!(package
             .indexer_schema

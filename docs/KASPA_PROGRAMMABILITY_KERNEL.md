@@ -20,6 +20,7 @@ A kernel contract package contains:
 - source evidence and target network posture
 - wallet previews
 - covenant lineage indexer schema
+- capability profile
 - fee-policy math
 - readiness report
 
@@ -54,6 +55,8 @@ The output JSON includes:
 - bytecode hex and ASM
 - schema version and source snapshots
 - wallet previews
+- capability profile with execution model, feature support, transition profiles,
+  wallet requirements, indexer requirements, and policy limits
 - covenant lineage indexer schema
 - readiness report with `verified`, `preview`, or `blocked` level
 - Toccata fee estimate and explicit fee assumptions
@@ -70,6 +73,8 @@ The kernel answers: "Can a builder safely ship this Kaspa app shape?"
 That second question needs more than bytecode:
 
 - Wallets must show state transitions instead of ordinary payment copy.
+- SDKs and agents need a compact capability profile before they automate
+  around a contract package.
 - Indexers must track covenant IDs, genesis outputs, continuations,
   authorizing inputs, accepted DAA context, and reorg state.
 - Fee estimation must follow Toccata policy instead of stale fixed-fee
@@ -117,7 +122,9 @@ activation schedule, and support posture are pinned.
 2. Add wallet-preview golden tests for each production contract pattern.
 3. Add indexer fixtures for covenant genesis, continuation, reorg, and
    wrong-network cases.
-4. Feed real node/RPC fee estimates into the package when available.
-5. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
+4. Add constraint extraction for signature, timelock, value, and script-binding
+   checks inside the capability profile.
+5. Feed real node/RPC fee estimates into the package when available.
+6. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
 
 See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the completion roadmap.

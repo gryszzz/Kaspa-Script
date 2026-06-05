@@ -5,8 +5,13 @@ agent-facing CLI report payloads. These files are API contracts for agents, CI,
 wallets, SDKs, and indexers that consume `--json` output.
 
 The CLI report schemas are versioned independently from the kernel package
-schema. A report schema version must not change shape without a new
-`schema_version` value.
+schema. A report schema version must not make incompatible shape changes
+without a new `schema_version` value.
+
+`kaspascript.cli.toccata.status.v0` is the upgrade intelligence payload for the
+Rusty Kaspa `v2.0.0` line: release metadata, tagged upgrade guide, release
+assets, activation guard, node requirements, Toccata fee policy, v1 transaction
+field changes, KIP mapping, and integrator actions.
 
 ## Schemas
 
@@ -27,6 +32,7 @@ schema. A report schema version must not change shape without a new
 - `schema_version` is required in every report payload.
 - Existing required fields cannot be removed within the same schema version.
 - Existing field types cannot change within the same schema version.
+- Additive optional fields are allowed within the same schema version.
 - New incompatible payload shapes must use a new schema version.
 - Golden snapshots are tested in CI against the report builders.
 - The report schemas are intentionally stricter at the top level than in nested

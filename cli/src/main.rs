@@ -615,25 +615,7 @@ fn toccata_fee_report(estimate: &kaspascript_kernel::FeeEstimate) -> Value {
 fn toccata_status_report() -> Value {
     json!({
         "schema_version": "kaspascript.cli.toccata.status.v0",
-        "upgrade": {
-            "name": "Toccata",
-            "rusty_kaspa_release": {
-                "repo": "https://github.com/kaspanet/rusty-kaspa",
-                "tag": "v2.0.0",
-                "name": "Mainnet Toccata Release - v2.0.0",
-                "published_at": "2026-06-05T12:09:13Z",
-            },
-            "mainnet_activation": {
-                "daa_score": 474_165_565u64,
-                "estimated_utc": "2026-06-30T16:15:00Z",
-                "status": "scheduled-not-independently-verified",
-                "kaspa_script_readiness": "blocked-for-production-mainnet",
-            },
-            "p2p_protocol": {
-                "required_version": 10,
-                "restriction_window": "24h-before-activation",
-            }
-        },
+        "upgrade": toccata_upgrade_profile(),
         "source_snapshots": current_source_snapshots(),
         "evidence": current_toccata_evidence(),
         "targets": target_matrix(),
@@ -642,6 +624,129 @@ fn toccata_status_report() -> Value {
             "kaspascript kernel check <contract.ks> --target verified-tn12",
             "kaspascript kernel preview <contract.ks> --target verified-tn12",
             "kaspascript kernel package <contract.ks> --target verified-tn12 --compute-grams 1000 --tx-bytes 400"
+        ],
+    })
+}
+
+fn toccata_upgrade_profile() -> Value {
+    json!({
+        "name": "Toccata",
+        "rusty_kaspa_release": {
+            "repo": "https://github.com/kaspanet/rusty-kaspa",
+            "tag": "v2.0.0",
+            "name": "Mainnet Toccata Release - v2.0.0",
+            "published_at": "2026-06-05T12:09:13Z",
+        },
+        "node_upgrade_guide": {
+            "url": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md",
+            "database_upgrade": "one-way; downgrade requires resync",
+            "recommended_rehearsal_network": "testnet-10",
+        },
+        "release_assets": [
+            {
+                "name": "kaspa-wasm32-sdk-v2.0.0.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.0/kaspa-wasm32-sdk-v2.0.0.zip",
+            },
+            {
+                "name": "rusty-kaspa-v2.0.0-linux-amd64.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.0/rusty-kaspa-v2.0.0-linux-amd64.zip",
+            },
+            {
+                "name": "rusty-kaspa-v2.0.0-osx.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.0/rusty-kaspa-v2.0.0-osx.zip",
+            },
+            {
+                "name": "rusty-kaspa-v2.0.0-win64.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.0/rusty-kaspa-v2.0.0-win64.zip",
+            },
+        ],
+        "mainnet_activation": {
+            "daa_score": 474_165_565u64,
+            "estimated_utc": "2026-06-30T16:15:00Z",
+            "status": "scheduled-not-independently-verified",
+            "kaspa_script_readiness": "blocked-for-production-mainnet",
+        },
+        "p2p_protocol": {
+            "required_version": 10,
+            "restriction_window": "24h-before-activation",
+        },
+        "node_requirements": {
+            "minimum": {
+                "cpu_cores": "8",
+                "ram_gb": 16,
+                "storage": "640 GB SSD",
+                "network": "10 MB/s or about 80 Mbit/s",
+            },
+            "preferred": {
+                "cpu_cores": "12-16",
+                "ram_gb": 32,
+                "storage": "1 TB SSD",
+                "network": "higher sustained bandwidth",
+            },
+            "rationale": "Toccata doubles the transient mass limit to support ZK-STARK proof workloads.",
+        },
+        "fee_policy": {
+            "formula": "100 sompi * max(compute grams, 2 * transaction bytes)",
+            "minimum_fee_rate_change": {
+                "pre_toccata_sompi_per_gram": 1,
+                "toccata_sompi_per_gram": 100,
+            },
+            "normalized_transient_mass": "2 * transaction bytes",
+            "pre_activation_rpc": "direct RPC transaction submission applies the higher minimum standard fee",
+            "pre_activation_p2p": "P2P relay keeps the pre-activation policy until activation",
+            "post_activation": "RPC and P2P relay reject transactions below the higher minimum standard fee",
+            "consensus": "standard fee policy is not consensus; zero-fee transactions remain consensus-valid",
+        },
+        "transaction_format": {
+            "transaction_version": 1,
+            "new_fields": [
+                "TransactionOutput.covenant",
+                "TransactionInput.compute_commit",
+            ],
+            "pool_stratum_requirement": "preserve the new fields from GetBlockTemplate through SubmitBlock",
+            "mass_field": {
+                "rust_protobuf": "storage_mass",
+                "json_js": "storageMass",
+                "deprecated_alias": "mass",
+            },
+        },
+        "kips": [
+            {
+                "kip": 16,
+                "title": "New Transaction Opcodes for Verifiable Computation",
+                "status": "Proposed; implemented and activated in TN10",
+                "kaspa_script_integration": "gate OpZkPrecompile 0xa6 until proof ABI fixtures and pricing tests are pinned",
+                "source": "https://github.com/kaspanet/kips/blob/master/kip-0016.md",
+            },
+            {
+                "kip": 17,
+                "title": "Covenants and Improved Scripting Capabilities",
+                "status": "Implemented and activated in TN10",
+                "kaspa_script_integration": "model full transaction introspection, byte-string ops, keyed hashes, and post-activation script limits behind Toccata targets",
+                "source": "https://github.com/kaspanet/kips/blob/master/kip-0017.md",
+            },
+            {
+                "kip": 20,
+                "title": "Covenant IDs",
+                "status": "Proposed; implemented and activated in TN10",
+                "kaspa_script_integration": "emit covenant lineage metadata now; lower covenant binding opcodes only after transaction builder support lands",
+                "source": "https://github.com/kaspanet/kips/blob/master/kip-0020.md",
+            },
+            {
+                "kip": 21,
+                "title": "Partitioned Sequencing Commitment with O(activity) Proving",
+                "status": "Implemented and activated in TN10",
+                "kaspa_script_integration": "treat OpChainblockSeqCommit as a future proof-bearing transition primitive with lane witness requirements",
+                "source": "https://github.com/kaspanet/kips/blob/master/kip-0021.md",
+            },
+        ],
+        "integrator_actions": [
+            "Upgrade nodes to rusty-kaspa v2.0.0 before the scheduled activation window.",
+            "Run full wallet, explorer, miner, pool, and indexer rehearsal on Testnet-10.",
+            "Update gRPC/protobuf integrations for transaction version 1 covenant and compute_commit fields.",
+            "Use node fee estimation when available; otherwise apply the Toccata minimum standard fee formula.",
+            "Prefer storage_mass/storageMass in new JSON and protobuf integrations; treat mass as deprecated compatibility only.",
+            "Keep KaspaScript future-mainnet packages blocked until activation evidence is independently verified.",
         ],
     })
 }
@@ -711,6 +816,18 @@ fn print_toccata_status_human(report: &Value) {
     println!(
         "kaspa_script_readiness: {}",
         upgrade["mainnet_activation"]["kaspa_script_readiness"]
+            .as_str()
+            .unwrap_or("unknown")
+    );
+    println!(
+        "guide: {}",
+        upgrade["node_upgrade_guide"]["url"]
+            .as_str()
+            .unwrap_or("unknown")
+    );
+    println!(
+        "fee_policy: {}",
+        upgrade["fee_policy"]["formula"]
             .as_str()
             .unwrap_or("unknown")
     );
@@ -1464,6 +1581,22 @@ mod tests {
             report["upgrade"]["mainnet_activation"]["kaspa_script_readiness"],
             Value::String("blocked-for-production-mainnet".to_owned())
         );
+        assert_eq!(
+            report["upgrade"]["node_upgrade_guide"]["url"],
+            Value::String(
+                "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md"
+                    .to_owned()
+            )
+        );
+        assert_eq!(
+            report["upgrade"]["fee_policy"]["formula"],
+            Value::String("100 sompi * max(compute grams, 2 * transaction bytes)".to_owned())
+        );
+        assert_eq!(
+            report["upgrade"]["transaction_format"]["mass_field"]["json_js"],
+            Value::String("storageMass".to_owned())
+        );
+        assert_eq!(report["upgrade"]["kips"].as_array().expect("kips").len(), 4);
         let targets = report["targets"].as_array().expect("targets");
         let future = targets
             .iter()

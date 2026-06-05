@@ -12,6 +12,8 @@ Primary sources checked:
 
 - `kaspanet/rusty-kaspa` release `v2.0.0`, published 2026-06-05:
   https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.0
+- Tagged `v2.0.0` Toccata guide:
+  https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md
 - `kaspanet/rusty-kaspa` release `v1.3.0-toc.5`, published 2026-06-03:
   https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5
 - `kaspanet/rusty-kaspa` release `tn10-toc3`, published 2026-05-27:
@@ -37,6 +39,9 @@ Follow-up source watch on 2026-06-05:
 See [`RUSTY_KASPA_UPSTREAM_WATCH.md`](RUSTY_KASPA_UPSTREAM_WATCH.md) for the
 moving-master architecture watch.
 
+See [`TOCCATA_V2_INTEGRATION.md`](TOCCATA_V2_INTEGRATION.md) for the tagged
+release integration brief now wired into the CLI status report.
+
 ## What Toccata Adds
 
 | Area | Upstream source | Impact for KaspaScript |
@@ -45,8 +50,9 @@ moving-master architecture watch.
 | Expanded covenants | KIP-17; transaction introspection, payload substrings, `OpCat`, `OpSubstr`, bitwise ops, keyed hashes, `OpBlake3`, signature-from-stack | The language can grow beyond KIP-10 input/output checks, but every opcode needs target gates and bytecode snapshots. |
 | Covenant IDs | KIP-20; UTXO/output covenant ID model; `OpInputCovenantId`, `OpOutputCovenantId`, authorized-output context | `input(0).covenant_id` and `output(0).covenant_id` need distinct IR, plus transaction output covenant bindings in the SDK. |
 | Partitioned sequencing | KIP-21; `OpChainblockSeqCommit` `0xd4` | `sequencing` needs a block-hash witness model, depth/reorg policy, and proof tests. |
-| Fee policy | Toccata release notes | Transaction submission must not rely on stale fixed-fee assumptions; fees should come from node APIs where possible. |
-| Node DB upgrade | `v1.3.0-toc.5` release notes | Dev/test nodes upgraded to this pre-release cannot be downgraded without resyncing. |
+| Fee policy | Tagged `v2.0.0` Toccata guide | Transaction submission must not rely on stale fixed-fee assumptions; fees should come from node APIs where possible. |
+| Transaction shape | Tagged `v2.0.0` Toccata guide | Toccata v1 transactions add output covenant bindings and input compute commitments; builders must preserve both. |
+| Node DB upgrade | Tagged `v2.0.0` Toccata guide | Upgraded node databases cannot be downgraded without resyncing. |
 
 ## Local Readiness Snapshot
 
@@ -57,6 +63,9 @@ moving-master architecture watch.
 - `kaspascript kernel package <contract.ks>` now emits v0 bytecode plus kernel
   package JSON: schema version, source snapshots, wallet previews, indexer
   schema, fee estimate, and readiness report.
+- `kaspascript toccata status --json` now emits a v2.0.0 integration profile
+  for release assets, node guide, fee policy, v1 transaction fields, KIP map,
+  and integrator actions.
 - The SDK testnet integration depends on Kaspa crates `0.15.0`; Toccata
   compatibility must now be respiked against the `v2.0.0` line.
 - The first Toccata crate compatibility spike is recorded in

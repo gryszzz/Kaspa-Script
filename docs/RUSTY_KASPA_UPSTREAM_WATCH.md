@@ -15,6 +15,9 @@ txscript builder changes, and activation evidence.
 Source repository:
 [`kaspanet/rusty-kaspa`](https://github.com/kaspanet/rusty-kaspa).
 
+Tagged Toccata guide:
+[`docs/toccata-guide.md` at `v2.0.0`](https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md).
+
 As of this audit:
 
 - default branch: `master`
@@ -87,7 +90,8 @@ The release lane protects tests. The moving lane trains the architecture.
 2. Move Toccata crate compatibility work to `v2.0.0`, while keeping
    `v1.3.0-toc.5` as a historical comparison point.
 3. Add TN10-oriented readiness fixtures for `tn10-toccata`.
-4. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
+4. Keep the CLI Toccata status schema as the machine-readable digest of the
+   current tagged release.
 5. Track `storage_mass`, `compute_commit`, and covenant bindings explicitly in
    the SDK transaction builder plan.
 6. Add wallet-preview fields for covenant bindings once the transaction builder

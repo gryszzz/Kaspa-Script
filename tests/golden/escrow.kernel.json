@@ -160,7 +160,7 @@
         {
           "label": "KaspaScript compiled artifact",
           "url": "tests/contracts/escrow.ks",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Tn12",
           "level": "BranchCode",
           "features": [
@@ -174,7 +174,7 @@
         {
           "label": "rusty-kaspa v2.0.0",
           "url": "https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.0",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Mainnet",
           "level": "MainnetPreActivation",
           "features": [
@@ -189,7 +189,7 @@
         {
           "label": "rusty-kaspa v1.3.0-toc.5",
           "url": "https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Mainnet",
           "level": "MainnetPreActivation",
           "features": [
@@ -200,7 +200,7 @@
         {
           "label": "rusty-kaspa PR #1000",
           "url": "https://github.com/kaspanet/rusty-kaspa/pull/1000",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Unknown",
           "level": "MergedCode",
           "features": [
@@ -214,7 +214,7 @@
         {
           "label": "rusty-kaspa tn10-toc3",
           "url": "https://github.com/kaspanet/rusty-kaspa/releases/tag/tn10-toc3",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Tn10",
           "level": "TestnetActivation",
           "features": [
@@ -226,7 +226,7 @@
         {
           "label": "KIP-17 merged file",
           "url": "https://github.com/kaspanet/kips/blob/master/kip-0017.md",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Tn10",
           "level": "TestnetActivation",
           "features": [
@@ -237,7 +237,7 @@
         {
           "label": "KIP-20 merged file",
           "url": "https://github.com/kaspanet/kips/blob/master/kip-0020.md",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Tn10",
           "level": "TestnetActivation",
           "features": [
@@ -248,7 +248,7 @@
         {
           "label": "KIP-21 merged file",
           "url": "https://github.com/kaspanet/kips/blob/master/kip-0021.md",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Tn10",
           "level": "TestnetActivation",
           "features": [
@@ -259,7 +259,7 @@
         {
           "label": "KaspaScript kernel artifacts",
           "url": "kernel/src/lib.rs",
-          "audit_date": "2026-06-04T03:33:39Z",
+          "audit_date": "2026-06-05T13:00:00Z",
           "network": "Unknown",
           "level": "BranchCode",
           "features": [
@@ -634,7 +634,7 @@
   },
   "fee_estimate": {
     "policy": "toccata-rpc-minimum-standard-fee",
-    "source": "https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5",
+    "source": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md",
     "compute_grams": 1000,
     "transaction_bytes": 400,
     "minimum_standard_fee_sompi": 100000,

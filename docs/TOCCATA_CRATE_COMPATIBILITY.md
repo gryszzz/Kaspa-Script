@@ -1,9 +1,9 @@
 # Toccata Crate Compatibility Spike
 
-Prepared: 2026-06-04.
+Prepared: 2026-06-05.
 
 This spike checks whether the Kaspa crates used by the SDK can move from the
-published `0.15.0` crates.io line toward the Toccata `v1.3.0-toc.5` line.
+published `0.15.0` crates.io line toward the tagged Toccata `v2.0.0` line.
 
 ## Local SDK Crates
 
@@ -17,12 +17,39 @@ published `0.15.0` crates.io line toward the Toccata `v1.3.0-toc.5` line.
 - `kaspa-wallet-core`
 - `kaspa-wrpc-client`
 
-`cargo search kaspa-txscript --limit 5` still reports `kaspa-txscript =
-"0.15.0"` as the published crates.io line.
+`cargo search kaspa-txscript --limit 5` was rechecked on 2026-06-05 and still
+reports `kaspa-txscript = "0.15.0"` as the published crates.io line.
 
-## Toccata Probe
+## Toccata v2.0.0 Target
 
-Disposable scratch crate:
+Rusty Kaspa `v2.0.0` is now the explicit compatibility target:
+
+- upstream tag: `v2.0.0`
+- tag commit: `90dbf074275d60c1fe74a3491883196f110970c0`
+- workspace MSRV observed in the tagged `Cargo.toml`: `1.91.0`
+- workspace edition observed in the tagged `Cargo.toml`: `2024`
+- workspace package version observed in the tagged `Cargo.toml`: `2.0.0`
+
+Future Toccata compatibility probes should use:
+
+```toml
+[dependencies]
+kaspa-addresses = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
+kaspa-consensus-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
+kaspa-rpc-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
+kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
+kaspa-wallet-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
+kaspa-wrpc-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
+```
+
+The repo should introduce this as a non-default compatibility feature or
+facade. The global SDK dependencies stay on `0.15.0` until the transaction
+builder and RPC JSON model can preserve Toccata v1 transaction fields.
+
+## Historical `v1.3.0-toc.5` Probe
+
+Disposable scratch crate used before the final tag:
 
 ```toml
 [dependencies]
@@ -35,7 +62,7 @@ kaspa-wallet-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag =
 kaspa-wrpc-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.3.0-toc.5" }
 ```
 
-Results:
+Historical results:
 
 - `rustc 1.95.0` is new enough for the Toccata workspace MSRV
   `1.91.0`.
@@ -54,18 +81,17 @@ completed successfully.
 
 - Toccata `kaspa-txscript` pulls in ZK dependencies such as Arkworks and RISC0,
   making the graph much heavier than the current `0.15.0` line.
-- The Toccata workspace uses edition 2024 and version `1.3.0-toc.5`.
+- The final Toccata workspace uses edition 2024 and version `2.0.0`.
 - The SDK currently assumes transaction constructors, mass calculation, script
   validation, RPC conversions, and wallet network params from `0.15.0`; each
   import in `sdk/src/testnet.rs` needs an API check before bumping.
-- The `v1.3.0-toc.5` release is a mainnet pre-activation pre-release, not final
-  mainnet activation.
+- The `v2.0.0` release is a mainnet release, but activation is still scheduled
+  for DAA score `474,165,565`; it is not proof of activation by itself.
 
 ## Moving-Master Watch
 
-The pinned compatibility spike should remain anchored to `v1.3.0-toc.5` until a
-new release becomes the explicit target. However, `kaspanet/rusty-kaspa`
-`master` was observed 10 commits ahead of `v1.3.0-toc.5` on 2026-06-05.
+The pinned compatibility spike should now anchor to `v2.0.0`. The older
+`v1.3.0-toc.5` probe remains useful only as a historical diff point.
 
 The moving-master lane should be non-blocking and should watch for:
 
@@ -88,7 +114,7 @@ CARGO_TARGET_DIR=/Users/anthonygryszkin/Desktop/kaspa-script/target/toccata-spik
 ```
 
 The next repo change should introduce a Cargo feature such as
-`toccata-git-deps` or a small compatibility facade instead of replacing the
+`toccata-v2-git-deps` or a small compatibility facade instead of replacing the
 current `0.15.0` dependencies globally. The follow-up check should compile
 `sdk/src/testnet.rs` itself against the Toccata feature, not only an isolated
 API smoke crate.

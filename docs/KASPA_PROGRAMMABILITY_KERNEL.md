@@ -104,7 +104,7 @@ production bytecode lowering is claimed.
 
 ## Evidence Posture
 
-The bundled kernel evidence is pinned to the June 4, 2026 source audit:
+The bundled kernel evidence is pinned to the June 5, 2026 source audit:
 
 - `v2.0.0` is the mainnet Toccata release published on June 5, 2026. Its
   release notes schedule activation at DAA score `474,165,565`, roughly
@@ -120,6 +120,10 @@ The bundled kernel evidence is pinned to the June 4, 2026 source audit:
 Mainnet blueprints remain blocked until activation itself, crate compatibility,
 wallet/indexer support posture, and fee/mass behavior are pinned.
 
+The tagged `v2.0.0` Toccata guide is now the fee-policy source used by
+`ToccataFeePolicy`; see
+[`TOCCATA_V2_INTEGRATION.md`](TOCCATA_V2_INTEGRATION.md).
+
 ## Next Kernel Upgrades
 
 1. Add Toccata git-tag compatibility fixtures to validate Kaspa crate APIs.
@@ -129,6 +133,7 @@ wallet/indexer support posture, and fee/mass behavior are pinned.
 4. Add constraint extraction for signature, timelock, value, and script-binding
    checks inside the capability profile.
 5. Feed real node/RPC fee estimates into the package when available.
-6. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
+6. Add a non-default Rusty Kaspa `v2.0.0` compatibility feature for SDK
+   transaction-builder work.
 
 See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the completion roadmap.

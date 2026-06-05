@@ -12,7 +12,7 @@ use std::fmt;
 use thiserror::Error;
 
 /// Source audit date for the bundled Toccata evidence set.
-pub const TOCCATA_AUDIT_DATE: &str = "2026-06-04T03:33:39Z";
+pub const TOCCATA_AUDIT_DATE: &str = "2026-06-05T13:00:00Z";
 
 /// Kernel package schema version emitted by v0 packages.
 pub const KERNEL_PACKAGE_SCHEMA_VERSION: &str = "kaspascript.kernel.package.v0";
@@ -893,7 +893,8 @@ impl ToccataFeePolicy {
     ) -> Result<FeeEstimate, KernelError> {
         Ok(FeeEstimate {
             policy: "toccata-rpc-minimum-standard-fee".to_owned(),
-            source: "https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5".to_owned(),
+            source: "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md"
+                .to_owned(),
             compute_grams,
             transaction_bytes,
             minimum_standard_fee_sompi: self

@@ -358,29 +358,37 @@ minimum_fee_sompi: 100000</code></pre>
           <p class="section-kicker">Upstream Watch</p>
           <h2 id="upstream-title">Learning from Rusty Kaspa as it moves.</h2>
           <p>
-            KaspaScript tracks <code>kaspanet/rusty-kaspa</code> in two lanes: pinned
-            release compatibility for reproducibility and moving-master watch
+            KaspaScript tracks <code>kaspanet/rusty-kaspa</code> through a pinned
+            release lane, a schema-backed CLI digest, and a moving-master watch
             for early architecture signals.
           </p>
         </div>
         <div class="milestone-grid">
           <article>
             <h3>Pinned Tag</h3>
-            <p><code>v2.0.0</code> is now tracked as the mainnet Toccata release with scheduled activation still guarded.</p>
+            <p><code>v2.0.0</code> is tracked as the mainnet Toccata release, with the tagged upgrade guide and activation DAA pinned.</p>
           </article>
           <article>
-            <h3>Moving Master</h3>
-            <p>Post-tag commits already touch storage mass, compute commits, covenant bindings, WASM txscript flags, and RPC JSON shape.</p>
+            <h3>Status Schema</h3>
+            <p><code>toccata status --json</code> emits release assets, node requirements, fee policy, v1 transaction fields, and KIP mapping.</p>
           </article>
           <article>
             <h3>Mainnet Guard</h3>
-            <p>Activation remains locked until final merged and released primary-source evidence exists.</p>
+            <p>Production mainnet packages stay blocked until activation at DAA score 474,165,565 is independently verified.</p>
+          </article>
+          <article>
+            <h3>Moving Master</h3>
+            <p>The watch lane tracks storage mass, compute commits, covenant bindings, WASM txscript flags, and RPC JSON shape.</p>
           </article>
         </div>
         <p class="doc-link">
           Upstream brief:
           <a href="https://github.com/gryszzz/Kaspa-Script/blob/main/docs/RUSTY_KASPA_UPSTREAM_WATCH.md">
             docs/RUSTY_KASPA_UPSTREAM_WATCH.md
+          </a>
+          and
+          <a href="https://github.com/gryszzz/Kaspa-Script/blob/main/docs/TOCCATA_V2_INTEGRATION.md">
+            docs/TOCCATA_V2_INTEGRATION.md
           </a>
         </p>
       </section>

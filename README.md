@@ -208,6 +208,8 @@ upgrade: Toccata
 rusty_kaspa_release: v2.0.0 (2026-06-05T12:09:13Z)
 mainnet_activation: DAA 474165565 estimated 2026-06-30T16:15:00Z
 kaspa_script_readiness: blocked-for-production-mainnet
+guide: https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md
+fee_policy: 100 sompi * max(compute grams, 2 * transaction bytes)
 ```
 
 ```console

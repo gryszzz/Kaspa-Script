@@ -50,6 +50,9 @@ Kernel:
 - Human-readable kernel package schema reference.
 - Toccata pre-activation fee policy:
   `100 sompi * max(compute grams, 2 * transaction bytes)`.
+- `kaspascript toccata status --json` includes the `v2.0.0` release digest:
+  tagged guide, release assets, node requirements, v1 transaction fields,
+  KIP integration map, and wallet/indexer/miner action checklist.
 
 Testnet readiness:
 

@@ -73,6 +73,36 @@
               "type": "string"
             }
           }
+        },
+        "node_upgrade_guide": {
+          "$ref": "#/$defs/node_upgrade_guide"
+        },
+        "release_assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/release_asset"
+          }
+        },
+        "node_requirements": {
+          "$ref": "#/$defs/node_requirements"
+        },
+        "fee_policy": {
+          "$ref": "#/$defs/fee_policy"
+        },
+        "transaction_format": {
+          "$ref": "#/$defs/transaction_format"
+        },
+        "kips": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/kip_profile"
+          }
+        },
+        "integrator_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -122,6 +152,212 @@
           "type": "string"
         },
         "published_at": {
+          "type": "string"
+        }
+      }
+    },
+    "node_upgrade_guide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "url",
+        "database_upgrade",
+        "recommended_rehearsal_network"
+      ],
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "database_upgrade": {
+          "type": "string"
+        },
+        "recommended_rehearsal_network": {
+          "type": "string"
+        }
+      }
+    },
+    "release_asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "url"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "node_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum",
+        "preferred",
+        "rationale"
+      ],
+      "properties": {
+        "minimum": {
+          "$ref": "#/$defs/node_requirement_tier"
+        },
+        "preferred": {
+          "$ref": "#/$defs/node_requirement_tier"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      }
+    },
+    "node_requirement_tier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cpu_cores",
+        "ram_gb",
+        "storage",
+        "network"
+      ],
+      "properties": {
+        "cpu_cores": {
+          "type": "string"
+        },
+        "ram_gb": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "storage": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        }
+      }
+    },
+    "fee_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "formula",
+        "minimum_fee_rate_change",
+        "normalized_transient_mass",
+        "pre_activation_rpc",
+        "pre_activation_p2p",
+        "post_activation",
+        "consensus"
+      ],
+      "properties": {
+        "formula": {
+          "type": "string"
+        },
+        "minimum_fee_rate_change": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pre_toccata_sompi_per_gram",
+            "toccata_sompi_per_gram"
+          ],
+          "properties": {
+            "pre_toccata_sompi_per_gram": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "toccata_sompi_per_gram": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "normalized_transient_mass": {
+          "type": "string"
+        },
+        "pre_activation_rpc": {
+          "type": "string"
+        },
+        "pre_activation_p2p": {
+          "type": "string"
+        },
+        "post_activation": {
+          "type": "string"
+        },
+        "consensus": {
+          "type": "string"
+        }
+      }
+    },
+    "transaction_format": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transaction_version",
+        "new_fields",
+        "pool_stratum_requirement",
+        "mass_field"
+      ],
+      "properties": {
+        "transaction_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pool_stratum_requirement": {
+          "type": "string"
+        },
+        "mass_field": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rust_protobuf",
+            "json_js",
+            "deprecated_alias"
+          ],
+          "properties": {
+            "rust_protobuf": {
+              "type": "string"
+            },
+            "json_js": {
+              "type": "string"
+            },
+            "deprecated_alias": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "kip_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kip",
+        "title",
+        "status",
+        "kaspa_script_integration",
+        "source"
+      ],
+      "properties": {
+        "kip": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "kaspa_script_integration": {
+          "type": "string"
+        },
+        "source": {
           "type": "string"
         }
       }

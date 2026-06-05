@@ -1,6 +1,6 @@
 # Kaspa Source Reality Audit
 
-Audit date: 2026-06-04.
+Audit date: 2026-06-05.
 
 Compiler baseline sources:
 
@@ -32,6 +32,7 @@ mainnet pre-activation evidence until activation is independently verified.
 | Transaction introspection | `crypto/txscript/src/opcodes/mod.rs` and `kip-0010.md` | Verifies KIP-10 opcodes `OpTxInputCount` `0xb3`, `OpTxOutputCount` `0xb4`, `OpTxInputAmount` `0xbe`, `OpTxInputSpk` `0xbf`, `OpTxOutputAmount` `0xc2`, and `OpTxOutputSpk` `0xc3`. |
 | Sequencing commitment | `kip-0015.md` | Verifies KIP-15 as a block-header / accepted-transaction-ordering commitment. It is not a txscript opcode. |
 | Toccata mainnet release | `rusty-kaspa` release `v2.0.0` | Verifies a released mainnet upgrade artifact and scheduled activation DAA score. It does not prove activation has already occurred at this audit date. |
+| Toccata tagged guide | `rusty-kaspa` `docs/toccata-guide.md` at `v2.0.0` | Verifies node upgrade posture, one-way database upgrade, node requirements, Toccata fee policy, transaction v1 field changes, and TN10 rehearsal guidance. |
 | Toccata pre-activation release | `rusty-kaspa` release `v1.3.0-toc.5` | Verifies upstream mainnet sanity testing, the upcoming RPC minimum-standard-fee policy, and one-way node DB upgrade warning. It does not activate Toccata on mainnet. |
 | TN10 Toccata hardening | `rusty-kaspa` release `tn10-toc3` | Verifies TN10 activation of final Toccata hardening on May 28, 2026, including Groth16 verifier hardening, ZK pricing behavior, and SMT/seqcommit inactivity shortcut. |
 | KIP-16 ZK precompile | `kip-0016.md`; `crypto/txscript/src/opcodes/mod.rs`; `crypto/txscript/src/zk_precompiles/mod.rs` | Defines `OpZkPrecompile` `0xa6` with Groth16 tag `0x20` and RISC0-Succinct tag `0x21`. |

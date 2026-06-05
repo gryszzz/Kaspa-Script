@@ -202,7 +202,7 @@ Evidence:
 {
   "label": "KaspaScript compiled artifact",
   "url": "tests/contracts/escrow.ks",
-  "audit_date": "2026-06-04T03:33:39Z",
+  "audit_date": "2026-06-05T13:00:00Z",
   "network": "Tn12",
   "level": "BranchCode",
   "features": ["BaseScript", "WalletPreview", "IndexerLineage"],
@@ -377,7 +377,7 @@ Transition profile:
 ```json
 {
   "policy": "toccata-rpc-minimum-standard-fee",
-  "source": "https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5",
+  "source": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md",
   "compute_grams": 1000,
   "transaction_bytes": 400,
   "minimum_standard_fee_sompi": 100000,

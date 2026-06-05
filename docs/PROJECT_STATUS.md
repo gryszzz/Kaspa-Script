@@ -22,10 +22,16 @@ Compiler:
 
 CLI:
 
-- `kaspascript compile <contract.ks>`
+- `kaspascript --help`, `--brief`, and `--version`
+- `kaspascript compile <contract.ks> --target <target>`
 - `kaspascript inspect <contract.ks>`
 - `kaspascript verify <artifact.json>`
 - `kaspascript kernel package <contract.ks> --target <target>`
+- `kaspascript kernel check <contract.ks> --target <target> [--json]`
+- `kaspascript kernel preview <contract.ks> --target <target>
+  [--transition <name>] [--json]`
+- `kaspascript toccata status|targets|fee [--json]`
+- `kaspascript doctor <contract.ks> --target <target> [--json]`
 
 Kernel:
 
@@ -68,7 +74,7 @@ Testnet readiness:
 
 The current milestone is close to alpha complete. It needs:
 
-- README examples for compile, inspect, verify, and kernel package.
+- JSON-schema publication for the agent-facing CLI report payloads.
 - CI running `cargo fmt --check`, `cargo clippy`, and workspace tests.
 
 ### Testnet Complete
@@ -122,4 +128,18 @@ cargo run -p kaspascript-cli -- kernel package tests/contracts/escrow.ks \
   --output /tmp/escrow.kernel.json \
   --compute-grams 1000 \
   --tx-bytes 400
+```
+
+Smoke test the Toccata-aware CLI reports:
+
+```bash
+cargo run -p kaspascript-cli -- toccata status --json
+cargo run -p kaspascript-cli -- kernel check tests/contracts/escrow.ks \
+  --target verified-tn12 \
+  --compute-grams 1000 \
+  --tx-bytes 400 \
+  --json
+cargo run -p kaspascript-cli -- doctor tests/contracts/escrow.ks \
+  --target future-mainnet \
+  --json
 ```

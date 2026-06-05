@@ -328,9 +328,18 @@ minimum_fee_sompi: 100000</code></pre>
         </div>
         <div class="command-grid">
           <pre><code>cargo test --workspace</code></pre>
-          <pre><code>kaspascript compile escrow.ks</code></pre>
+          <pre><code>kaspascript toccata status</code></pre>
+          <pre><code>kaspascript compile escrow.ks \
+  --target verified-tn12</code></pre>
           <pre><code>kaspascript inspect escrow.ks</code></pre>
           <pre><code>kaspascript verify escrow.artifact.json</code></pre>
+          <pre><code>kaspascript kernel check escrow.ks \
+  --target verified-tn12 \
+  --compute-grams 1000 \
+  --tx-bytes 400</code></pre>
+          <pre><code>kaspascript kernel preview escrow.ks \
+  --target verified-tn12 \
+  --transition release</code></pre>
           <pre><code>kaspascript kernel package escrow.ks \
   --target verified-tn12 \
   --compute-grams 1000 \

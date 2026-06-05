@@ -158,7 +158,7 @@ branch.
 | Semantic analysis | Collects all errors instead of stopping at the first failure. |
 | Typed IR | Opcode-agnostic lowering for verified V1 patterns. |
 | Kaspa txscript backend | Emits deterministic bytes for source-grounded opcodes. |
-| CLI | `compile`, `inspect`, `verify`, and target-aware `kernel package`. |
+| CLI | Target-aware `compile`, `inspect`, `verify`, Toccata status/fee commands, and kernel package/check/preview workflows. |
 | Golden artifacts | JSON, hex, and ASM snapshots for every example contract. |
 | Kernel package goldens | v0 `.kernel.json` snapshots for escrow and vault. |
 | SDK preview model | Compile API plus finality-depth checks; not a real Kaspa transaction builder yet. |
@@ -198,7 +198,28 @@ branch.
 ## CLI Usage
 
 ```console
-$ kaspascript compile escrow.ks
+$ kaspascript --help
+KaspaScript is a source-grounded Kaspa contract compiler and programmability kernel...
+```
+
+```console
+$ kaspascript toccata status
+upgrade: Toccata
+rusty_kaspa_release: v2.0.0 (2026-06-05T12:09:13Z)
+mainnet_activation: DAA 474165565 estimated 2026-06-30T16:15:00Z
+kaspa_script_readiness: blocked-for-production-mainnet
+```
+
+```console
+$ kaspascript toccata targets
+target: verified-tn12
+  readiness: verified
+  network: tn12
+  use: deterministic txscript packages for the source-grounded V1 subset
+```
+
+```console
+$ kaspascript compile escrow.ks --target verified-tn12
 escrow.artifact.json
 ```
 
@@ -211,8 +232,38 @@ contract Escrow
 ```
 
 ```console
+$ kaspascript kernel check escrow.ks --target verified-tn12 --compute-grams 1000 --tx-bytes 400
+contract: Escrow
+target: verified-tn12
+readiness: verified
+ready: true
+minimum_standard_fee_sompi: 100000
+```
+
+```console
+$ kaspascript kernel preview escrow.ks --target verified-tn12 --transition release
+contract: Escrow
+target: verified-tn12
+transition: release
+  classification: CovenantStateTransition
+```
+
+```console
 $ kaspascript kernel package escrow.ks --target verified-tn12 --compute-grams 1000 --tx-bytes 400
 escrow.kernel.json
+```
+
+```console
+$ kaspascript toccata fee --compute-grams 1000 --tx-bytes 400
+policy: toccata-rpc-minimum-standard-fee
+minimum_standard_fee_sompi: 100000
+formula: max(compute_grams, tx_bytes * 2) * 100 sompi
+```
+
+Every report-style command also supports `--json` for agents and CI:
+
+```console
+$ kaspascript doctor escrow.ks --target future-mainnet --json
 ```
 
 ```console

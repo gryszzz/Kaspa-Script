@@ -8,13 +8,15 @@ use kaspascript_codegen::{
 };
 use kaspascript_ir::lower_file;
 use kaspascript_kernel::{
-    current_toccata_evidence, define_kaspa_contract, package_compiled_contract,
-    CompiledArtifactSummary, CompiledKernelPackage, ContractBlueprint, EvidenceLevel,
-    FeatureRequirement, KernelFeature, Network, SourceEvidence, StateField, StateType, Transition,
-    TransitionKind,
+    current_source_snapshots, current_toccata_evidence, define_kaspa_contract,
+    package_compiled_contract, CompiledArtifactSummary, CompiledKernelPackage, ContractBlueprint,
+    EvidenceLevel, FeatureRequirement, KernelFeature, Network, SourceEvidence, StateField,
+    StateType, ToccataFeePolicy, Transition, TransitionKind,
 };
 use kaspascript_lexer::TypeName;
-use kaspascript_sdk::compile;
+use serde_json::{json, Value};
+
+const CLI_BRIEF: &str = "KaspaScript is a source-grounded Kaspa contract compiler and programmability kernel for target-gated txscript bytecode, Toccata readiness, wallet previews, indexer schemas, and fee-aware package metadata.";
 
 fn main() -> Result<()> {
     let args = env::args().collect::<Vec<_>>();
@@ -23,10 +25,24 @@ fn main() -> Result<()> {
     }
 
     match args[1].as_str() {
-        "compile" if args.len() == 3 => compile_command(&args[2]),
+        "--help" | "-h" | "help" => {
+            println!("{}", help());
+            Ok(())
+        }
+        "--brief" | "brief" => {
+            println!("{CLI_BRIEF}");
+            Ok(())
+        }
+        "--version" | "-V" | "version" => {
+            println!("kaspascript {}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        }
+        "compile" => compile_command(&args[2..]),
         "verify" if args.len() == 3 => verify_command(&args[2]),
         "inspect" if args.len() == 3 => inspect_command(&args[2]),
         "kernel" => kernel_command(&args[2..]),
+        "toccata" => toccata_command(&args[2..]),
+        "doctor" => kernel_check_command(&args[2..]),
         "wallet" => wallet_command(&args[2..]),
         "tx" => tx_command(&args[2..]),
         "proof" => proof_command(&args[2..]),
@@ -35,14 +51,30 @@ fn main() -> Result<()> {
 }
 
 fn usage() -> &'static str {
-    "usage: kaspascript <compile|verify|inspect> <file>\n       kaspascript kernel package <file.ks> [--target verified-tn12|tn10-toccata|toccata-preview|future-mainnet] [--output <file>] [--compute-grams <n>] [--tx-bytes <n>]\n       kaspascript wallet balance --target tn12\n       kaspascript tx lock <file.ks> --target tn12 --amount 1.0 [--dry-run|--broadcast]\n       kaspascript tx spend <artifact.json> --spend <name> --target tn12 [--dry-run|--broadcast]\n       kaspascript proof verify <proof.json>"
+    "usage: kaspascript compile <file.ks> [--target verified-tn12|tn10-toccata|toccata-preview|future-mainnet] [--output <file>]\n       kaspascript verify <artifact.json>\n       kaspascript inspect <file.ks|artifact.json>\n       kaspascript kernel package <file.ks> [--target verified-tn12|tn10-toccata|toccata-preview|future-mainnet] [--output <file>] [--compute-grams <n>] [--tx-bytes <n>]\n       kaspascript kernel check <file.ks> [--target <target>] [--compute-grams <n>] [--tx-bytes <n>] [--json]\n       kaspascript kernel preview <file.ks> [--target <target>] [--transition <name>] [--json]\n       kaspascript toccata status [--json]\n       kaspascript toccata targets [--json]\n       kaspascript toccata fee --compute-grams <n> --tx-bytes <n> [--json]\n       kaspascript doctor <file.ks> [--target <target>] [--json]\n       kaspascript wallet balance --target tn12\n       kaspascript tx lock <file.ks> --target tn12 --amount 1.0 [--dry-run|--broadcast]\n       kaspascript tx spend <artifact.json> --spend <name> --target tn12 [--dry-run|--broadcast]\n       kaspascript proof verify <proof.json>"
 }
 
-fn compile_command(path: &str) -> Result<()> {
+fn help() -> String {
+    format!(
+        "{CLI_BRIEF}\n\n{}\n\nKaspa-native workflow:\n  1. kaspascript toccata status\n  2. kaspascript compile contract.ks --target verified-tn12\n  3. kaspascript kernel check contract.ks --target verified-tn12\n  4. kaspascript kernel preview contract.ks --transition <spend>\n  5. kaspascript kernel package contract.ks --target verified-tn12 --compute-grams 1000 --tx-bytes 400\n\nTargets:\n  verified-tn12     source-grounded TN12 txscript subset\n  tn10-toccata      TN10 Toccata readiness posture\n  toccata-preview   preview-only analysis for gated Toccata features\n  future-mainnet    blocked until mainnet activation evidence is verified",
+        usage()
+    )
+}
+
+fn compile_command(args: &[String]) -> Result<()> {
+    let Some(path) = args.first() else {
+        bail!("{}", usage());
+    };
+    let options = CompileOptions::parse(&args[1..])?;
     let source = fs::read_to_string(path).with_context(|| format!("failed to read {path}"))?;
-    let artifact = compile(&source, path).map_err(|error| anyhow::anyhow!("error: {error}"))?;
+    let artifact = compile_file_for_target(&source, path, options.target)
+        .map_err(|error| anyhow::anyhow!("error: {error}"))?;
+    verify_artifact(&artifact).map_err(|error| anyhow::anyhow!("error: {error}"))?;
     let json = serde_json::to_string_pretty(&artifact)?;
-    let output = artifact_path(path);
+    let output = options
+        .output
+        .clone()
+        .unwrap_or_else(|| artifact_path(path));
     fs::write(&output, json).with_context(|| format!("failed to write {}", output.display()))?;
     println!("{}", output.display());
     Ok(())
@@ -84,6 +116,8 @@ fn inspect_command(path: &str) -> Result<()> {
 fn kernel_command(args: &[String]) -> Result<()> {
     match args.first().map(String::as_str) {
         Some("package") => kernel_package_command(&args[1..]),
+        Some("check") => kernel_check_command(&args[1..]),
+        Some("preview") => kernel_preview_command(&args[1..]),
         _ => bail!("{}", usage()),
     }
 }
@@ -104,6 +138,83 @@ fn kernel_package_command(args: &[String]) -> Result<()> {
     fs::write(&output, json).with_context(|| format!("failed to write {}", output.display()))?;
     println!("{}", output.display());
     Ok(())
+}
+
+fn kernel_check_command(args: &[String]) -> Result<()> {
+    let Some(path) = args.first() else {
+        bail!("{}", usage());
+    };
+    let options = KernelReportOptions::parse(&args[1..])?;
+    let package = build_kernel_package_from_path(path, &options.package_options())?;
+
+    match options.format {
+        OutputFormat::Json => {
+            let report = json!({
+                "schema_version": "kaspascript.cli.kernel.check.v0",
+                "contract": package.kernel.readiness.contract,
+                "target": package.package_target,
+                "artifact": &package.artifact,
+                "readiness": &package.kernel.readiness,
+                "capabilities": &package.kernel.capabilities,
+                "fee_estimate": &package.fee_estimate,
+                "next_commands": [
+                    format!("kaspascript kernel preview {path} --target {}", package.package_target),
+                    format!("kaspascript kernel package {path} --target {} --compute-grams {} --tx-bytes {}", package.package_target, package.fee_estimate.compute_grams, package.fee_estimate.transaction_bytes)
+                ]
+            });
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+        OutputFormat::Human => print_kernel_check_human(path, &package),
+    }
+
+    Ok(())
+}
+
+fn kernel_preview_command(args: &[String]) -> Result<()> {
+    let Some(path) = args.first() else {
+        bail!("{}", usage());
+    };
+    let options = KernelReportOptions::parse(&args[1..])?;
+    let package = build_kernel_package_from_path(path, &options.package_options())?;
+    let previews = package
+        .kernel
+        .wallet_previews
+        .iter()
+        .filter(|preview| {
+            options
+                .transition
+                .as_ref()
+                .map_or(true, |transition| preview.transition == *transition)
+        })
+        .collect::<Vec<_>>();
+
+    if previews.is_empty() {
+        let transition = options.transition.as_deref().unwrap_or("<any transition>");
+        bail!("no wallet preview matched transition `{transition}`");
+    }
+
+    match options.format {
+        OutputFormat::Json => {
+            let report = json!({
+                "schema_version": "kaspascript.cli.kernel.preview.v0",
+                "contract": package.kernel.readiness.contract,
+                "target": package.package_target,
+                "previews": previews,
+            });
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+        OutputFormat::Human => print_kernel_preview_human(&package, &previews),
+    }
+
+    Ok(())
+}
+
+fn build_kernel_package_from_path(
+    path: &str,
+    options: &KernelPackageOptions,
+) -> Result<CompiledKernelPackage> {
+    let source = fs::read_to_string(path).with_context(|| format!("failed to read {path}"))?;
+    build_kernel_package(path, &source, options)
 }
 
 fn build_kernel_package(
@@ -141,6 +252,76 @@ fn build_kernel_package(
     Ok(package)
 }
 
+fn toccata_command(args: &[String]) -> Result<()> {
+    match args.first().map(String::as_str) {
+        Some("status") | None => toccata_status_command(args.get(1..).unwrap_or(&[])),
+        Some("targets") => toccata_targets_command(&args[1..]),
+        Some("fee") => toccata_fee_command(&args[1..]),
+        _ => bail!("{}", usage()),
+    }
+}
+
+fn toccata_status_command(args: &[String]) -> Result<()> {
+    let format = parse_report_format(args)?;
+    let report = toccata_status_report();
+    match format {
+        OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+        OutputFormat::Human => print_toccata_status_human(&report),
+    }
+    Ok(())
+}
+
+fn toccata_targets_command(args: &[String]) -> Result<()> {
+    let format = parse_report_format(args)?;
+    let targets = target_matrix();
+    match format {
+        OutputFormat::Json => {
+            let report = json!({
+                "schema_version": "kaspascript.cli.toccata.targets.v0",
+                "targets": targets,
+            });
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+        OutputFormat::Human => print_target_matrix_human(&targets),
+    }
+    Ok(())
+}
+
+fn toccata_fee_command(args: &[String]) -> Result<()> {
+    let options = ToccataFeeOptions::parse(args)?;
+    let estimate = ToccataFeePolicy::default()
+        .estimate(
+            options.compute_grams,
+            options.tx_bytes,
+            "caller-provided Toccata fee estimate inputs",
+        )
+        .map_err(|error| anyhow::anyhow!("error: {error}"))?;
+
+    match options.format {
+        OutputFormat::Json => {
+            let report = json!({
+                "schema_version": "kaspascript.cli.toccata.fee.v0",
+                "fee_estimate": estimate,
+                "formula": "max(compute_grams, tx_bytes * 2) * 100 sompi",
+            });
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+        OutputFormat::Human => {
+            println!("policy: {}", estimate.policy);
+            println!("source: {}", estimate.source);
+            println!("compute_grams: {}", estimate.compute_grams);
+            println!("transaction_bytes: {}", estimate.transaction_bytes);
+            println!(
+                "minimum_standard_fee_sompi: {}",
+                estimate.minimum_standard_fee_sompi
+            );
+            println!("formula: max(compute_grams, tx_bytes * 2) * 100 sompi");
+        }
+    }
+
+    Ok(())
+}
+
 fn read_artifact(path: &str) -> Result<CompiledArtifact> {
     let json = fs::read_to_string(path).with_context(|| format!("failed to read {path}"))?;
     serde_json::from_str(&json).with_context(|| format!("failed to parse {path}"))
@@ -152,6 +333,43 @@ fn artifact_path(path: &str) -> std::path::PathBuf {
 
 fn kernel_package_path(path: &str) -> std::path::PathBuf {
     Path::new(path).with_extension("kernel.json")
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CompileOptions {
+    output: Option<std::path::PathBuf>,
+    target: Target,
+}
+
+impl CompileOptions {
+    fn parse(args: &[String]) -> Result<Self> {
+        let mut options = Self {
+            output: None,
+            target: Target::VerifiedTn12,
+        };
+        let mut index = 0;
+        while index < args.len() {
+            match args[index].as_str() {
+                "--output" | "-o" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--output needs a value"))?;
+                    options.output = Some(value.into());
+                }
+                "--target" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--target needs a value"))?;
+                    options.target = parse_target_option(value)?;
+                }
+                other => bail!("unknown option `{other}`"),
+            }
+            index += 1;
+        }
+        Ok(options)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -199,11 +417,7 @@ impl KernelPackageOptions {
                     let value = args
                         .get(index)
                         .ok_or_else(|| anyhow::anyhow!("--target needs a value"))?;
-                    options.target = Target::parse(value).ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "--target must be one of verified-tn12, tn10-toccata, toccata-preview, future-mainnet"
-                        )
-                    })?;
+                    options.target = parse_target_option(value)?;
                 }
                 other => bail!("unknown option `{other}`"),
             }
@@ -213,10 +427,402 @@ impl KernelPackageOptions {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OutputFormat {
+    Human,
+    Json,
+}
+
+impl OutputFormat {
+    fn parse_flag(flag: &str, current: &mut Self) -> bool {
+        match flag {
+            "--json" | "--agent" => {
+                *current = Self::Json;
+                true
+            }
+            "--human" => {
+                *current = Self::Human;
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct KernelReportOptions {
+    compute_grams: u64,
+    tx_bytes: Option<u64>,
+    target: Target,
+    format: OutputFormat,
+    transition: Option<String>,
+}
+
+impl KernelReportOptions {
+    fn parse(args: &[String]) -> Result<Self> {
+        let mut options = Self {
+            compute_grams: 0,
+            tx_bytes: None,
+            target: Target::VerifiedTn12,
+            format: OutputFormat::Human,
+            transition: None,
+        };
+        let mut index = 0;
+        while index < args.len() {
+            if OutputFormat::parse_flag(args[index].as_str(), &mut options.format) {
+                index += 1;
+                continue;
+            }
+
+            match args[index].as_str() {
+                "--compute-grams" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--compute-grams needs a value"))?;
+                    options.compute_grams = parse_u64_option("--compute-grams", value)?;
+                }
+                "--tx-bytes" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--tx-bytes needs a value"))?;
+                    options.tx_bytes = Some(parse_u64_option("--tx-bytes", value)?);
+                }
+                "--target" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--target needs a value"))?;
+                    options.target = parse_target_option(value)?;
+                }
+                "--transition" => {
+                    index += 1;
+                    options.transition = Some(
+                        args.get(index)
+                            .ok_or_else(|| anyhow::anyhow!("--transition needs a value"))?
+                            .clone(),
+                    );
+                }
+                other => bail!("unknown option `{other}`"),
+            }
+            index += 1;
+        }
+        Ok(options)
+    }
+
+    fn package_options(&self) -> KernelPackageOptions {
+        KernelPackageOptions {
+            output: None,
+            compute_grams: self.compute_grams,
+            tx_bytes: self.tx_bytes,
+            target: self.target,
+        }
+    }
+}
+
+fn parse_target_option(value: &str) -> Result<Target> {
+    Target::parse(value).ok_or_else(|| {
+        anyhow::anyhow!(
+            "--target must be one of verified-tn12, tn10-toccata, toccata-preview, future-mainnet"
+        )
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ToccataFeeOptions {
+    compute_grams: u64,
+    tx_bytes: u64,
+    format: OutputFormat,
+}
+
+impl ToccataFeeOptions {
+    fn parse(args: &[String]) -> Result<Self> {
+        let mut compute_grams = None;
+        let mut tx_bytes = None;
+        let mut format = OutputFormat::Human;
+        let mut index = 0;
+        while index < args.len() {
+            if OutputFormat::parse_flag(args[index].as_str(), &mut format) {
+                index += 1;
+                continue;
+            }
+
+            match args[index].as_str() {
+                "--compute-grams" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--compute-grams needs a value"))?;
+                    compute_grams = Some(parse_u64_option("--compute-grams", value)?);
+                }
+                "--tx-bytes" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--tx-bytes needs a value"))?;
+                    tx_bytes = Some(parse_u64_option("--tx-bytes", value)?);
+                }
+                other => bail!("unknown option `{other}`"),
+            }
+            index += 1;
+        }
+
+        Ok(Self {
+            compute_grams: compute_grams
+                .ok_or_else(|| anyhow::anyhow!("--compute-grams is required"))?,
+            tx_bytes: tx_bytes.ok_or_else(|| anyhow::anyhow!("--tx-bytes is required"))?,
+            format,
+        })
+    }
+}
+
+fn parse_report_format(args: &[String]) -> Result<OutputFormat> {
+    let mut format = OutputFormat::Human;
+    for arg in args {
+        if !OutputFormat::parse_flag(arg, &mut format) {
+            bail!("unknown option `{arg}`");
+        }
+    }
+    Ok(format)
+}
+
 fn parse_u64_option(option: &str, value: &str) -> Result<u64> {
     value
         .parse::<u64>()
         .with_context(|| format!("{option} must be a non-negative integer"))
+}
+
+fn toccata_status_report() -> Value {
+    json!({
+        "schema_version": "kaspascript.cli.toccata.status.v0",
+        "upgrade": {
+            "name": "Toccata",
+            "rusty_kaspa_release": {
+                "repo": "https://github.com/kaspanet/rusty-kaspa",
+                "tag": "v2.0.0",
+                "name": "Mainnet Toccata Release - v2.0.0",
+                "published_at": "2026-06-05T12:09:13Z",
+            },
+            "mainnet_activation": {
+                "daa_score": 474_165_565u64,
+                "estimated_utc": "2026-06-30T16:15:00Z",
+                "status": "scheduled-not-independently-verified",
+                "kaspa_script_readiness": "blocked-for-production-mainnet",
+            },
+            "p2p_protocol": {
+                "required_version": 10,
+                "restriction_window": "24h-before-activation",
+            }
+        },
+        "source_snapshots": current_source_snapshots(),
+        "evidence": current_toccata_evidence(),
+        "targets": target_matrix(),
+        "recommended_commands": [
+            "kaspascript toccata targets",
+            "kaspascript kernel check <contract.ks> --target verified-tn12",
+            "kaspascript kernel preview <contract.ks> --target verified-tn12",
+            "kaspascript kernel package <contract.ks> --target verified-tn12 --compute-grams 1000 --tx-bytes 400"
+        ],
+    })
+}
+
+fn target_matrix() -> Vec<Value> {
+    vec![
+        json!({
+            "target": "verified-tn12",
+            "readiness": "verified",
+            "network": "tn12",
+            "use": "deterministic txscript packages for the source-grounded V1 subset",
+            "allows_gated_warnings": false,
+            "production_mainnet": false,
+            "recommended_for": ["golden tests", "wallet preview integration", "indexer schema integration"],
+        }),
+        json!({
+            "target": "tn10-toccata",
+            "readiness": "verified",
+            "network": "tn10",
+            "use": "Toccata testnet posture for upgrade compatibility checks",
+            "allows_gated_warnings": true,
+            "production_mainnet": false,
+            "recommended_for": ["Toccata app design", "covenant readiness analysis", "testnet package review"],
+        }),
+        json!({
+            "target": "toccata-preview",
+            "readiness": "preview",
+            "network": "unknown",
+            "use": "analysis surface for recognized but not fully lowered Toccata features",
+            "allows_gated_warnings": true,
+            "production_mainnet": false,
+            "recommended_for": ["architecture planning", "backend ABI TODO discovery", "agent review"],
+        }),
+        json!({
+            "target": "future-mainnet",
+            "readiness": "blocked",
+            "network": "mainnet",
+            "use": "future gate that remains blocked until mainnet activation and lowering evidence are verified",
+            "allows_gated_warnings": false,
+            "production_mainnet": false,
+            "recommended_for": ["release readiness checks only"],
+        }),
+    ]
+}
+
+fn print_toccata_status_human(report: &Value) {
+    let upgrade = &report["upgrade"];
+    println!("upgrade: {}", upgrade["name"].as_str().unwrap_or("Toccata"));
+    println!(
+        "rusty_kaspa_release: {} ({})",
+        upgrade["rusty_kaspa_release"]["tag"]
+            .as_str()
+            .unwrap_or("unknown"),
+        upgrade["rusty_kaspa_release"]["published_at"]
+            .as_str()
+            .unwrap_or("unknown")
+    );
+    println!(
+        "mainnet_activation: DAA {} estimated {}",
+        upgrade["mainnet_activation"]["daa_score"]
+            .as_u64()
+            .unwrap_or_default(),
+        upgrade["mainnet_activation"]["estimated_utc"]
+            .as_str()
+            .unwrap_or("unknown")
+    );
+    println!(
+        "kaspa_script_readiness: {}",
+        upgrade["mainnet_activation"]["kaspa_script_readiness"]
+            .as_str()
+            .unwrap_or("unknown")
+    );
+    println!("targets:");
+    if let Some(targets) = report["targets"].as_array() {
+        for target in targets {
+            println!(
+                "- {}: {} ({})",
+                target["target"].as_str().unwrap_or("unknown"),
+                target["readiness"].as_str().unwrap_or("unknown"),
+                target["use"].as_str().unwrap_or("no description")
+            );
+        }
+    }
+}
+
+fn print_target_matrix_human(targets: &[Value]) {
+    for target in targets {
+        println!("target: {}", target["target"].as_str().unwrap_or("unknown"));
+        println!(
+            "  readiness: {}",
+            target["readiness"].as_str().unwrap_or("unknown")
+        );
+        println!(
+            "  network: {}",
+            target["network"].as_str().unwrap_or("unknown")
+        );
+        println!("  use: {}", target["use"].as_str().unwrap_or("unknown"));
+        println!(
+            "  allows_gated_warnings: {}",
+            target["allows_gated_warnings"]
+                .as_bool()
+                .unwrap_or_default()
+        );
+        println!(
+            "  production_mainnet: {}",
+            target["production_mainnet"].as_bool().unwrap_or_default()
+        );
+    }
+}
+
+fn print_kernel_check_human(path: &str, package: &CompiledKernelPackage) {
+    println!("contract: {}", package.kernel.readiness.contract);
+    println!("source: {path}");
+    println!("target: {}", package.package_target);
+    println!(
+        "readiness: {}",
+        readiness_label(package.kernel.readiness.level)
+    );
+    println!("ready: {}", package.kernel.readiness.ready);
+    println!("bytecode_bytes: {}", package.artifact.bytecode_bytes);
+    println!(
+        "minimum_standard_fee_sompi: {}",
+        package.fee_estimate.minimum_standard_fee_sompi
+    );
+
+    if !package.kernel.readiness.blockers.is_empty() {
+        println!("blockers:");
+        for blocker in &package.kernel.readiness.blockers {
+            println!("- {blocker}");
+        }
+    }
+
+    println!("features:");
+    for feature in &package.kernel.readiness.features {
+        let best = feature
+            .best
+            .map(|level| level.to_string())
+            .unwrap_or_else(|| "unknown".to_owned());
+        let source = feature.source_label.as_deref().unwrap_or("none");
+        println!(
+            "- {}.{} requires {} at {}, best {}, level {}, source {}",
+            package.kernel.readiness.contract,
+            feature.transition,
+            feature.feature,
+            feature.required,
+            best,
+            readiness_label(feature.level),
+            source
+        );
+    }
+
+    println!("next:");
+    println!(
+        "- kaspascript kernel preview {path} --target {}",
+        package.package_target
+    );
+    println!(
+        "- kaspascript kernel package {path} --target {} --compute-grams {} --tx-bytes {}",
+        package.package_target,
+        package.fee_estimate.compute_grams,
+        package.fee_estimate.transaction_bytes
+    );
+}
+
+fn print_kernel_preview_human(
+    package: &CompiledKernelPackage,
+    previews: &[&kaspascript_kernel::WalletPreview],
+) {
+    println!("contract: {}", package.kernel.readiness.contract);
+    println!("target: {}", package.package_target);
+    for preview in previews {
+        println!("transition: {}", preview.transition);
+        println!("  classification: {:?}", preview.classification);
+        println!("  network: {}", preview.network);
+        println!("  consumes: {}", join_strings(&preview.consumes));
+        println!("  creates: {}", join_strings(&preview.creates));
+        println!("  signers: {}", join_strings(&preview.signers));
+        if !preview.warnings.is_empty() {
+            println!("  warnings:");
+            for warning in &preview.warnings {
+                println!("  - {warning}");
+            }
+        }
+    }
+}
+
+fn readiness_label(level: kaspascript_kernel::ReadinessLevel) -> &'static str {
+    match level {
+        kaspascript_kernel::ReadinessLevel::Verified => "verified",
+        kaspascript_kernel::ReadinessLevel::Preview => "preview",
+        kaspascript_kernel::ReadinessLevel::Blocked => "blocked",
+    }
+}
+
+fn join_strings(values: &[String]) -> String {
+    if values.is_empty() {
+        "none".to_owned()
+    } else {
+        values.join(", ")
+    }
 }
 
 fn artifact_summary(artifact: &CompiledArtifact) -> CompiledArtifactSummary {
@@ -740,6 +1346,101 @@ mod tests {
         assert_eq!(options.compute_grams, 25);
         assert_eq!(options.tx_bytes, Some(11));
         assert_eq!(options.target, Target::Tn10Toccata);
+    }
+
+    #[test]
+    fn compile_command_accepts_target_and_output() {
+        let dir =
+            std::env::temp_dir().join(format!("kaspascript-compile-cli-{}", std::process::id()));
+        fs::create_dir_all(&dir).expect("temp dir");
+        let source_path = dir.join("escrow.ks");
+        let output_path = dir.join("escrow.tn10.artifact.json");
+        fs::write(
+            &source_path,
+            include_str!("../../tests/contracts/escrow.ks"),
+        )
+        .expect("write source");
+
+        let args = vec![
+            source_path.display().to_string(),
+            "--target".to_owned(),
+            "tn10-toccata".to_owned(),
+            "--output".to_owned(),
+            output_path.display().to_string(),
+        ];
+
+        compile_command(&args).expect("compile command");
+
+        let json = fs::read_to_string(&output_path).expect("read artifact");
+        let artifact: Value = serde_json::from_str(&json).expect("artifact json");
+        assert_eq!(artifact["target"], Value::String("tn10-toccata".to_owned()));
+        assert!(artifact["bytecode"]
+            .as_array()
+            .is_some_and(|bytes| !bytes.is_empty()));
+
+        let _ = fs::remove_file(source_path);
+        let _ = fs::remove_file(output_path);
+        let _ = fs::remove_dir(dir);
+    }
+
+    #[test]
+    fn kernel_report_options_parse_agent_flags() {
+        let args = vec![
+            "--target".to_owned(),
+            "toccata-preview".to_owned(),
+            "--transition".to_owned(),
+            "release".to_owned(),
+            "--json".to_owned(),
+            "--compute-grams".to_owned(),
+            "55".to_owned(),
+            "--tx-bytes".to_owned(),
+            "123".to_owned(),
+        ];
+        let options = KernelReportOptions::parse(&args).expect("report options");
+
+        assert_eq!(options.target, Target::ToccataPreview);
+        assert_eq!(options.transition.as_deref(), Some("release"));
+        assert_eq!(options.format, OutputFormat::Json);
+        assert_eq!(options.compute_grams, 55);
+        assert_eq!(options.tx_bytes, Some(123));
+    }
+
+    #[test]
+    fn toccata_status_marks_future_mainnet_blocked() {
+        let report = toccata_status_report();
+
+        assert_eq!(
+            report["upgrade"]["mainnet_activation"]["daa_score"],
+            Value::from(474_165_565u64)
+        );
+        assert_eq!(
+            report["upgrade"]["mainnet_activation"]["kaspa_script_readiness"],
+            Value::String("blocked-for-production-mainnet".to_owned())
+        );
+        let targets = report["targets"].as_array().expect("targets");
+        let future = targets
+            .iter()
+            .find(|target| target["target"] == Value::String("future-mainnet".to_owned()))
+            .expect("future target");
+        assert_eq!(future["readiness"], Value::String("blocked".to_owned()));
+        assert_eq!(future["production_mainnet"], Value::Bool(false));
+    }
+
+    #[test]
+    fn toccata_fee_options_require_inputs() {
+        let args = vec![
+            "--compute-grams".to_owned(),
+            "1000".to_owned(),
+            "--tx-bytes".to_owned(),
+            "400".to_owned(),
+            "--json".to_owned(),
+        ];
+        let options = ToccataFeeOptions::parse(&args).expect("fee options");
+
+        assert_eq!(options.compute_grams, 1000);
+        assert_eq!(options.tx_bytes, 400);
+        assert_eq!(options.format, OutputFormat::Json);
+        assert!(ToccataFeeOptions::parse(&["--tx-bytes".to_owned(), "400".to_owned()]).is_err());
     }
 
     #[test]

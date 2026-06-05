@@ -49,10 +49,14 @@ Testnet readiness:
 - Offline deployment previews.
 - Toccata source and crate compatibility notes.
 - Rusty Kaspa upstream watch for moving-master architecture changes.
+- Rusty Kaspa `v2.0.0` is tracked as mainnet pre-activation evidence; its
+  release notes schedule activation at DAA score `474,165,565`, roughly
+  June 30, 2026 at 16:15 UTC.
 
 ## What This Does Not Claim Yet
 
 - It does not claim Toccata mainnet activation.
+- It does not claim the June 30, 2026 scheduled Toccata activation has occurred.
 - It does not emit production covenant ID, ZK verifier, or script-visible
   sequencing bytecode yet.
 - It does not build or broadcast real covenant-bearing Toccata transactions.
@@ -83,8 +87,7 @@ The testnet milestone needs:
 
 Mainnet readiness is blocked until primary sources verify:
 
-- final Toccata mainnet activation release
-- activation schedule or DAA score
+- activation occurred at the scheduled DAA score
 - pinned Rusty Kaspa crate/tag compatibility
 - wallet/indexer support assumptions
 - final fee/mass behavior

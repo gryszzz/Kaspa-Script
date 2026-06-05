@@ -993,6 +993,12 @@ pub fn current_source_snapshots() -> Vec<SourceSnapshot> {
     vec![
         SourceSnapshot::new(
             "https://github.com/kaspanet/rusty-kaspa",
+            "v2.0.0",
+            "90dbf074275d60c1fe74a3491883196f110970c0",
+            SOURCE_SNAPSHOT_AUDIT_DATE,
+        ),
+        SourceSnapshot::new(
+            "https://github.com/kaspanet/rusty-kaspa",
             "v1.3.0-toc.5",
             "04b0d135f8c8023676ea74dcf496c99d5d0bc2a5",
             SOURCE_SNAPSHOT_AUDIT_DATE,
@@ -1009,6 +1015,20 @@ pub fn current_source_snapshots() -> Vec<SourceSnapshot> {
 /// Current bundled Toccata evidence used by examples and tests.
 pub fn current_toccata_evidence() -> Vec<SourceEvidence> {
     vec![
+        SourceEvidence::new(
+            "rusty-kaspa v2.0.0",
+            "https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.0",
+            Network::Mainnet,
+            EvidenceLevel::MainnetPreActivation,
+            vec![
+                KernelFeature::TransactionIntrospection,
+                KernelFeature::CovenantIds,
+                KernelFeature::SequencingCommitments,
+                KernelFeature::ZkVerification,
+                KernelFeature::FeePolicy,
+            ],
+            "mainnet Toccata release published 2026-06-05; activation is scheduled for DAA score 474,165,565 and is not active at this audit date",
+        ),
         SourceEvidence::new(
             "rusty-kaspa v1.3.0-toc.5",
             "https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5",
@@ -1299,6 +1319,10 @@ mod tests {
     fn source_snapshots_pin_upstream_tags() {
         let snapshots = current_source_snapshots();
 
+        assert!(snapshots.iter().any(|snapshot| {
+            snapshot.tag == "v2.0.0"
+                && snapshot.commit == "90dbf074275d60c1fe74a3491883196f110970c0"
+        }));
         assert!(snapshots.iter().any(|snapshot| {
             snapshot.tag == "v1.3.0-toc.5"
                 && snapshot.commit == "04b0d135f8c8023676ea74dcf496c99d5d0bc2a5"

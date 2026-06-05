@@ -59,15 +59,17 @@ Package targets:
 ```json
 {
   "upstream_repo": "https://github.com/kaspanet/rusty-kaspa",
-  "tag": "v1.3.0-toc.5",
-  "commit": "04b0d135f8c8023676ea74dcf496c99d5d0bc2a5",
+  "tag": "v2.0.0",
+  "commit": "90dbf074275d60c1fe74a3491883196f110970c0",
   "audit_date": "2026-06-05"
 }
 ```
 
-The v0 package pins Rusty Kaspa snapshots for `v1.3.0-toc.5` and `tn10-toc3`.
-Consumers should treat these as evidence metadata, not as a replacement for
-node validation.
+The v0 package pins Rusty Kaspa snapshots for `v2.0.0`, `v1.3.0-toc.5`, and
+`tn10-toc3`. `v2.0.0` is a mainnet Toccata release with activation scheduled
+for DAA score `474,165,565`, roughly June 30, 2026 at 16:15 UTC; it is still
+treated as pre-activation evidence at this audit date. Consumers should treat
+snapshots as evidence metadata, not as a replacement for node validation.
 
 ## Artifact Summary
 

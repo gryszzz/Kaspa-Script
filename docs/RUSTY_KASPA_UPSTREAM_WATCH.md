@@ -18,31 +18,31 @@ Source repository:
 As of this audit:
 
 - default branch: `master`
-- latest observed `master` commit:
-  [`580fa8b5d5a6`](https://github.com/kaspanet/rusty-kaspa/commit/580fa8b5d5a66b55db368cd47781784b8b631222)
-- latest observed push: 2026-06-04T23:48:07Z
 - latest release:
-  [`v1.3.0-toc.5`](https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5),
-  published 2026-06-03
+  [`v2.0.0`](https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.0),
+  published 2026-06-05
+- `v2.0.0` tag commit:
+  [`90dbf074275d`](https://github.com/kaspanet/rusty-kaspa/commit/90dbf074275d60c1fe74a3491883196f110970c0)
 - latest stable branch observed: `stable` at the `v1.1.0` line
-- open activation PR observed:
-  [`#1044 Set Toccata to activate on mainnet`](https://github.com/kaspanet/rusty-kaspa/pull/1044)
-  proposing DAA score `474,165,565`, roughly 2026-06-30 16:15 UTC
+- activation schedule from the release notes: DAA score `474,165,565`,
+  roughly 2026-06-30 16:15 UTC
 
-`v1.3.0-toc.5` remains a Toccata mainnet pre-activation pre-release. It does
-not activate Toccata on mainnet.
+`v2.0.0` is the mainnet Toccata release, but at this audit date activation is
+scheduled in the future. KaspaScript therefore treats it as mainnet
+pre-activation evidence, not as proof that mainnet contract support is active.
 
 ## Why This Matters
 
 Rusty Kaspa moved quickly after `v1.3.0-toc.5`. `master` was already 10 commits
 ahead of the tag during this audit.
 
-That means KaspaScript needs two upstream lanes:
+That means KaspaScript needs three upstream lanes:
 
-- pinned tag lane: reproducible compatibility against `v1.3.0-toc.5`
+- release lane: reproducible compatibility against `v2.0.0`
+- legacy pinned lane: comparison against `v1.3.0-toc.5`
 - moving master lane: early warning for API, RPC, wallet, and txscript changes
 
-The pinned lane protects tests. The moving lane trains the architecture.
+The release lane protects tests. The moving lane trains the architecture.
 
 ## Post-Release Delta Since `v1.3.0-toc.5`
 
@@ -63,7 +63,6 @@ The pinned lane protects tests. The moving lane trains the architecture.
 
 | PR | Why it matters |
 | --- | --- |
-| [`#1044 Set Toccata to activate on mainnet`](https://github.com/kaspanet/rusty-kaspa/pull/1044) | This is the strongest current signal toward final mainnet activation evidence. It proposes DAA score `474,165,565`, roughly 2026-06-30 16:15 UTC, but it is not merged at this audit time. |
 | [`#961 Add get_seq_commit_lane_proof RPC`](https://github.com/kaspanet/rusty-kaspa/pull/961) | Sequencing/lane proof RPCs could become part of kernel readiness, indexer schema, or proof-bearing package output. |
 | [`#1025 remove TRANSIENT_BYTE_TO_MASS_FACTOR`](https://github.com/kaspanet/rusty-kaspa/pull/1025) | Mass/fee terminology is still being cleaned up in the Toccata lane. |
 | [`#953 Zk sdk`](https://github.com/kaspanet/rusty-kaspa/pull/953) | ZK SDK shape may determine how KaspaScript packages proof hints and verifier payloads. |
@@ -83,10 +82,10 @@ The pinned lane protects tests. The moving lane trains the architecture.
 
 ## KaspaScript Response Plan
 
-1. Keep `future-mainnet` locked until final activation evidence is merged and
-   released.
-2. Keep Toccata crate compatibility pinned to `v1.3.0-toc.5`, but add a
-   non-blocking moving-master watch.
+1. Keep `future-mainnet` locked until activation at DAA score `474,165,565` is
+   independently verified.
+2. Move Toccata crate compatibility work to `v2.0.0`, while keeping
+   `v1.3.0-toc.5` as a historical comparison point.
 3. Add TN10-oriented readiness fixtures for `tn10-toccata`.
 4. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
 5. Track `storage_mass`, `compute_commit`, and covenant bindings explicitly in

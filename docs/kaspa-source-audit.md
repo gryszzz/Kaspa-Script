@@ -9,6 +9,7 @@ Compiler baseline sources:
 
 Current upstream learning checkpoint:
 
+- `kaspanet/rusty-kaspa` tag `v2.0.0` commit `90dbf074275d60c1fe74a3491883196f110970c0`
 - `kaspanet/rusty-kaspa` tag `v1.3.0-toc.5` commit `04b0d135f8c8023676ea74dcf496c99d5d0bc2a5`
 - `kaspanet/rusty-kaspa` tag `tn10-toc3` commit `1015a62359e0d06e0b3b3b7f7d06bc1bd4bf0c1b`
 - `kaspanet/kips` `master` commit `1aba3b8321c1d27e00b7d87bd7c74ef879efabdc`
@@ -17,10 +18,10 @@ Only the files listed below are treated as protocol evidence. Project roadmap
 text, model memory, market articles, and unsourced prompts are not protocol
 evidence.
 
-The June 3, 2026 `v1.3.0-toc.5` Rusty Kaspa release is a Toccata mainnet
-pre-activation pre-release. Its notes explicitly state that it does not
-activate Toccata on mainnet and that operators should expect another upgrade
-for the final rollout.
+The June 5, 2026 `v2.0.0` Rusty Kaspa release is the mainnet Toccata release.
+Its notes schedule activation at DAA score `474,165,565`, roughly
+2026-06-30 16:15 UTC. At this audit date, KaspaScript treats `v2.0.0` as
+mainnet pre-activation evidence until activation is independently verified.
 
 ## Verified Kaspa Sources
 
@@ -30,6 +31,7 @@ for the final rollout.
 | Canonical pushes | `crypto/txscript/src/script_builder.rs` | Defines canonical data and integer push behavior using `Op0`, `Op1..Op16`, `OpDataN`, and `OpPushDataN`. |
 | Transaction introspection | `crypto/txscript/src/opcodes/mod.rs` and `kip-0010.md` | Verifies KIP-10 opcodes `OpTxInputCount` `0xb3`, `OpTxOutputCount` `0xb4`, `OpTxInputAmount` `0xbe`, `OpTxInputSpk` `0xbf`, `OpTxOutputAmount` `0xc2`, and `OpTxOutputSpk` `0xc3`. |
 | Sequencing commitment | `kip-0015.md` | Verifies KIP-15 as a block-header / accepted-transaction-ordering commitment. It is not a txscript opcode. |
+| Toccata mainnet release | `rusty-kaspa` release `v2.0.0` | Verifies a released mainnet upgrade artifact and scheduled activation DAA score. It does not prove activation has already occurred at this audit date. |
 | Toccata pre-activation release | `rusty-kaspa` release `v1.3.0-toc.5` | Verifies upstream mainnet sanity testing, the upcoming RPC minimum-standard-fee policy, and one-way node DB upgrade warning. It does not activate Toccata on mainnet. |
 | TN10 Toccata hardening | `rusty-kaspa` release `tn10-toc3` | Verifies TN10 activation of final Toccata hardening on May 28, 2026, including Groth16 verifier hardening, ZK pricing behavior, and SMT/seqcommit inactivity shortcut. |
 | KIP-16 ZK precompile | `kip-0016.md`; `crypto/txscript/src/opcodes/mod.rs`; `crypto/txscript/src/zk_precompiles/mod.rs` | Defines `OpZkPrecompile` `0xa6` with Groth16 tag `0x20` and RISC0-Succinct tag `0x21`. |
@@ -79,7 +81,7 @@ for the final rollout.
 | KIP-17 covenant/introspection opcodes | GATED | KIP and opcode source exist in current upstream; only the older KIP-10 subset is emitted today. |
 | KIP-20 covenant IDs | GATED | KIP and opcode source exist in current upstream; transaction-output covenant bindings and covenant ID lowering are not implemented. |
 | KIP-21 sequencing script access | GATED | KIP and opcode source exist in current upstream; `OpChainblockSeqCommit` witness policy and tests are not implemented. |
-| “Toccata is live / mainnet smart contracts” | UNSUPPORTED | The latest mainnet pre-activation release explicitly says Toccata is not activated on mainnet yet. README must not claim mainnet smart-contract support. |
+| “Toccata is live / mainnet smart contracts” | UNSUPPORTED | `v2.0.0` schedules mainnet activation for DAA score `474,165,565`; activation has not been independently verified at this audit date. README must not claim active mainnet smart-contract support. |
 
 ## Transaction Assumptions
 

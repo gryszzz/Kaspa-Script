@@ -106,6 +106,10 @@ production bytecode lowering is claimed.
 
 The bundled kernel evidence is pinned to the June 4, 2026 source audit:
 
+- `v2.0.0` is the mainnet Toccata release published on June 5, 2026. Its
+  release notes schedule activation at DAA score `474,165,565`, roughly
+  June 30, 2026 at 16:15 UTC, so KaspaScript treats it as mainnet
+  pre-activation evidence until activation is independently verified.
 - `v1.3.0-toc.5` is mainnet pre-activation evidence only. It does not activate
   Toccata on mainnet.
 - PR #1000 is merged Toccata implementation evidence.
@@ -113,8 +117,8 @@ The bundled kernel evidence is pinned to the June 4, 2026 source audit:
 - KIP-17, KIP-20, and KIP-21 merged files indicate TN10 activation status for
   the relevant covenant and sequencing surfaces.
 
-Mainnet blueprints remain blocked until a final mainnet activation release,
-activation schedule, and support posture are pinned.
+Mainnet blueprints remain blocked until activation itself, crate compatibility,
+wallet/indexer support posture, and fee/mass behavior are pinned.
 
 ## Next Kernel Upgrades
 

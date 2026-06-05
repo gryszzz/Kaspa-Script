@@ -717,7 +717,7 @@ mod tests {
             .is_some_and(|profiles| profiles.len() == 2));
         assert_eq!(
             package["source_snapshots"][0]["tag"],
-            Value::String("v1.3.0-toc.5".to_owned())
+            Value::String("v2.0.0".to_owned())
         );
 
         let _ = fs::remove_file(source_path);

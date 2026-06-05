@@ -4,6 +4,12 @@
   "source_snapshots": [
     {
       "upstream_repo": "https://github.com/kaspanet/rusty-kaspa",
+      "tag": "v2.0.0",
+      "commit": "90dbf074275d60c1fe74a3491883196f110970c0",
+      "audit_date": "2026-06-05"
+    },
+    {
+      "upstream_repo": "https://github.com/kaspanet/rusty-kaspa",
       "tag": "v1.3.0-toc.5",
       "commit": "04b0d135f8c8023676ea74dcf496c99d5d0bc2a5",
       "audit_date": "2026-06-05"
@@ -164,6 +170,21 @@
             "TransactionIntrospection"
           ],
           "note": "local compiler artifact verified before kernel package emission"
+        },
+        {
+          "label": "rusty-kaspa v2.0.0",
+          "url": "https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.0",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Mainnet",
+          "level": "MainnetPreActivation",
+          "features": [
+            "TransactionIntrospection",
+            "CovenantIds",
+            "SequencingCommitments",
+            "ZkVerification",
+            "FeePolicy"
+          ],
+          "note": "mainnet Toccata release published 2026-06-05; activation is scheduled for DAA score 474,165,565 and is not active at this audit date"
         },
         {
           "label": "rusty-kaspa v1.3.0-toc.5",

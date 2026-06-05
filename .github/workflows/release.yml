@@ -31,7 +31,7 @@ jobs:
             binary: kaspascript.exe
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Show toolchain
         run: |
@@ -50,6 +50,20 @@ jobs:
           asset="kaspascript-${version}-${{ matrix.label }}"
           package_dir="${RUNNER_TEMP}/${asset}"
           binary_path="${package_dir}/bin/${{ matrix.binary }}"
+
+          sha256_file() {
+            local file="$1"
+            if command -v shasum >/dev/null 2>&1; then
+              shasum -a 256 "${file}" | awk '{print $1}'
+            elif command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "${file}" | awk '{print $1}'
+            elif command -v certutil.exe >/dev/null 2>&1; then
+              certutil.exe -hashfile "${file}" SHA256 | awk 'NR == 2 { gsub(/\r/, ""); print tolower($0) }'
+            else
+              echo "no supported SHA-256 tool found" >&2
+              return 1
+            fi
+          }
 
           rm -rf "${package_dir}" dist
           mkdir -p "${package_dir}/bin" "${package_dir}/packages" "${package_dir}/docs" dist
@@ -100,17 +114,19 @@ jobs:
 
           (
             cd "${package_dir}"
-            find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 shasum -a 256 > SHA256SUMS.txt
+            while IFS= read -r -d '' file; do
+              printf "%s  %s\n" "$(sha256_file "${file}")" "${file}"
+            done < <(find . -type f ! -name SHA256SUMS.txt -print0 | sort -z) > SHA256SUMS.txt
           )
 
           tar -czf "dist/${asset}.tar.gz" -C "${RUNNER_TEMP}" "${asset}"
           (
             cd dist
-            shasum -a 256 "${asset}.tar.gz" > "${asset}.tar.gz.sha256"
+            printf "%s  %s\n" "$(sha256_file "${asset}.tar.gz")" "${asset}.tar.gz" > "${asset}.tar.gz.sha256"
           )
 
       - name: Upload bundle artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.label }}
           path: dist/*
@@ -123,7 +139,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true

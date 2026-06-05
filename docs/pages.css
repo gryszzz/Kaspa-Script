@@ -500,7 +500,44 @@ pre code {
   .hero {
     min-height: auto;
     grid-template-columns: 1fr;
-    padding-top: 4rem;
+    align-items: start;
+    gap: 1rem;
+    padding: 3rem 1rem 2rem;
+  }
+
+  .hero::before {
+    background: rgba(4, 13, 11, 0.78);
+  }
+
+  .hero-media {
+    background-position: center top;
+    opacity: 0.34;
+  }
+
+  .hero-content {
+    max-width: none;
+    border: 1px solid rgba(73, 234, 203, 0.24);
+    border-radius: 8px;
+    background: rgba(7, 18, 16, 0.88);
+    padding: 1rem;
+  }
+
+  .hero-copy {
+    color: rgba(255, 255, 255, 0.94);
+  }
+
+  .button.secondary,
+  .status-row div,
+  .hero-console {
+    background: rgba(4, 13, 11, 0.94);
+  }
+
+  .hero-console {
+    box-shadow: none;
+  }
+
+  .status-row {
+    margin-top: 1rem;
   }
 
   .intro-grid,
@@ -517,7 +554,8 @@ pre code {
 
 @media (max-width: 620px) {
   h1 {
-    font-size: 2.55rem;
+    font-size: 2.12rem;
+    line-height: 1.12;
   }
 
   .site-nav {
@@ -525,9 +563,26 @@ pre code {
     font-size: 0.88rem;
   }
 
+  .hero {
+    padding: 2rem 0.85rem 1.5rem;
+  }
+
+  .hero-content {
+    padding: 0.9rem;
+  }
+
+  .hero-copy {
+    font-size: 1rem;
+  }
+
   .hero-actions .button,
   .status-row div {
     width: 100%;
+  }
+
+  .hero-console pre code {
+    font-size: 0.78rem;
+    line-height: 1.55;
   }
 
   .pattern-table [role="row"] {

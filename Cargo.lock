@@ -2568,6 +2568,8 @@ dependencies = [
  "anyhow",
  "kaspascript-codegen",
  "kaspascript-ir",
+ "kaspascript-kernel",
+ "kaspascript-lexer",
  "kaspascript-sdk",
  "serde_json",
  "tokio",
@@ -2595,6 +2597,15 @@ dependencies = [
  "kaspascript-parser",
  "kaspascript-semantic",
  "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "kaspascript-kernel"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
  "thiserror 1.0.69",
 ]
 

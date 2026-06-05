@@ -8,6 +8,7 @@ members = [
     "compiler/parser",
     "compiler/protocol",
     "compiler/semantic",
+    "kernel",
     "sdk",
 ]
 

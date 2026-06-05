@@ -8,6 +8,8 @@ rust-version.workspace = true
 anyhow.workspace = true
 kaspascript-codegen = { path = "../compiler/codegen" }
 kaspascript-ir = { path = "../compiler/ir" }
+kaspascript-kernel = { path = "../kernel" }
+kaspascript-lexer = { path = "../compiler/lexer" }
 kaspascript-sdk = { path = "../sdk" }
 serde_json.workspace = true
 tokio = { version = "1.48.0", features = ["rt-multi-thread"], optional = true }

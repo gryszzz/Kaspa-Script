@@ -5,6 +5,12 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use kaspascript_codegen::{bytecode_asm, bytecode_hex, verify_artifact, CompiledArtifact};
 use kaspascript_ir::lower_file;
+use kaspascript_kernel::{
+    current_toccata_evidence, define_kaspa_contract, package_compiled_contract,
+    CompiledArtifactSummary, ContractBlueprint, EvidenceLevel, FeatureRequirement, KernelFeature,
+    Network, SourceEvidence, StateField, StateType, Transition, TransitionKind,
+};
+use kaspascript_lexer::TypeName;
 use kaspascript_sdk::compile;
 
 fn main() -> Result<()> {
@@ -17,6 +23,7 @@ fn main() -> Result<()> {
         "compile" if args.len() == 3 => compile_command(&args[2]),
         "verify" if args.len() == 3 => verify_command(&args[2]),
         "inspect" if args.len() == 3 => inspect_command(&args[2]),
+        "kernel" => kernel_command(&args[2..]),
         "wallet" => wallet_command(&args[2..]),
         "tx" => tx_command(&args[2..]),
         "proof" => proof_command(&args[2..]),
@@ -25,7 +32,7 @@ fn main() -> Result<()> {
 }
 
 fn usage() -> &'static str {
-    "usage: kaspascript <compile|verify|inspect> <file>\n       kaspascript wallet balance --target tn12\n       kaspascript tx lock <file.ks> --target tn12 --amount 1.0 [--dry-run|--broadcast]\n       kaspascript tx spend <artifact.json> --spend <name> --target tn12 [--dry-run|--broadcast]\n       kaspascript proof verify <proof.json>"
+    "usage: kaspascript <compile|verify|inspect> <file>\n       kaspascript kernel package <file.ks> [--output <file>] [--compute-grams <n>] [--tx-bytes <n>]\n       kaspascript wallet balance --target tn12\n       kaspascript tx lock <file.ks> --target tn12 --amount 1.0 [--dry-run|--broadcast]\n       kaspascript tx spend <artifact.json> --spend <name> --target tn12 [--dry-run|--broadcast]\n       kaspascript proof verify <proof.json>"
 }
 
 fn compile_command(path: &str) -> Result<()> {
@@ -71,6 +78,52 @@ fn inspect_command(path: &str) -> Result<()> {
     Ok(())
 }
 
+fn kernel_command(args: &[String]) -> Result<()> {
+    match args.first().map(String::as_str) {
+        Some("package") => kernel_package_command(&args[1..]),
+        _ => bail!("{}", usage()),
+    }
+}
+
+fn kernel_package_command(args: &[String]) -> Result<()> {
+    let Some(path) = args.first() else {
+        bail!("{}", usage());
+    };
+    let options = KernelPackageOptions::parse(&args[1..])?;
+    let source = fs::read_to_string(path).with_context(|| format!("failed to read {path}"))?;
+    let artifact = compile(&source, path).map_err(|error| anyhow::anyhow!("error: {error}"))?;
+    verify_artifact(&artifact).map_err(|error| anyhow::anyhow!("error: {error}"))?;
+
+    let bytecode_hex = bytecode_hex(&artifact.bytecode);
+    let bytecode_asm = bytecode_asm(&artifact.bytecode)?;
+    let summary = artifact_summary(&artifact);
+    let blueprint = kernel_blueprint_from_artifact(path, &artifact)?;
+    let transaction_bytes = options
+        .tx_bytes
+        .unwrap_or_else(|| u64::try_from(artifact.bytecode.len()).unwrap_or(u64::MAX));
+    let fee_assumption = if options.tx_bytes.is_some() || options.compute_grams != 0 {
+        "caller-provided fee estimate inputs"
+    } else {
+        "lower-bound estimate using compiled bytecode length as transaction_bytes and compute_grams=0"
+    };
+    let package = package_compiled_contract(
+        summary,
+        bytecode_hex,
+        bytecode_asm,
+        blueprint,
+        options.compute_grams,
+        transaction_bytes,
+        fee_assumption,
+    )
+    .map_err(|error| anyhow::anyhow!("error: {error}"))?;
+
+    let json = serde_json::to_string_pretty(&package)?;
+    let output = options.output.unwrap_or_else(|| kernel_package_path(path));
+    fs::write(&output, json).with_context(|| format!("failed to write {}", output.display()))?;
+    println!("{}", output.display());
+    Ok(())
+}
+
 fn read_artifact(path: &str) -> Result<CompiledArtifact> {
     let json = fs::read_to_string(path).with_context(|| format!("failed to read {path}"))?;
     serde_json::from_str(&json).with_context(|| format!("failed to parse {path}"))
@@ -78,6 +131,224 @@ fn read_artifact(path: &str) -> Result<CompiledArtifact> {
 
 fn artifact_path(path: &str) -> std::path::PathBuf {
     Path::new(path).with_extension("artifact.json")
+}
+
+fn kernel_package_path(path: &str) -> std::path::PathBuf {
+    Path::new(path).with_extension("kernel.json")
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct KernelPackageOptions {
+    output: Option<std::path::PathBuf>,
+    compute_grams: u64,
+    tx_bytes: Option<u64>,
+}
+
+impl KernelPackageOptions {
+    fn parse(args: &[String]) -> Result<Self> {
+        let mut options = Self {
+            output: None,
+            compute_grams: 0,
+            tx_bytes: None,
+        };
+        let mut index = 0;
+        while index < args.len() {
+            match args[index].as_str() {
+                "--output" | "-o" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--output needs a value"))?;
+                    options.output = Some(value.into());
+                }
+                "--compute-grams" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--compute-grams needs a value"))?;
+                    options.compute_grams = parse_u64_option("--compute-grams", value)?;
+                }
+                "--tx-bytes" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--tx-bytes needs a value"))?;
+                    options.tx_bytes = Some(parse_u64_option("--tx-bytes", value)?);
+                }
+                other => bail!("unknown option `{other}`"),
+            }
+            index += 1;
+        }
+        Ok(options)
+    }
+}
+
+fn parse_u64_option(option: &str, value: &str) -> Result<u64> {
+    value
+        .parse::<u64>()
+        .with_context(|| format!("{option} must be a non-negative integer"))
+}
+
+fn artifact_summary(artifact: &CompiledArtifact) -> CompiledArtifactSummary {
+    CompiledArtifactSummary {
+        backend: artifact.backend.clone(),
+        target: artifact.target.clone(),
+        compiler_version: artifact.compiler_version.clone(),
+        bytecode_bytes: artifact.bytecode.len(),
+        finality_depth: artifact.finality_depth,
+        kip_requirements: artifact.kip_requirements.clone(),
+        contracts: artifact
+            .contracts
+            .iter()
+            .map(|contract| contract.name.clone())
+            .collect(),
+        spends: artifact
+            .contracts
+            .iter()
+            .flat_map(|contract| {
+                contract
+                    .spends
+                    .iter()
+                    .map(move |spend| format!("{}.{}", contract.name, spend.name))
+            })
+            .collect(),
+    }
+}
+
+fn kernel_blueprint_from_artifact(
+    source_path: &str,
+    artifact: &CompiledArtifact,
+) -> Result<ContractBlueprint> {
+    let network = network_from_target(&artifact.target);
+    let contract_name = if artifact.contracts.len() == 1 {
+        artifact.contracts[0].name.clone()
+    } else {
+        contract_name_from_path_without_cfg(source_path)
+    };
+
+    let mut builder = define_kaspa_contract(contract_name)
+        .network(network)
+        .evidence(local_artifact_evidence(source_path, network, artifact));
+
+    for evidence in current_toccata_evidence() {
+        builder = builder.evidence(evidence);
+    }
+
+    for contract in &artifact.contracts {
+        for param in &contract.params {
+            let field_name = if artifact.contracts.len() == 1 {
+                param.name.clone()
+            } else {
+                format!("{}.{}", contract.name, param.name)
+            };
+            builder = builder.state_field(StateField::new(
+                field_name,
+                state_type_from_type_name(param.ty),
+                format!("compiled parameter from contract {}", contract.name),
+            ));
+        }
+
+        for spend in &contract.spends {
+            let mut transition = Transition::new(&spend.name, TransitionKind::Spend)
+                .consumes(format!("{} compiled locking state", contract.name))
+                .creates("transaction outputs selected by the spend path")
+                .requires(FeatureRequirement::new(
+                    KernelFeature::BaseScript,
+                    EvidenceLevel::BranchCode,
+                    "compiled artifact emitted verified Kaspa txscript bytecode",
+                ))
+                .requires(FeatureRequirement::new(
+                    KernelFeature::WalletPreview,
+                    EvidenceLevel::BranchCode,
+                    "kernel package emits wallet preview metadata",
+                ))
+                .requires(FeatureRequirement::new(
+                    KernelFeature::IndexerLineage,
+                    EvidenceLevel::BranchCode,
+                    "kernel package emits indexer schema metadata",
+                ))
+                .wallet_warning(format!(
+                    "Review `{}` as a Kaspa contract spend path before signing.",
+                    spend.name
+                ));
+
+            if artifact.kip_requirements.contains(&10) {
+                transition = transition.requires(FeatureRequirement::new(
+                    KernelFeature::TransactionIntrospection,
+                    EvidenceLevel::BranchCode,
+                    "artifact declares KIP-10 transaction introspection requirements",
+                ));
+            }
+
+            for param in &spend.params {
+                if param.ty == TypeName::Signature {
+                    transition = transition.signer(&param.name);
+                }
+            }
+
+            builder = builder.transition(transition);
+        }
+    }
+
+    builder
+        .build()
+        .map_err(|error| anyhow::anyhow!("error: {error}"))
+}
+
+fn local_artifact_evidence(
+    source_path: &str,
+    network: Network,
+    artifact: &CompiledArtifact,
+) -> SourceEvidence {
+    let mut features = vec![
+        KernelFeature::BaseScript,
+        KernelFeature::WalletPreview,
+        KernelFeature::IndexerLineage,
+    ];
+    if artifact.kip_requirements.contains(&10) {
+        features.push(KernelFeature::TransactionIntrospection);
+    }
+
+    SourceEvidence::new(
+        "KaspaScript compiled artifact",
+        source_path,
+        network,
+        EvidenceLevel::BranchCode,
+        features,
+        "local compiler artifact verified before kernel package emission",
+    )
+}
+
+fn network_from_target(target: &str) -> Network {
+    match target {
+        "verified-tn12" => Network::Tn12,
+        "future-mainnet" => Network::Mainnet,
+        "toccata-preview" => Network::Unknown,
+        _ => Network::Unknown,
+    }
+}
+
+fn state_type_from_type_name(ty: TypeName) -> StateType {
+    match ty {
+        TypeName::PublicKey => StateType::PublicKey,
+        TypeName::Signature => StateType::Signature,
+        TypeName::Hash => StateType::Hash,
+        TypeName::BlockHeight => StateType::BlockHeight,
+        TypeName::Amount => StateType::Sompi,
+        TypeName::Bool => StateType::Bool,
+        TypeName::Bytes => StateType::Bytes,
+        TypeName::CovenantID => StateType::CovenantId,
+        TypeName::ZKProof | TypeName::UTXO | TypeName::Output | TypeName::Input => StateType::Bytes,
+    }
+}
+
+fn contract_name_from_path_without_cfg(path: &str) -> String {
+    Path::new(path)
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .filter(|stem| !stem.is_empty())
+        .unwrap_or("KaspaScriptPackage")
+        .to_owned()
 }
 
 #[cfg(any(feature = "tn12-integration", feature = "testnet-integration"))]
@@ -327,4 +598,74 @@ fn contract_name_from_path(path: &str) -> String {
                 .collect::<String>()
         })
         .unwrap_or_else(|| "Contract".to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::Value;
+
+    #[test]
+    fn kernel_package_command_writes_combined_artifact() {
+        let dir =
+            std::env::temp_dir().join(format!("kaspascript-kernel-cli-{}", std::process::id()));
+        fs::create_dir_all(&dir).expect("temp dir");
+        let source_path = dir.join("escrow.ks");
+        let output_path = dir.join("escrow.kernel.json");
+        fs::write(
+            &source_path,
+            include_str!("../../tests/contracts/escrow.ks"),
+        )
+        .expect("write source");
+
+        let args = vec![
+            source_path.display().to_string(),
+            "--output".to_owned(),
+            output_path.display().to_string(),
+            "--compute-grams".to_owned(),
+            "1000".to_owned(),
+            "--tx-bytes".to_owned(),
+            "400".to_owned(),
+        ];
+
+        kernel_package_command(&args).expect("kernel package command");
+
+        let json = fs::read_to_string(&output_path).expect("read package");
+        let package: Value = serde_json::from_str(&json).expect("json");
+        assert_eq!(
+            package["artifact"]["contracts"][0],
+            Value::String("Escrow".to_owned())
+        );
+        assert_eq!(
+            package["fee_estimate"]["minimum_standard_fee_sompi"],
+            Value::from(100_000)
+        );
+        assert!(package["bytecode_hex"]
+            .as_str()
+            .is_some_and(|hex| !hex.is_empty()));
+        assert!(package["kernel"]["wallet_previews"]
+            .as_array()
+            .is_some_and(|previews| !previews.is_empty()));
+        assert!(package["kernel"]["readiness"]["ready"]
+            .as_bool()
+            .expect("readiness bool"));
+
+        let _ = fs::remove_file(source_path);
+        let _ = fs::remove_file(output_path);
+        let _ = fs::remove_dir(dir);
+    }
+
+    #[test]
+    fn kernel_options_parse_fee_inputs() {
+        let args = vec![
+            "--compute-grams".to_owned(),
+            "25".to_owned(),
+            "--tx-bytes".to_owned(),
+            "11".to_owned(),
+        ];
+        let options = KernelPackageOptions::parse(&args).expect("options");
+
+        assert_eq!(options.compute_grams, 25);
+        assert_eq!(options.tx_bytes, Some(11));
+    }
 }

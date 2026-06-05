@@ -92,15 +92,15 @@ pub fn backend_opcode_records() -> Vec<GroundingRecord> {
         verified_opcode("sub", "OpSub (0x94)"),
         unsupported_opcode(
             "mul",
-            "OpMul exists at 0x95 but rusty-kaspa marks it disabled",
+            "OpMul exists at 0x95; current Toccata sources enable it behind covenants_enabled",
         ),
         unsupported_opcode(
             "div",
-            "OpDiv exists at 0x96 but rusty-kaspa marks it disabled",
+            "OpDiv exists at 0x96; current Toccata sources enable it behind covenants_enabled",
         ),
         unsupported_opcode(
             "mod",
-            "OpMod exists at 0x97 but rusty-kaspa marks it disabled",
+            "OpMod exists at 0x97; current Toccata sources enable it behind covenants_enabled",
         ),
         verified_opcode("lessthan", "OpLessThan (0x9f)"),
         verified_opcode("lessthanorequal", "OpLessThanOrEqual (0xa1)"),
@@ -124,23 +124,23 @@ pub fn backend_opcode_records() -> Vec<GroundingRecord> {
         verified_opcode("outputcount", "OpTxOutputCount (0xb4), KIP-10"),
         unsupported_opcode(
             "covenantid",
-            "no covenant ID opcode is present in pinned sources",
+            "current Toccata sources define covenant ID accessors; KaspaScript lowering is not implemented",
         ),
         unsupported_opcode(
             "covenantid-depth",
-            "no covenant ID depth opcode is present in pinned sources",
+            "no upstream covenant depth opcode or KaspaScript depth lowering is implemented",
         ),
         unsupported_opcode(
             "zk-groth16-verify",
-            "no Groth16 verifier opcode is present in pinned sources",
+            "current Toccata sources define OpZkPrecompile tag 0x20; KaspaScript stack ABI lowering is not implemented",
         ),
         unsupported_opcode(
             "zk-risczero-verify",
-            "no RISC Zero verifier opcode is present in pinned sources",
+            "current Toccata sources define OpZkPrecompile tag 0x21; KaspaScript stack ABI lowering is not implemented",
         ),
         unsupported_opcode(
             "sequencing-commitment",
-            "KIP-15 defines a header commitment, not a script opcode",
+            "current Toccata sources define OpChainblockSeqCommit; KaspaScript witness/depth lowering is not implemented",
         ),
         unsupported_opcode(
             "check-hash-preimage",
@@ -176,15 +176,21 @@ pub fn builtin_records() -> Vec<GroundingRecord> {
             "block",
             "block.height/time syntax is recognized; parameterized lock values are still emitted as script-template data",
         ),
-        unsupported_builtin("covenant_id", "no pinned Kaspa source defines covenant ID opcodes"),
-        unsupported_builtin("covenant", "no pinned Kaspa source defines covenant.with_keys lowering"),
+        unsupported_builtin(
+            "covenant_id",
+            "upstream Toccata sources define covenant ID accessors; KaspaScript lowering is not implemented",
+        ),
+        unsupported_builtin(
+            "covenant",
+            "upstream Toccata sources define covenant bindings; KaspaScript transaction builder support is not implemented",
+        ),
         unsupported_builtin(
             "sequencing",
-            "KIP-15 sequencing commitment is a header/archival-node commitment, not a txscript opcode",
+            "upstream Toccata sources define OpChainblockSeqCommit; KaspaScript witness/depth lowering is not implemented",
         ),
         unsupported_builtin(
             "zk_verify",
-            "no pinned Kaspa source defines a txscript ZK verifier opcode",
+            "upstream Toccata sources define OpZkPrecompile; KaspaScript proof artifact lowering is not implemented",
         ),
         verified_builtin("sha256", "docs/kaspa-source-audit.md", "OpSHA256 is present at 0xa8"),
         verified_builtin("blake2b", "docs/kaspa-source-audit.md", "OpBlake2b is present at 0xaa"),
@@ -208,22 +214,22 @@ pub fn kip_records() -> Vec<GroundingRecord> {
         gated_kip(
             16,
             "docs/kaspa-source-audit.md",
-            "no KIP-16 file or txscript ZK opcode is present in the pinned source set",
+            "KIP-16 and OpZkPrecompile exist upstream; KaspaScript proof lowering remains gated",
         ),
         gated_kip(
             17,
             "docs/kaspa-source-audit.md",
-            "no KIP-17 file is present; previous introspection claims map to KIP-10",
+            "KIP-17 and expanded Toccata opcodes exist upstream; KaspaScript emits only the older KIP-10 subset",
         ),
         gated_kip(
             20,
             "docs/kaspa-source-audit.md",
-            "no KIP-20 file or covenant ID opcode is present in the pinned source set",
+            "KIP-20 and covenant ID accessors exist upstream; transaction-output covenant bindings remain gated",
         ),
         gated_kip(
             21,
             "docs/kaspa-source-audit.md",
-            "no KIP-21 file is present; sequencing source is KIP-15 and is not a txscript opcode",
+            "KIP-21 and OpChainblockSeqCommit exist upstream; witness/depth lowering remains gated",
         ),
     ]
 }
@@ -394,7 +400,7 @@ fn unsupported_opcode(id: &'static str, detail: &'static str) -> GroundingRecord
         GroundingCategory::BackendOpcode,
         "docs/kaspa-source-audit.md",
         detail,
-        "backend emission is unsupported until a pinned Kaspa source verifies it",
+        "backend emission is unsupported until KaspaScript lowering and tests verify it",
     )
 }
 
@@ -445,7 +451,7 @@ fn gated_kip(kip: u16, path: &'static str, note: &'static str) -> GroundingRecor
         id,
         GroundingCategory::KipReference,
         path,
-        "KIP source is absent or does not define txscript emission in pinned sources",
+        "KIP source is recognized but not fully enabled for KaspaScript bytecode emission",
         note,
     )
 }

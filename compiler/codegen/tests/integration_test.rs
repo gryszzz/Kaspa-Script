@@ -24,6 +24,10 @@ const CONTRACTS: &[(&str, &str)] = &[
         "vault.ks",
         include_str!("../../../tests/contracts/vault.ks"),
     ),
+    (
+        "dagsafe_channel.ks",
+        include_str!("../../../tests/contracts/dagsafe_channel.ks"),
+    ),
 ];
 
 const GOLDENS: &[(&str, &str, &str, &str, &str)] = &[

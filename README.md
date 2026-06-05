@@ -40,6 +40,12 @@ verification, and no hidden transaction behavior.
                         └──────────── │ Semantics    │
                                       └──────────────┘
 
+┌────────────────────────────────────────────────────────┐
+│ Programmability Kernel                                 │
+│ contract blueprints, wallet previews, indexer schema,  │
+│ source evidence, Toccata fee policy, readiness reports │
+└────────────────────────────────────────────────────────┘
+
 Optimization passes are planned; today the compiler favors verifiable lowering
 and deterministic emission over speculative transformation.
 ```
@@ -52,6 +58,7 @@ and deterministic emission over speculative transformation.
 | Typed IR | Opcode-agnostic instruction layer for contract verification and backend selection. |
 | Backend Gates | Emits only source-grounded txscript for `verified-tn12`; gates preview surfaces. |
 | Artifact | Deterministic JSON containing bytecode, source hash, target, KIP requirements, and warnings. |
+| Kernel | Packages Kaspa-native contract blueprints with wallet previews, covenant lineage schema, fee policy, and network readiness. |
 
 ---
 
@@ -138,10 +145,11 @@ branch.
 | Semantic analysis | Collects all errors instead of stopping at the first failure. |
 | Typed IR | Opcode-agnostic lowering for verified V1 patterns. |
 | Kaspa txscript backend | Emits deterministic bytes for source-grounded opcodes. |
-| CLI | `compile`, `inspect`, and `verify`. |
+| CLI | `compile`, `inspect`, `verify`, and `kernel package`. |
 | Golden artifacts | JSON, hex, and ASM snapshots for every example contract. |
 | SDK preview model | Compile API plus finality-depth checks; not a real Kaspa transaction builder yet. |
 | TN12 test harness | Feature-gated live RPC/wallet preflight with gated proof files. |
+| Programmability kernel | `kaspascript-kernel` crate plus `kaspascript kernel package <contract.ks>` for bytecode, wallet previews, indexer schema, readiness, and fee estimates. |
 
 ### Verified
 
@@ -189,6 +197,11 @@ contract Escrow
 ```
 
 ```console
+$ kaspascript kernel package escrow.ks --compute-grams 1000 --tx-bytes 400
+escrow.kernel.json
+```
+
+```console
 $ kaspascript verify escrow.artifact.json
 backend: kaspa-txscript
 target: verified-tn12
@@ -209,6 +222,8 @@ kip_requirements: [10]
 | Multisig | Static threshold signatures lowered to `OP_CHECKMULTISIG`. | Verified TN12 |
 | Atomic swap | Hash preimage-style claim path plus refund timeout. | Verified TN12 |
 | Covenant vault | Finality-aware vault pattern using verified txscript constraints today; covenant lineage remains future-gated. | Partial / gated |
+| DAGSafe channel | Hash-committed cooperative close, timeout refund, and mediated close using verified script primitives. | Verified TN12 |
+| DAGSafeVault kernel blueprint | UTXO covenant state-machine package with wallet previews, indexer schema, TN10 readiness report, and mainnet activation guard. | Kernel / TN10-gated |
 
 Examples live in `tests/contracts`; committed outputs live in `tests/golden`.
 
@@ -226,6 +241,15 @@ KaspaScript keeps bytecode generation measurable.
 | Fuzz smoke | Random lexer/parser input must not panic. |
 | Clippy | Workspace is clean under `-D warnings`. |
 
+For the current Toccata/DAGKnight preparation notes, see
+[`docs/KASPA_UPGRADE_PREP.md`](docs/KASPA_UPGRADE_PREP.md). That brief records
+the latest upstream KIP and Rusty Kaspa checkpoints without unlocking
+unsupported bytecode paths prematurely.
+For the new framework layer, see
+[`docs/KASPA_PROGRAMMABILITY_KERNEL.md`](docs/KASPA_PROGRAMMABILITY_KERNEL.md).
+The crate compatibility spike is in
+[`docs/TOCCATA_CRATE_COMPATIBILITY.md`](docs/TOCCATA_CRATE_COMPATIBILITY.md).
+
 ---
 
 ## Repository Layout
@@ -239,6 +263,7 @@ kaspascript/
 │   ├── ir/          opcode-agnostic contract IR
 │   ├── codegen/     target gates, txscript backend, artifacts
 │   └── protocol/    target manifests and feature gates
+├── kernel/          Kaspa-native app kernel: blueprints, wallet preview, indexer schema
 ├── sdk/             Rust compile API and preview transaction model
 ├── cli/             kaspascript command-line interface
 ├── tests/

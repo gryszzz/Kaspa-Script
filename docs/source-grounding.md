@@ -10,6 +10,11 @@ Status meanings:
 - `GATED`: recognized as a future/preview surface, but not allowed for verified TN12 bytecode.
 - `UNSUPPORTED`: must fail compilation before bytecode emission.
 
+As of 2026-06-04, upstream Toccata sources exist for KIP-16, KIP-17,
+KIP-20, and KIP-21. KaspaScript still treats their contract-facing bytecode as
+unsupported until the compiler has exact stack ABI lowering, transaction
+builder support, and live testnet proof coverage.
+
 ## Backend Opcodes
 
 | Item | Status | Local citation |
@@ -25,7 +30,7 @@ Status meanings:
 | `OP_SHA256`, `OP_BLAKE2B` | VERIFIED | `docs/kaspa-source-audit.md` |
 | KIP-10 input/output introspection opcodes | VERIFIED | `docs/kaspa-source-audit.md` |
 | Covenant ID opcodes | UNSUPPORTED | `docs/kaspa-source-audit.md` |
-| ZK verifier opcodes | UNSUPPORTED | `docs/kaspa-source-audit.md` |
+| ZK verifier opcode | UNSUPPORTED | `docs/kaspa-source-audit.md` |
 | Sequencing txscript opcode | UNSUPPORTED | `docs/kaspa-source-audit.md` |
 | Dedicated hash-preimage opcode | UNSUPPORTED | `docs/kaspa-source-audit.md` |
 

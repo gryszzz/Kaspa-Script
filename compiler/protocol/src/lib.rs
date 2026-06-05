@@ -174,7 +174,7 @@ pub fn verified_tn12_manifest() -> ProtocolManifest {
             FeatureSpec {
                 feature: ProtocolFeature::CovenantIds,
                 status: FeatureStatus::Unsupported,
-                source: "no pinned Kaspa source file/opcode",
+                source: "unsupported for verified-tn12; current Toccata sources are not lowered by KaspaScript",
             },
             FeatureSpec {
                 feature: ProtocolFeature::SequencingCommitments,
@@ -184,7 +184,7 @@ pub fn verified_tn12_manifest() -> ProtocolManifest {
             FeatureSpec {
                 feature: ProtocolFeature::ZkVerification,
                 status: FeatureStatus::Unsupported,
-                source: "no pinned Kaspa source file/opcode",
+                source: "unsupported for verified-tn12; current Toccata ZK precompile stack ABI is not lowered by KaspaScript",
             },
         ],
         limits: ProtocolLimits::default(),
@@ -202,8 +202,17 @@ pub fn toccata_preview_manifest() -> ProtocolManifest {
             ProtocolFeature::CovenantIds | ProtocolFeature::ZkVerification
         ) {
             feature.status = FeatureStatus::Unpinned;
-            feature.source = "preview-gated; source not pinned";
+            feature.source =
+                "preview-gated; current upstream Toccata source exists, KaspaScript lowering is not implemented";
         }
+    }
+    if let Some(feature) = manifest
+        .features
+        .iter_mut()
+        .find(|feature| feature.feature == ProtocolFeature::SequencingCommitments)
+    {
+        feature.source =
+            "kaspanet/kips kip-0021 and rusty-kaspa OpChainblockSeqCommit; contract lowering remains gated";
     }
     manifest
 }

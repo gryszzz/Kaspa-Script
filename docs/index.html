@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KaspaScript - Kaspa Contract Compiler And Kernel</title>
+    <meta
+      name="description"
+      content="KaspaScript is a source-gated Rust compiler and programmability kernel for deterministic Kaspa contract artifacts, wallet previews, indexer schema, readiness reports, and Toccata-era upgrade prep."
+    >
+    <meta property="og:title" content="KaspaScript">
+    <meta
+      property="og:description"
+      content="A source-gated Rust compiler and programmability kernel for Kaspa contract artifacts."
+    >
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gryszzz.github.io/Kaspa-Script/">
+    <meta property="og:image" content="https://gryszzz.github.io/Kaspa-Script/assets/kaspascript-hero.jpg">
+    <link rel="canonical" href="https://gryszzz.github.io/Kaspa-Script/">
+    <link rel="stylesheet" href="pages.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="KaspaScript home">
+        <span class="brand-mark">.ks</span>
+        <span>KaspaScript</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#kernel">Kernel</a>
+        <a href="#package">Package</a>
+        <a href="#roadmap">Roadmap</a>
+        <a href="https://github.com/gryszzz/Kaspa-Script">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero-media" aria-hidden="true"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Rust compiler workspace for Kaspa's covenant era</p>
+          <h1 id="hero-title">Kaspa contract artifacts with bytecode, kernel metadata, and upgrade gates.</h1>
+          <p class="hero-copy">
+            KaspaScript compiles a verified V1 contract subset into deterministic
+            Kaspa txscript artifacts, then packages each contract with wallet
+            previews, indexer schema, fee estimates, and a readiness report.
+          </p>
+          <div class="hero-actions" aria-label="Project actions">
+            <a class="button primary" href="https://github.com/gryszzz/Kaspa-Script">View Repo</a>
+            <a class="button secondary" href="#quickstart">Run The CLI</a>
+          </div>
+          <dl class="status-row" aria-label="Current project status">
+            <div>
+              <dt>Compiler</dt>
+              <dd>Verified TN12</dd>
+            </div>
+            <div>
+              <dt>Kernel</dt>
+              <dd>Package CLI</dd>
+            </div>
+            <div>
+              <dt>Mainnet</dt>
+              <dd>Activation Guarded</dd>
+            </div>
+          </dl>
+        </div>
+        <aside class="hero-console" aria-label="Kernel package command preview">
+          <div class="console-bar">
+            <span>kernel package</span>
+            <span>escrow.ks</span>
+          </div>
+          <pre><code>$ kaspascript kernel package escrow.ks \
+  --compute-grams 1000 \
+  --tx-bytes 400
+
+artifact.target: verified-tn12
+bytecode_bytes: 76
+kernel.wallet_previews: 2
+kernel.indexer_schema: covenant_lineage
+readiness.ready: true
+minimum_fee_sompi: 100000</code></pre>
+        </aside>
+      </section>
+
+      <section class="band intro-band" aria-label="Project summary">
+        <div class="intro-grid">
+          <article>
+            <p class="section-kicker">What it is</p>
+            <h2>A compiler plus the first slice of a Kaspa-native programmability kernel.</h2>
+          </article>
+          <article>
+            <p>
+              The compiler answers whether source can become deterministic Kaspa
+              txscript. The kernel answers whether a builder can ship the app
+              shape safely: what a wallet should show, what an indexer should
+              track, what the fee assumptions are, and what evidence supports
+              the target network.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="kernel" aria-labelledby="kernel-title">
+        <div class="section-heading">
+          <p class="section-kicker">Kernel</p>
+          <h2 id="kernel-title">Smart-contract-like, Kaspa-shaped.</h2>
+          <p>
+            KaspaScript models contracts as UTXO state machines instead of an
+            Ethereum-style global account runtime. State is consumed, a
+            transition is validated, and successor outputs preserve lineage.
+          </p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Wallet Preview</h3>
+            <p>
+              Emits transition labels, consumed state, created outputs, signers,
+              proof hints, and signing warnings so wallets do not render
+              covenant transitions as ordinary payments.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Indexer Schema</h3>
+            <p>
+              Ships covenant lineage, transition, and wallet preview audit table
+              suggestions with required fields for network, DAA context, status,
+              and outpoints.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Readiness Report</h3>
+            <p>
+              Checks each transition requirement against source evidence. Mainnet
+              packages stay blocked until final activation evidence is pinned.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="band package-band" id="package" aria-labelledby="package-title">
+        <div class="section-heading compact">
+          <p class="section-kicker">Package Output</p>
+          <h2 id="package-title">One artifact for bytecode, app metadata, and review.</h2>
+        </div>
+        <div class="package-layout">
+          <div class="schema-list" aria-label="Kernel package schema fields">
+            <div>
+              <span>artifact</span>
+              <p>Backend, target, compiler version, finality depth, KIPs, contracts, spends.</p>
+            </div>
+            <div>
+              <span>bytecode_hex</span>
+              <p>Compiled txscript bytes in deterministic hex form.</p>
+            </div>
+            <div>
+              <span>bytecode_asm</span>
+              <p>Human-readable txscript assembly for code review.</p>
+            </div>
+            <div>
+              <span>kernel</span>
+              <p>Blueprint, wallet previews, indexer schema, readiness, and fee policy.</p>
+            </div>
+            <div>
+              <span>fee_estimate</span>
+              <p>Toccata minimum-standard-fee estimate with explicit assumptions.</p>
+            </div>
+          </div>
+          <pre class="json-preview" aria-label="Kernel package JSON preview"><code>{
+  "artifact": {
+    "backend": "kaspa-txscript",
+    "target": "verified-tn12",
+    "kip_requirements": [10]
+  },
+  "kernel": {
+    "readiness": { "ready": true },
+    "wallet_previews": ["release", "refund"],
+    "indexer_schema": "covenant_lineage"
+  },
+  "fee_estimate": {
+    "minimum_standard_fee_sompi": 100000
+  }
+}</code></pre>
+        </div>
+        <p class="doc-link">
+          Full schema:
+          <a href="https://github.com/gryszzz/Kaspa-Script/blob/main/docs/KERNEL_PACKAGE_SCHEMA.md">
+            docs/KERNEL_PACKAGE_SCHEMA.md
+          </a>
+        </p>
+      </section>
+
+      <section class="section" id="quickstart" aria-labelledby="quickstart-title">
+        <div class="section-heading">
+          <p class="section-kicker">Quickstart</p>
+          <h2 id="quickstart-title">Compile, inspect, verify, package.</h2>
+        </div>
+        <div class="command-grid">
+          <pre><code>cargo test --workspace</code></pre>
+          <pre><code>kaspascript compile escrow.ks</code></pre>
+          <pre><code>kaspascript inspect escrow.ks</code></pre>
+          <pre><code>kaspascript verify escrow.artifact.json</code></pre>
+          <pre><code>kaspascript kernel package escrow.ks \
+  --compute-grams 1000 \
+  --tx-bytes 400</code></pre>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="patterns-title">
+        <div class="section-heading compact">
+          <p class="section-kicker">Contract Patterns</p>
+          <h2 id="patterns-title">Verified examples and future-gated shapes.</h2>
+        </div>
+        <div class="pattern-table" role="table" aria-label="Contract pattern status">
+          <div role="row" class="table-head">
+            <span role="columnheader">Pattern</span>
+            <span role="columnheader">Target status</span>
+          </div>
+          <div role="row">
+            <span role="cell">Escrow</span>
+            <span role="cell">Verified TN12</span>
+          </div>
+          <div role="row">
+            <span role="cell">Timelock</span>
+            <span role="cell">Verified TN12</span>
+          </div>
+          <div role="row">
+            <span role="cell">Multisig</span>
+            <span role="cell">Verified TN12</span>
+          </div>
+          <div role="row">
+            <span role="cell">Atomic swap</span>
+            <span role="cell">Verified TN12</span>
+          </div>
+          <div role="row">
+            <span role="cell">Covenant vault</span>
+            <span role="cell">Partial / gated</span>
+          </div>
+          <div role="row">
+            <span role="cell">DAGSafeVault blueprint</span>
+            <span role="cell">Kernel / TN10-gated</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section roadmap" id="roadmap" aria-labelledby="roadmap-title">
+        <div class="section-heading">
+          <p class="section-kicker">Completion Roadmap</p>
+          <h2 id="roadmap-title">The next work is concrete.</h2>
+          <p>
+            The project is close to alpha complete. The next steps are focused
+            on golden package snapshots, target selection, CI, SDK packaging,
+            and testnet fixtures.
+          </p>
+        </div>
+        <div class="milestone-grid">
+          <article>
+            <h3>Alpha Complete</h3>
+            <p>Kernel package golden snapshots, target selection, README examples, and CI checks.</p>
+          </article>
+          <article>
+            <h3>Testnet Complete</h3>
+            <p>Toccata tag fixture, TN10 transaction facade, covenant continuation and indexer cases.</p>
+          </article>
+          <article>
+            <h3>Mainnet Ready</h3>
+            <p>Blocked until primary sources verify final activation, crate tags, support posture, and fee behavior.</p>
+          </article>
+        </div>
+        <p class="doc-link">
+          Roadmap:
+          <a href="https://github.com/gryszzz/Kaspa-Script/blob/main/docs/PROJECT_STATUS.md">
+            docs/PROJECT_STATUS.md
+          </a>
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>KaspaScript keeps protocol claims source-grounded and target-gated.</p>
+      <div>
+        <a href="https://github.com/gryszzz/Kaspa-Script">GitHub</a>
+        <a href="https://github.com/gryszzz/Kaspa-Script/blob/main/docs/KASPA_PROGRAMMABILITY_KERNEL.md">Kernel Doc</a>
+        <a href="https://github.com/gryszzz/Kaspa-Script/blob/main/README.md">README</a>
+      </div>
+    </footer>
+  </body>
+</html>

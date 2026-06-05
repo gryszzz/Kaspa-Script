@@ -30,6 +30,7 @@ Current status:
 Read the status roadmap: [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
 Kernel package schema:
 [`docs/KERNEL_PACKAGE_SCHEMA.md`](docs/KERNEL_PACKAGE_SCHEMA.md).
+Project site: [`https://gryszzz.github.io/Kaspa-Script/`](https://gryszzz.github.io/Kaspa-Script/).
 
 ---
 

@@ -16,6 +16,8 @@ use thiserror::Error;
 pub enum Target {
     /// Only behavior verified against the pinned Kaspa sources is emitted.
     VerifiedTn12,
+    /// TN10 Toccata posture for activated-testnet package/readiness checks.
+    Tn10Toccata,
     /// Preview target for source-recognized but not opcode-verified features.
     ToccataPreview,
     /// Future mainnet target. Gated features fail until mainnet sources are pinned.
@@ -27,14 +29,26 @@ impl Target {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::VerifiedTn12 => "verified-tn12",
+            Self::Tn10Toccata => "tn10-toccata",
             Self::ToccataPreview => "toccata-preview",
             Self::FutureMainnet => "future-mainnet",
         }
     }
 
+    /// Parses a stable artifact target label.
+    pub fn parse(label: &str) -> Option<Self> {
+        match label {
+            "verified-tn12" => Some(Self::VerifiedTn12),
+            "tn10-toccata" => Some(Self::Tn10Toccata),
+            "toccata-preview" => Some(Self::ToccataPreview),
+            "future-mainnet" => Some(Self::FutureMainnet),
+            _ => None,
+        }
+    }
+
     /// Returns true when gated records should be emitted as warnings.
     pub const fn allows_gated_warnings(self) -> bool {
-        matches!(self, Self::ToccataPreview)
+        matches!(self, Self::Tn10Toccata | Self::ToccataPreview)
     }
 }
 

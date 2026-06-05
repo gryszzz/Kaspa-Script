@@ -54,9 +54,9 @@ moving-master architecture watch.
 - `kaspascript-kernel` now provides the first framework layer for
   Kaspa-native contract blueprints, wallet previews, covenant lineage schema,
   readiness reports, and Toccata fee-policy math.
-- `kaspascript kernel package <contract.ks>` now emits bytecode plus kernel
-  package JSON: wallet previews, indexer schema, fee estimate, and readiness
-  report.
+- `kaspascript kernel package <contract.ks>` now emits v0 bytecode plus kernel
+  package JSON: schema version, source snapshots, wallet previews, indexer
+  schema, fee estimate, and readiness report.
 - The SDK testnet integration depends on Kaspa crates `0.15.0`; current
   Toccata pre-release artifacts are in the `v1.3.0-toc.5` line.
 - The first Toccata crate compatibility spike is recorded in

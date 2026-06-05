@@ -97,7 +97,7 @@ for the final rollout.
 | `source_hash` | VERIFIED | Defined in `compiler/codegen/src/lib.rs`; deterministic test covers repeated compilation. |
 | `compiler_version` | VERIFIED | Defined in `compiler/codegen/src/lib.rs`. |
 | `backend` | VERIFIED | Defined in `compiler/codegen/src/lib.rs`; current value is `kaspa-txscript`. |
-| `target` | VERIFIED | Defined in `compiler/codegen/src/lib.rs`; separates `verified-tn12`, `toccata-preview`, and `future-mainnet`. |
+| `target` | VERIFIED | Defined in `compiler/codegen/src/lib.rs`; separates `verified-tn12`, `tn10-toccata`, `toccata-preview`, and `future-mainnet`. |
 | `finality_depth` | VERIFIED | Defined in `compiler/codegen/src/lib.rs`; sourced from parsed contract metadata. |
 | `kip_requirements` | VERIFIED | Defined in `compiler/codegen/src/lib.rs`; KIP-10 is emitted for transaction introspection. |
 | `warnings` | VERIFIED | Defined in `compiler/codegen/src/lib.rs`; preview target warnings are tested. |

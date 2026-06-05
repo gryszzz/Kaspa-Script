@@ -72,13 +72,17 @@
             <span>escrow.ks</span>
           </div>
           <pre><code>$ kaspascript kernel package escrow.ks \
+  --target verified-tn12 \
   --compute-grams 1000 \
   --tx-bytes 400
 
+schema_version: kaspascript.kernel.package.v0
+package_target: verified-tn12
 artifact.target: verified-tn12
 bytecode_bytes: 76
 kernel.wallet_previews: 2
 kernel.indexer_schema: covenant_lineage
+readiness.level: verified
 readiness.ready: true
 minimum_fee_sompi: 100000</code></pre>
         </aside>
@@ -147,6 +151,14 @@ minimum_fee_sompi: 100000</code></pre>
         <div class="package-layout">
           <div class="schema-list" aria-label="Kernel package schema fields">
             <div>
+              <span>schema_version</span>
+              <p>Current package version: kaspascript.kernel.package.v0.</p>
+            </div>
+            <div>
+              <span>source_snapshots</span>
+              <p>Pinned Rusty Kaspa tags, commits, and audit dates used for evidence.</p>
+            </div>
+            <div>
               <span>artifact</span>
               <p>Backend, target, compiler version, finality depth, KIPs, contracts, spends.</p>
             </div>
@@ -168,13 +180,19 @@ minimum_fee_sompi: 100000</code></pre>
             </div>
           </div>
           <pre class="json-preview" aria-label="Kernel package JSON preview"><code>{
+  "schema_version": "kaspascript.kernel.package.v0",
+  "package_target": "verified-tn12",
+  "source_snapshots": ["v1.3.0-toc.5", "tn10-toc3"],
   "artifact": {
     "backend": "kaspa-txscript",
     "target": "verified-tn12",
     "kip_requirements": [10]
   },
   "kernel": {
-    "readiness": { "ready": true },
+    "readiness": {
+      "level": "verified",
+      "ready": true
+    },
     "wallet_previews": ["release", "refund"],
     "indexer_schema": "covenant_lineage"
   },
@@ -202,6 +220,7 @@ minimum_fee_sompi: 100000</code></pre>
           <pre><code>kaspascript inspect escrow.ks</code></pre>
           <pre><code>kaspascript verify escrow.artifact.json</code></pre>
           <pre><code>kaspascript kernel package escrow.ks \
+  --target verified-tn12 \
   --compute-grams 1000 \
   --tx-bytes 400</code></pre>
         </div>

@@ -42,6 +42,7 @@ CLI package command:
 
 ```console
 $ kaspascript kernel package tests/contracts/escrow.ks \
+    --target verified-tn12 \
     --compute-grams 1000 \
     --tx-bytes 400
 tests/contracts/escrow.kernel.json
@@ -51,9 +52,10 @@ The output JSON includes:
 
 - compiled artifact summary
 - bytecode hex and ASM
+- schema version and source snapshots
 - wallet previews
 - covenant lineage indexer schema
-- readiness report
+- readiness report with `verified`, `preview`, or `blocked` level
 - Toccata fee estimate and explicit fee assumptions
 
 See [`KERNEL_PACKAGE_SCHEMA.md`](KERNEL_PACKAGE_SCHEMA.md) for the current
@@ -111,12 +113,11 @@ activation schedule, and support posture are pinned.
 
 ## Next Kernel Upgrades
 
-1. Add kernel package golden snapshots for `escrow.ks` and `vault.ks`.
-2. Add target selection to `kaspascript kernel package`.
-3. Add Toccata git-tag compatibility fixtures to validate Kaspa crate APIs.
-4. Add wallet-preview golden tests for each production contract pattern.
-5. Add indexer fixtures for covenant genesis, continuation, reorg, and
+1. Add Toccata git-tag compatibility fixtures to validate Kaspa crate APIs.
+2. Add wallet-preview golden tests for each production contract pattern.
+3. Add indexer fixtures for covenant genesis, continuation, reorg, and
    wrong-network cases.
-6. Feed real node/RPC fee estimates into the package when available.
+4. Feed real node/RPC fee estimates into the package when available.
+5. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
 
 See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the completion roadmap.

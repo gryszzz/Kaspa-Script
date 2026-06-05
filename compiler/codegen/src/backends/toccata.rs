@@ -375,6 +375,30 @@ mod tests {
     }
 
     #[test]
+    fn tn10_toccata_target_warns_for_gated_kips() {
+        let ir = IrProgram {
+            contracts: vec![IrContract {
+                name: "Preview".to_owned(),
+                params: Vec::new(),
+                finality_depth: None,
+                spends: vec![IrSpend {
+                    name: "spend".to_owned(),
+                    params: Vec::new(),
+                    instructions: vec![Instruction::new(Span::new(0, 1), InstructionKind::Verify)],
+                }],
+            }],
+            kip_requirements: vec![20],
+        };
+
+        let artifact = compile_toccata("tn10", &ir, "test", Target::Tn10Toccata).expect("tn10");
+        assert_eq!(artifact.target, "tn10-toccata");
+        assert!(artifact
+            .warnings
+            .iter()
+            .any(|warning| warning.id == "kip-20"));
+    }
+
+    #[test]
     fn future_mainnet_rejects_gated_kips_until_sources_are_pinned() {
         let ir = IrProgram {
             contracts: vec![IrContract {

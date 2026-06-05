@@ -1,0 +1,532 @@
+{
+  "schema_version": "kaspascript.kernel.package.v0",
+  "package_target": "verified-tn12",
+  "source_snapshots": [
+    {
+      "upstream_repo": "https://github.com/kaspanet/rusty-kaspa",
+      "tag": "v1.3.0-toc.5",
+      "commit": "04b0d135f8c8023676ea74dcf496c99d5d0bc2a5",
+      "audit_date": "2026-06-05"
+    },
+    {
+      "upstream_repo": "https://github.com/kaspanet/rusty-kaspa",
+      "tag": "tn10-toc3",
+      "commit": "1015a62359e0d06e0b3b3b7f7d06bc1bd4bf0c1b",
+      "audit_date": "2026-06-05"
+    }
+  ],
+  "artifact": {
+    "backend": "kaspa-txscript",
+    "target": "verified-tn12",
+    "compiler_version": "0.1.0",
+    "bytecode_bytes": 76,
+    "finality_depth": 10,
+    "kip_requirements": [
+      10
+    ],
+    "contracts": [
+      "Escrow"
+    ],
+    "spends": [
+      "Escrow.release",
+      "Escrow.refund"
+    ]
+  },
+  "bytecode_hex": "057369675f61057369675f62520562757965720673656c6c6572076172626974657253ae6900c200bea26903736967056275796572ac690774696d656f7574b0516900c30562757965728769",
+  "bytecode_asm": "OP_DATA_5 0x7369675f61 OP_DATA_5 0x7369675f62 OP_2 OP_DATA_5 0x6275796572 OP_DATA_6 0x73656c6c6572 OP_DATA_7 0x61726269746572 OP_3 OP_CHECKMULTISIG OP_VERIFY OP_0 OP_TXOUTPUTAMOUNT OP_0 OP_TXINPUTAMOUNT OP_GREATERTHANOREQUAL OP_VERIFY OP_DATA_3 0x736967 OP_DATA_5 0x6275796572 OP_CHECKSIG OP_VERIFY OP_DATA_7 0x74696d656f7574 OP_CHECKLOCKTIMEVERIFY OP_1 OP_VERIFY OP_0 OP_TXOUTPUTSPK OP_DATA_5 0x6275796572 OP_EQUAL OP_VERIFY",
+  "kernel": {
+    "schema_version": "kaspascript.kernel.package.v0",
+    "blueprint": {
+      "name": "Escrow",
+      "network": "Tn12",
+      "state": [
+        {
+          "name": "buyer",
+          "ty": "PublicKey",
+          "description": "compiled parameter from contract Escrow"
+        },
+        {
+          "name": "seller",
+          "ty": "PublicKey",
+          "description": "compiled parameter from contract Escrow"
+        },
+        {
+          "name": "arbiter",
+          "ty": "PublicKey",
+          "description": "compiled parameter from contract Escrow"
+        },
+        {
+          "name": "timeout",
+          "ty": "BlockHeight",
+          "description": "compiled parameter from contract Escrow"
+        }
+      ],
+      "transitions": [
+        {
+          "name": "release",
+          "kind": "Spend",
+          "consumes": [
+            "Escrow compiled locking state"
+          ],
+          "creates": [
+            "transaction outputs selected by the spend path"
+          ],
+          "signers": [
+            "sig_a",
+            "sig_b"
+          ],
+          "requirements": [
+            {
+              "feature": "BaseScript",
+              "minimum_evidence": "BranchCode",
+              "reason": "compiled artifact emitted verified Kaspa txscript bytecode"
+            },
+            {
+              "feature": "WalletPreview",
+              "minimum_evidence": "BranchCode",
+              "reason": "kernel package emits wallet preview metadata"
+            },
+            {
+              "feature": "IndexerLineage",
+              "minimum_evidence": "BranchCode",
+              "reason": "kernel package emits indexer schema metadata"
+            },
+            {
+              "feature": "TransactionIntrospection",
+              "minimum_evidence": "BranchCode",
+              "reason": "artifact declares KIP-10 transaction introspection requirements"
+            }
+          ],
+          "proof": {
+            "verifier": "None",
+            "public_inputs": [],
+            "payload_hint": "no proof payload"
+          },
+          "wallet_warnings": [
+            "Review `release` as a Kaspa contract spend path before signing."
+          ]
+        },
+        {
+          "name": "refund",
+          "kind": "Spend",
+          "consumes": [
+            "Escrow compiled locking state"
+          ],
+          "creates": [
+            "transaction outputs selected by the spend path"
+          ],
+          "signers": [
+            "sig"
+          ],
+          "requirements": [
+            {
+              "feature": "BaseScript",
+              "minimum_evidence": "BranchCode",
+              "reason": "compiled artifact emitted verified Kaspa txscript bytecode"
+            },
+            {
+              "feature": "WalletPreview",
+              "minimum_evidence": "BranchCode",
+              "reason": "kernel package emits wallet preview metadata"
+            },
+            {
+              "feature": "IndexerLineage",
+              "minimum_evidence": "BranchCode",
+              "reason": "kernel package emits indexer schema metadata"
+            },
+            {
+              "feature": "TransactionIntrospection",
+              "minimum_evidence": "BranchCode",
+              "reason": "artifact declares KIP-10 transaction introspection requirements"
+            }
+          ],
+          "proof": {
+            "verifier": "None",
+            "public_inputs": [],
+            "payload_hint": "no proof payload"
+          },
+          "wallet_warnings": [
+            "Review `refund` as a Kaspa contract spend path before signing."
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "label": "KaspaScript compiled artifact",
+          "url": "tests/contracts/escrow.ks",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Tn12",
+          "level": "BranchCode",
+          "features": [
+            "BaseScript",
+            "WalletPreview",
+            "IndexerLineage",
+            "TransactionIntrospection"
+          ],
+          "note": "local compiler artifact verified before kernel package emission"
+        },
+        {
+          "label": "rusty-kaspa v1.3.0-toc.5",
+          "url": "https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Mainnet",
+          "level": "MainnetPreActivation",
+          "features": [
+            "FeePolicy"
+          ],
+          "note": "mainnet sanity-testing pre-release; explicitly not mainnet activation"
+        },
+        {
+          "label": "rusty-kaspa PR #1000",
+          "url": "https://github.com/kaspanet/rusty-kaspa/pull/1000",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Unknown",
+          "level": "MergedCode",
+          "features": [
+            "TransactionIntrospection",
+            "CovenantIds",
+            "SequencingCommitments",
+            "ZkVerification"
+          ],
+          "note": "Toccata implementation merged into master"
+        },
+        {
+          "label": "rusty-kaspa tn10-toc3",
+          "url": "https://github.com/kaspanet/rusty-kaspa/releases/tag/tn10-toc3",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Tn10",
+          "level": "TestnetActivation",
+          "features": [
+            "ZkVerification",
+            "SequencingCommitments"
+          ],
+          "note": "TN10 Toccata ZK hardening activation evidence"
+        },
+        {
+          "label": "KIP-17 merged file",
+          "url": "https://github.com/kaspanet/kips/blob/master/kip-0017.md",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Tn10",
+          "level": "TestnetActivation",
+          "features": [
+            "TransactionIntrospection"
+          ],
+          "note": "merged KIP status indicates implemented and activated in TN10"
+        },
+        {
+          "label": "KIP-20 merged file",
+          "url": "https://github.com/kaspanet/kips/blob/master/kip-0020.md",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Tn10",
+          "level": "TestnetActivation",
+          "features": [
+            "CovenantIds"
+          ],
+          "note": "merged KIP status indicates implemented and activated in TN10"
+        },
+        {
+          "label": "KIP-21 merged file",
+          "url": "https://github.com/kaspanet/kips/blob/master/kip-0021.md",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Tn10",
+          "level": "TestnetActivation",
+          "features": [
+            "SequencingCommitments"
+          ],
+          "note": "merged KIP status indicates implemented and activated in TN10"
+        },
+        {
+          "label": "KaspaScript kernel artifacts",
+          "url": "kernel/src/lib.rs",
+          "audit_date": "2026-06-04T03:33:39Z",
+          "network": "Unknown",
+          "level": "BranchCode",
+          "features": [
+            "WalletPreview",
+            "IndexerLineage"
+          ],
+          "note": "local kernel emits wallet preview and covenant lineage schema artifacts"
+        }
+      ]
+    },
+    "readiness": {
+      "contract": "Escrow",
+      "network": "Tn12",
+      "level": "verified",
+      "ready": true,
+      "blockers": [],
+      "features": [
+        {
+          "transition": "release",
+          "feature": "BaseScript",
+          "required": "BranchCode",
+          "best": "BranchCode",
+          "level": "verified",
+          "satisfied": true,
+          "source_label": "KaspaScript compiled artifact"
+        },
+        {
+          "transition": "release",
+          "feature": "WalletPreview",
+          "required": "BranchCode",
+          "best": "BranchCode",
+          "level": "verified",
+          "satisfied": true,
+          "source_label": "KaspaScript kernel artifacts"
+        },
+        {
+          "transition": "release",
+          "feature": "IndexerLineage",
+          "required": "BranchCode",
+          "best": "BranchCode",
+          "level": "verified",
+          "satisfied": true,
+          "source_label": "KaspaScript kernel artifacts"
+        },
+        {
+          "transition": "release",
+          "feature": "TransactionIntrospection",
+          "required": "BranchCode",
+          "best": "MergedCode",
+          "level": "verified",
+          "satisfied": true,
+          "source_label": "rusty-kaspa PR #1000"
+        },
+        {
+          "transition": "refund",
+          "feature": "BaseScript",
+          "required": "BranchCode",
+          "best": "BranchCode",
+          "level": "verified",
+          "satisfied": true,
+          "source_label": "KaspaScript compiled artifact"
+        },
+        {
+          "transition": "refund",
+          "feature": "WalletPreview",
+          "required": "BranchCode",
+          "best": "BranchCode",
+          "level": "verified",
+          "satisfied": true,
+          "source_label": "KaspaScript kernel artifacts"
+        },
+        {
+          "transition": "refund",
+          "feature": "IndexerLineage",
+          "required": "BranchCode",
+          "best": "BranchCode",
+          "level": "verified",
+          "satisfied": true,
+          "source_label": "KaspaScript kernel artifacts"
+        },
+        {
+          "transition": "refund",
+          "feature": "TransactionIntrospection",
+          "required": "BranchCode",
+          "best": "MergedCode",
+          "level": "verified",
+          "satisfied": true,
+          "source_label": "rusty-kaspa PR #1000"
+        }
+      ]
+    },
+    "wallet_previews": [
+      {
+        "contract": "Escrow",
+        "transition": "release",
+        "network": "Tn12",
+        "classification": "CovenantStateTransition",
+        "consumes": [
+          "Escrow compiled locking state"
+        ],
+        "creates": [
+          "transaction outputs selected by the spend path"
+        ],
+        "signers": [
+          "sig_a",
+          "sig_b"
+        ],
+        "proof": {
+          "verifier": "None",
+          "public_inputs": [],
+          "payload_hint": "no proof payload"
+        },
+        "warnings": [
+          "Review `release` as a Kaspa contract spend path before signing.",
+          "This is a covenant state transition preview, not an ordinary payment preview."
+        ]
+      },
+      {
+        "contract": "Escrow",
+        "transition": "refund",
+        "network": "Tn12",
+        "classification": "CovenantStateTransition",
+        "consumes": [
+          "Escrow compiled locking state"
+        ],
+        "creates": [
+          "transaction outputs selected by the spend path"
+        ],
+        "signers": [
+          "sig"
+        ],
+        "proof": {
+          "verifier": "None",
+          "public_inputs": [],
+          "payload_hint": "no proof payload"
+        },
+        "warnings": [
+          "Review `refund` as a Kaspa contract spend path before signing.",
+          "This is a covenant state transition preview, not an ordinary payment preview."
+        ]
+      }
+    ],
+    "indexer_schema": {
+      "contract": "Escrow",
+      "network": "Tn12",
+      "tables": [
+        {
+          "name": "covenant_lineage",
+          "columns": [
+            {
+              "name": "covenant_id",
+              "ty": "bytes32",
+              "required": true
+            },
+            {
+              "name": "network",
+              "ty": "text",
+              "required": true
+            },
+            {
+              "name": "genesis_tx_id",
+              "ty": "bytes32",
+              "required": true
+            },
+            {
+              "name": "genesis_output_index",
+              "ty": "u32",
+              "required": true
+            },
+            {
+              "name": "current_tip_tx_id",
+              "ty": "bytes32",
+              "required": true
+            },
+            {
+              "name": "current_tip_output_index",
+              "ty": "u32",
+              "required": true
+            },
+            {
+              "name": "last_seen_daa_score",
+              "ty": "u64",
+              "required": true
+            },
+            {
+              "name": "status",
+              "ty": "text",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "covenant_transition",
+          "columns": [
+            {
+              "name": "covenant_id",
+              "ty": "bytes32",
+              "required": true
+            },
+            {
+              "name": "spending_tx_id",
+              "ty": "bytes32",
+              "required": true
+            },
+            {
+              "name": "consumed_outpoint",
+              "ty": "text",
+              "required": true
+            },
+            {
+              "name": "successor_outpoint",
+              "ty": "text",
+              "required": true
+            },
+            {
+              "name": "authorizing_input_index",
+              "ty": "u32",
+              "required": true
+            },
+            {
+              "name": "accepting_block_hash",
+              "ty": "bytes32",
+              "required": true
+            },
+            {
+              "name": "accepting_daa_score",
+              "ty": "u64",
+              "required": true
+            },
+            {
+              "name": "transition_status",
+              "ty": "text",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "wallet_preview_audit",
+          "columns": [
+            {
+              "name": "preview_id",
+              "ty": "text",
+              "required": true
+            },
+            {
+              "name": "contract",
+              "ty": "text",
+              "required": true
+            },
+            {
+              "name": "transition",
+              "ty": "text",
+              "required": true
+            },
+            {
+              "name": "network",
+              "ty": "text",
+              "required": true
+            },
+            {
+              "name": "consumes_json",
+              "ty": "json",
+              "required": true
+            },
+            {
+              "name": "creates_json",
+              "ty": "json",
+              "required": true
+            },
+            {
+              "name": "warnings_json",
+              "ty": "json",
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    "fee_policy": {
+      "sompi_per_unit": 100
+    }
+  },
+  "fee_estimate": {
+    "policy": "toccata-rpc-minimum-standard-fee",
+    "source": "https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5",
+    "compute_grams": 1000,
+    "transaction_bytes": 400,
+    "minimum_standard_fee_sompi": 100000,
+    "assumption": "caller-provided fee estimate inputs"
+  }
+}

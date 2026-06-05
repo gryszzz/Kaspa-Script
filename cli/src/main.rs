@@ -3,12 +3,15 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::{bail, Context, Result};
-use kaspascript_codegen::{bytecode_asm, bytecode_hex, verify_artifact, CompiledArtifact};
+use kaspascript_codegen::{
+    bytecode_asm, bytecode_hex, compile_file_for_target, verify_artifact, CompiledArtifact, Target,
+};
 use kaspascript_ir::lower_file;
 use kaspascript_kernel::{
     current_toccata_evidence, define_kaspa_contract, package_compiled_contract,
-    CompiledArtifactSummary, ContractBlueprint, EvidenceLevel, FeatureRequirement, KernelFeature,
-    Network, SourceEvidence, StateField, StateType, Transition, TransitionKind,
+    CompiledArtifactSummary, CompiledKernelPackage, ContractBlueprint, EvidenceLevel,
+    FeatureRequirement, KernelFeature, Network, SourceEvidence, StateField, StateType, Transition,
+    TransitionKind,
 };
 use kaspascript_lexer::TypeName;
 use kaspascript_sdk::compile;
@@ -32,7 +35,7 @@ fn main() -> Result<()> {
 }
 
 fn usage() -> &'static str {
-    "usage: kaspascript <compile|verify|inspect> <file>\n       kaspascript kernel package <file.ks> [--output <file>] [--compute-grams <n>] [--tx-bytes <n>]\n       kaspascript wallet balance --target tn12\n       kaspascript tx lock <file.ks> --target tn12 --amount 1.0 [--dry-run|--broadcast]\n       kaspascript tx spend <artifact.json> --spend <name> --target tn12 [--dry-run|--broadcast]\n       kaspascript proof verify <proof.json>"
+    "usage: kaspascript <compile|verify|inspect> <file>\n       kaspascript kernel package <file.ks> [--target verified-tn12|tn10-toccata|toccata-preview|future-mainnet] [--output <file>] [--compute-grams <n>] [--tx-bytes <n>]\n       kaspascript wallet balance --target tn12\n       kaspascript tx lock <file.ks> --target tn12 --amount 1.0 [--dry-run|--broadcast]\n       kaspascript tx spend <artifact.json> --spend <name> --target tn12 [--dry-run|--broadcast]\n       kaspascript proof verify <proof.json>"
 }
 
 fn compile_command(path: &str) -> Result<()> {
@@ -91,7 +94,25 @@ fn kernel_package_command(args: &[String]) -> Result<()> {
     };
     let options = KernelPackageOptions::parse(&args[1..])?;
     let source = fs::read_to_string(path).with_context(|| format!("failed to read {path}"))?;
-    let artifact = compile(&source, path).map_err(|error| anyhow::anyhow!("error: {error}"))?;
+    let package = build_kernel_package(path, &source, &options)?;
+
+    let json = serde_json::to_string_pretty(&package)?;
+    let output = options
+        .output
+        .clone()
+        .unwrap_or_else(|| kernel_package_path(path));
+    fs::write(&output, json).with_context(|| format!("failed to write {}", output.display()))?;
+    println!("{}", output.display());
+    Ok(())
+}
+
+fn build_kernel_package(
+    path: &str,
+    source: &str,
+    options: &KernelPackageOptions,
+) -> Result<CompiledKernelPackage> {
+    let artifact = compile_file_for_target(source, path, options.target)
+        .map_err(|error| anyhow::anyhow!("error: {error}"))?;
     verify_artifact(&artifact).map_err(|error| anyhow::anyhow!("error: {error}"))?;
 
     let bytecode_hex = bytecode_hex(&artifact.bytecode);
@@ -117,11 +138,7 @@ fn kernel_package_command(args: &[String]) -> Result<()> {
     )
     .map_err(|error| anyhow::anyhow!("error: {error}"))?;
 
-    let json = serde_json::to_string_pretty(&package)?;
-    let output = options.output.unwrap_or_else(|| kernel_package_path(path));
-    fs::write(&output, json).with_context(|| format!("failed to write {}", output.display()))?;
-    println!("{}", output.display());
-    Ok(())
+    Ok(package)
 }
 
 fn read_artifact(path: &str) -> Result<CompiledArtifact> {
@@ -142,6 +159,7 @@ struct KernelPackageOptions {
     output: Option<std::path::PathBuf>,
     compute_grams: u64,
     tx_bytes: Option<u64>,
+    target: Target,
 }
 
 impl KernelPackageOptions {
@@ -150,6 +168,7 @@ impl KernelPackageOptions {
             output: None,
             compute_grams: 0,
             tx_bytes: None,
+            target: Target::VerifiedTn12,
         };
         let mut index = 0;
         while index < args.len() {
@@ -174,6 +193,17 @@ impl KernelPackageOptions {
                         .get(index)
                         .ok_or_else(|| anyhow::anyhow!("--tx-bytes needs a value"))?;
                     options.tx_bytes = Some(parse_u64_option("--tx-bytes", value)?);
+                }
+                "--target" => {
+                    index += 1;
+                    let value = args
+                        .get(index)
+                        .ok_or_else(|| anyhow::anyhow!("--target needs a value"))?;
+                    options.target = Target::parse(value).ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "--target must be one of verified-tn12, tn10-toccata, toccata-preview, future-mainnet"
+                        )
+                    })?;
                 }
                 other => bail!("unknown option `{other}`"),
             }
@@ -322,6 +352,7 @@ fn local_artifact_evidence(
 fn network_from_target(target: &str) -> Network {
     match target {
         "verified-tn12" => Network::Tn12,
+        "tn10-toccata" => Network::Tn10,
         "future-mainnet" => Network::Mainnet,
         "toccata-preview" => Network::Unknown,
         _ => Network::Unknown,
@@ -603,7 +634,21 @@ fn contract_name_from_path(path: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kaspascript_kernel::ReadinessLevel;
     use serde_json::Value;
+
+    const KERNEL_GOLDENS: &[(&str, &str, &str)] = &[
+        (
+            "tests/contracts/escrow.ks",
+            include_str!("../../tests/contracts/escrow.ks"),
+            include_str!("../../tests/golden/escrow.kernel.json"),
+        ),
+        (
+            "tests/contracts/vault.ks",
+            include_str!("../../tests/contracts/vault.ks"),
+            include_str!("../../tests/golden/vault.kernel.json"),
+        ),
+    ];
 
     #[test]
     fn kernel_package_command_writes_combined_artifact() {
@@ -622,6 +667,8 @@ mod tests {
             source_path.display().to_string(),
             "--output".to_owned(),
             output_path.display().to_string(),
+            "--target".to_owned(),
+            "verified-tn12".to_owned(),
             "--compute-grams".to_owned(),
             "1000".to_owned(),
             "--tx-bytes".to_owned(),
@@ -632,6 +679,14 @@ mod tests {
 
         let json = fs::read_to_string(&output_path).expect("read package");
         let package: Value = serde_json::from_str(&json).expect("json");
+        assert_eq!(
+            package["schema_version"],
+            Value::String("kaspascript.kernel.package.v0".to_owned())
+        );
+        assert_eq!(
+            package["package_target"],
+            Value::String("verified-tn12".to_owned())
+        );
         assert_eq!(
             package["artifact"]["contracts"][0],
             Value::String("Escrow".to_owned())
@@ -649,6 +704,14 @@ mod tests {
         assert!(package["kernel"]["readiness"]["ready"]
             .as_bool()
             .expect("readiness bool"));
+        assert_eq!(
+            package["kernel"]["readiness"]["level"],
+            Value::String("verified".to_owned())
+        );
+        assert_eq!(
+            package["source_snapshots"][0]["tag"],
+            Value::String("v1.3.0-toc.5".to_owned())
+        );
 
         let _ = fs::remove_file(source_path);
         let _ = fs::remove_file(output_path);
@@ -658,6 +721,8 @@ mod tests {
     #[test]
     fn kernel_options_parse_fee_inputs() {
         let args = vec![
+            "--target".to_owned(),
+            "tn10-toccata".to_owned(),
             "--compute-grams".to_owned(),
             "25".to_owned(),
             "--tx-bytes".to_owned(),
@@ -667,5 +732,60 @@ mod tests {
 
         assert_eq!(options.compute_grams, 25);
         assert_eq!(options.tx_bytes, Some(11));
+        assert_eq!(options.target, Target::Tn10Toccata);
+    }
+
+    #[test]
+    fn kernel_package_golden_snapshots_match() {
+        for (source_path, source, golden) in KERNEL_GOLDENS {
+            let options = KernelPackageOptions {
+                output: None,
+                compute_grams: 1000,
+                tx_bytes: Some(400),
+                target: Target::VerifiedTn12,
+            };
+
+            let package =
+                build_kernel_package(source_path, source, &options).expect("kernel package");
+            let actual = serde_json::to_string_pretty(&package).expect("json");
+
+            assert_eq!(actual.trim_end(), golden.trim_end(), "{source_path}");
+        }
+    }
+
+    #[test]
+    fn kernel_package_targets_drive_readiness_levels() {
+        let source_path = "tests/contracts/escrow.ks";
+        let source = include_str!("../../tests/contracts/escrow.ks");
+        let options = KernelPackageOptions {
+            output: None,
+            compute_grams: 1000,
+            tx_bytes: Some(400),
+            target: Target::ToccataPreview,
+        };
+        let preview_package =
+            build_kernel_package(source_path, source, &options).expect("preview package");
+
+        assert_eq!(preview_package.package_target, "toccata-preview");
+        assert_eq!(
+            preview_package.kernel.readiness.level,
+            ReadinessLevel::Preview
+        );
+
+        let options = KernelPackageOptions {
+            output: None,
+            compute_grams: 1000,
+            tx_bytes: Some(400),
+            target: Target::FutureMainnet,
+        };
+        let blocked_package =
+            build_kernel_package(source_path, source, &options).expect("future package");
+
+        assert_eq!(blocked_package.package_target, "future-mainnet");
+        assert_eq!(
+            blocked_package.kernel.readiness.level,
+            ReadinessLevel::Blocked
+        );
+        assert!(!blocked_package.kernel.readiness.ready);
     }
 }

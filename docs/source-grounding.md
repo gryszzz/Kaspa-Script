@@ -64,6 +64,7 @@ builder support, and live testnet proof coverage.
 | Target | Behavior | Local citation |
 | --- | --- | --- |
 | `verified-tn12` | Emits only verified records; gated and unsupported records fail. | `compiler/codegen/src/lib.rs`, `compiler/codegen/src/backends/toccata.rs` |
+| `tn10-toccata` | Emits verified records and warns for gated records under activated-testnet package posture; unsupported lowering still fails. | `compiler/codegen/src/lib.rs`, `compiler/codegen/src/backends/toccata.rs` |
 | `toccata-preview` | Emits verified records, warns for gated records, fails unsupported records. | `compiler/codegen/src/lib.rs`, `compiler/codegen/src/backends/toccata.rs` |
 | `future-mainnet` | Fails gated and unsupported records until mainnet sources are pinned. | `compiler/codegen/src/lib.rs`, `compiler/codegen/src/backends/toccata.rs` |
 

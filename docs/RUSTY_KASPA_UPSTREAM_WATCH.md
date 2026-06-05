@@ -87,16 +87,14 @@ The pinned lane protects tests. The moving lane trains the architecture.
    released.
 2. Keep Toccata crate compatibility pinned to `v1.3.0-toc.5`, but add a
    non-blocking moving-master watch.
-3. Add `--target verified-tn12|toccata-preview|future-mainnet` to
-   `kaspascript kernel package`, then add `tn10-toccata` readiness fixtures.
-4. Add kernel package golden snapshots for `escrow.ks` and `vault.ks`.
-5. Add a schema version field before changing package JSON terminology.
-6. Track `storage_mass`, `compute_commit`, and covenant bindings explicitly in
+3. Add TN10-oriented readiness fixtures for `tn10-toccata`.
+4. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
+5. Track `storage_mass`, `compute_commit`, and covenant bindings explicitly in
    the SDK transaction builder plan.
-7. Add wallet-preview fields for covenant bindings once the transaction builder
+6. Add wallet-preview fields for covenant bindings once the transaction builder
    can construct them.
-8. Add source snapshot metadata to kernel packages:
-   upstream repo, tag or branch, commit SHA, audit date, and evidence level.
+7. Extend source snapshot metadata with upstream branch watches once the moving
+   master lane is automated.
 
 ## Training Loop
 

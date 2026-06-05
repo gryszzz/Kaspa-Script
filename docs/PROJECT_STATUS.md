@@ -1,6 +1,6 @@
 # Project Status And Completion Roadmap
 
-Updated: 2026-06-04.
+Updated: 2026-06-05.
 
 KaspaScript is now a source-gated compiler plus the first slice of a
 Kaspa-native programmability kernel.
@@ -16,7 +16,8 @@ Compiler:
 
 - Lexer, parser, semantic checks, typed IR, and deterministic backend emission.
 - Golden artifacts for the verified example contracts.
-- `verified-tn12`, `toccata-preview`, and `future-mainnet` target posture.
+- `verified-tn12`, `tn10-toccata`, `toccata-preview`, and `future-mainnet`
+  target posture.
 - Source-grounded warnings for gated covenant, ZK, and sequencing surfaces.
 
 CLI:
@@ -24,13 +25,15 @@ CLI:
 - `kaspascript compile <contract.ks>`
 - `kaspascript inspect <contract.ks>`
 - `kaspascript verify <artifact.json>`
-- `kaspascript kernel package <contract.ks>`
+- `kaspascript kernel package <contract.ks> --target <target>`
 
 Kernel:
 
 - `kaspascript-kernel` workspace crate.
 - `DAGSafeVault` UTXO state-machine blueprint.
 - Compiled kernel package JSON.
+- Kernel Package v0 schema version.
+- Golden package snapshots for `escrow.ks` and `vault.ks`.
 - Wallet preview metadata.
 - Covenant lineage indexer schema.
 - Readiness report with mainnet activation guard.
@@ -59,8 +62,6 @@ Testnet readiness:
 
 The current milestone is close to alpha complete. It needs:
 
-- JSON golden tests for `*.kernel.json` package output.
-- `--target` selection for `kaspascript kernel package`.
 - README examples for compile, inspect, verify, and kernel package.
 - CI running `cargo fmt --check`, `cargo clippy`, and workspace tests.
 
@@ -90,14 +91,13 @@ Until those exist, `future-mainnet` remains locked.
 
 ## Immediate Next Tasks
 
-1. Add kernel package golden snapshots for `escrow.ks` and `vault.ks`.
-2. Add `--target verified-tn12|toccata-preview|future-mainnet` to
-   `kaspascript kernel package`.
-3. Add a non-blocking Rusty Kaspa moving-master compatibility watch.
-4. Add a machine-readable JSON Schema after a schema version field lands.
-5. Update CI to run format, clippy, and workspace tests.
-6. Add a small SDK wrapper for generating kernel packages without invoking the
+1. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
+2. Update CI to run format, clippy, workspace tests, and kernel package golden
+   checks.
+3. Add a small SDK wrapper for generating kernel packages without invoking the
    CLI.
+4. Add TN10-oriented package fixtures for Toccata readiness.
+5. Add wallet-preview and indexer fixtures for each production contract pattern.
 
 ## Maintainer Commands
 

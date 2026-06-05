@@ -14,6 +14,12 @@ use thiserror::Error;
 /// Source audit date for the bundled Toccata evidence set.
 pub const TOCCATA_AUDIT_DATE: &str = "2026-06-04T03:33:39Z";
 
+/// Kernel package schema version emitted by v0 packages.
+pub const KERNEL_PACKAGE_SCHEMA_VERSION: &str = "kaspascript.kernel.package.v0";
+
+/// Source snapshot audit date for the bundled v0 upstream metadata.
+pub const SOURCE_SNAPSHOT_AUDIT_DATE: &str = "2026-06-05";
+
 /// Kaspa network scope for a kernel artifact.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Network {
@@ -141,6 +147,31 @@ pub struct SourceEvidence {
     pub level: EvidenceLevel,
     pub features: Vec<KernelFeature>,
     pub note: String,
+}
+
+/// Upstream source snapshot pinned into a package.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceSnapshot {
+    pub upstream_repo: String,
+    pub tag: String,
+    pub commit: String,
+    pub audit_date: String,
+}
+
+impl SourceSnapshot {
+    pub fn new(
+        upstream_repo: impl Into<String>,
+        tag: impl Into<String>,
+        commit: impl Into<String>,
+        audit_date: impl Into<String>,
+    ) -> Self {
+        Self {
+            upstream_repo: upstream_repo.into(),
+            tag: tag.into(),
+            commit: commit.into(),
+            audit_date: audit_date.into(),
+        }
+    }
 }
 
 impl SourceEvidence {
@@ -414,20 +445,37 @@ impl ContractBlueprint {
                             .unwrap_or_else(|| EvidenceLevel::Unknown.to_string())
                     ));
                 }
+                let level = if satisfied {
+                    ReadinessLevel::Verified
+                } else if best.is_some() {
+                    ReadinessLevel::Preview
+                } else {
+                    ReadinessLevel::Blocked
+                };
                 feature_reports.push(FeatureReadiness {
                     transition: transition.name.clone(),
                     feature: requirement.feature,
                     required: requirement.minimum_evidence,
                     best: best.as_ref().map(|evidence| evidence.level),
+                    level,
                     satisfied,
                     source_label: best.map(|evidence| evidence.label),
                 });
             }
         }
 
+        let level = if !blockers.is_empty() {
+            ReadinessLevel::Blocked
+        } else if self.network == Network::Unknown {
+            ReadinessLevel::Preview
+        } else {
+            ReadinessLevel::Verified
+        };
+
         ReadinessReport {
             contract: self.name.clone(),
             network: self.network,
+            level,
             ready: blockers.is_empty(),
             blockers,
             features: feature_reports,
@@ -445,6 +493,7 @@ impl ContractBlueprint {
             .map(|transition| self.preview_transition(&transition.name))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(KernelPackage {
+            schema_version: KERNEL_PACKAGE_SCHEMA_VERSION.to_owned(),
             blueprint: self.clone(),
             readiness: self.readiness_report(),
             wallet_previews,
@@ -502,6 +551,15 @@ impl ContractBuilder {
     }
 }
 
+/// Overall readiness level for package and feature checks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReadinessLevel {
+    Verified,
+    Preview,
+    Blocked,
+}
+
 /// Wallet preview classification.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PreviewClassification {
@@ -552,6 +610,7 @@ pub struct ColumnSpec {
 pub struct ReadinessReport {
     pub contract: String,
     pub network: Network,
+    pub level: ReadinessLevel,
     pub ready: bool,
     pub blockers: Vec<String>,
     pub features: Vec<FeatureReadiness>,
@@ -564,6 +623,7 @@ pub struct FeatureReadiness {
     pub feature: KernelFeature,
     pub required: EvidenceLevel,
     pub best: Option<EvidenceLevel>,
+    pub level: ReadinessLevel,
     pub satisfied: bool,
     pub source_label: Option<String>,
 }
@@ -571,6 +631,7 @@ pub struct FeatureReadiness {
 /// Complete kernel package for an app builder.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KernelPackage {
+    pub schema_version: String,
     pub blueprint: ContractBlueprint,
     pub readiness: ReadinessReport,
     pub wallet_previews: Vec<WalletPreview>,
@@ -605,6 +666,9 @@ pub struct FeeEstimate {
 /// Combined compiler plus kernel package emitted by the CLI.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CompiledKernelPackage {
+    pub schema_version: String,
+    pub package_target: String,
+    pub source_snapshots: Vec<SourceSnapshot>,
     pub artifact: CompiledArtifactSummary,
     pub bytecode_hex: String,
     pub bytecode_asm: String,
@@ -688,13 +752,35 @@ pub fn package_compiled_contract(
     fee_assumption: impl Into<String>,
 ) -> Result<CompiledKernelPackage, KernelError> {
     let fee_policy = ToccataFeePolicy::default();
+    let package_target = artifact.target.clone();
     Ok(CompiledKernelPackage {
+        schema_version: KERNEL_PACKAGE_SCHEMA_VERSION.to_owned(),
+        package_target,
+        source_snapshots: current_source_snapshots(),
         artifact,
         bytecode_hex: bytecode_hex.into(),
         bytecode_asm: bytecode_asm.into(),
         kernel: blueprint.package()?,
         fee_estimate: fee_policy.estimate(compute_grams, transaction_bytes, fee_assumption)?,
     })
+}
+
+/// Current upstream snapshots embedded in v0 packages.
+pub fn current_source_snapshots() -> Vec<SourceSnapshot> {
+    vec![
+        SourceSnapshot::new(
+            "https://github.com/kaspanet/rusty-kaspa",
+            "v1.3.0-toc.5",
+            "04b0d135f8c8023676ea74dcf496c99d5d0bc2a5",
+            SOURCE_SNAPSHOT_AUDIT_DATE,
+        ),
+        SourceSnapshot::new(
+            "https://github.com/kaspanet/rusty-kaspa",
+            "tn10-toc3",
+            "1015a62359e0d06e0b3b3b7f7d06bc1bd4bf0c1b",
+            SOURCE_SNAPSHOT_AUDIT_DATE,
+        ),
+    ]
 }
 
 /// Current bundled Toccata evidence used by examples and tests.
@@ -933,6 +1019,8 @@ mod tests {
         let package = vault.package().expect("package");
 
         assert!(package.readiness.ready, "{:?}", package.readiness.blockers);
+        assert_eq!(package.schema_version, KERNEL_PACKAGE_SCHEMA_VERSION);
+        assert_eq!(package.readiness.level, ReadinessLevel::Verified);
         assert_eq!(package.wallet_previews.len(), 3);
         assert!(package
             .indexer_schema
@@ -963,9 +1051,24 @@ mod tests {
         let report = vault.readiness_report();
 
         assert!(!report.ready);
+        assert_eq!(report.level, ReadinessLevel::Blocked);
         assert!(report
             .blockers
             .iter()
             .any(|blocker| blocker.contains("mainnet activation is not verified")));
+    }
+
+    #[test]
+    fn source_snapshots_pin_upstream_tags() {
+        let snapshots = current_source_snapshots();
+
+        assert!(snapshots.iter().any(|snapshot| {
+            snapshot.tag == "v1.3.0-toc.5"
+                && snapshot.commit == "04b0d135f8c8023676ea74dcf496c99d5d0bc2a5"
+        }));
+        assert!(snapshots.iter().any(|snapshot| {
+            snapshot.tag == "tn10-toc3"
+                && snapshot.commit == "1015a62359e0d06e0b3b3b7f7d06bc1bd4bf0c1b"
+        }));
     }
 }

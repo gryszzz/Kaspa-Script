@@ -24,7 +24,7 @@ verification, and no hidden transaction behavior.
 Current status:
 
 - Verified compiler and golden test suite for the V1 txscript subset.
-- First Kaspa programmability kernel crate and CLI package command.
+- First Kaspa programmability kernel crate and v0 package command.
 - Toccata upgrade prep is tracked, but mainnet activation remains unclaimed.
 
 Read the status roadmap: [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
@@ -138,7 +138,7 @@ KaspaScript treats compilation as an auditable system boundary.
 | Deterministic artifacts | The same source must produce the same bytecode and source hash every time. |
 | No hidden behavior | The compiler and SDK do not inject invisible fees, treasury outputs, or implicit spend paths. |
 | Source-grounded protocol support | Backend opcodes and KIP claims must cite pinned Kaspa sources before they can be verified. |
-| Upgrade-safe targets | `verified-tn12`, `toccata-preview`, and `future-mainnet` are separate target gates. |
+| Upgrade-safe targets | `verified-tn12`, `tn10-toccata`, `toccata-preview`, and `future-mainnet` are separate target gates. |
 | Verification first | Unsupported behavior fails before bytecode emission; preview behavior must warn explicitly. |
 
 The compiler refuses to guess. Uncertain protocol support is a gate, not a
@@ -156,11 +156,12 @@ branch.
 | Semantic analysis | Collects all errors instead of stopping at the first failure. |
 | Typed IR | Opcode-agnostic lowering for verified V1 patterns. |
 | Kaspa txscript backend | Emits deterministic bytes for source-grounded opcodes. |
-| CLI | `compile`, `inspect`, `verify`, and `kernel package`. |
+| CLI | `compile`, `inspect`, `verify`, and target-aware `kernel package`. |
 | Golden artifacts | JSON, hex, and ASM snapshots for every example contract. |
+| Kernel package goldens | v0 `.kernel.json` snapshots for escrow and vault. |
 | SDK preview model | Compile API plus finality-depth checks; not a real Kaspa transaction builder yet. |
 | TN12 test harness | Feature-gated live RPC/wallet preflight with gated proof files. |
-| Programmability kernel | `kaspascript-kernel` crate plus `kaspascript kernel package <contract.ks>` for bytecode, wallet previews, indexer schema, readiness, and fee estimates. |
+| Programmability kernel | `kaspascript-kernel` crate plus `kaspascript kernel package <contract.ks>` for bytecode, wallet previews, indexer schema, readiness levels, source snapshots, and fee estimates. |
 
 ### Verified
 
@@ -208,7 +209,7 @@ contract Escrow
 ```
 
 ```console
-$ kaspascript kernel package escrow.ks --compute-grams 1000 --tx-bytes 400
+$ kaspascript kernel package escrow.ks --target verified-tn12 --compute-grams 1000 --tx-bytes 400
 escrow.kernel.json
 ```
 
@@ -247,7 +248,7 @@ KaspaScript keeps bytecode generation measurable.
 | Check | Coverage |
 | --- | --- |
 | Determinism | Escrow compiles 1000 times with identical bytecode and source hash. |
-| Golden snapshots | Each example checks artifact JSON, expected hex, and expected ASM. |
+| Golden snapshots | Each example checks artifact JSON, expected hex, and expected ASM; escrow and vault also check v0 kernel package JSON. |
 | Negative tests | Wrong signature type, invalid input index, bad finality depth, and unsupported covenant features fail. |
 | Fuzz smoke | Random lexer/parser input must not panic. |
 | Clippy | Workspace is clean under `-D warnings`. |

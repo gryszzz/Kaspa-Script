@@ -1,6 +1,6 @@
-# Kernel Package Schema
+# Kernel Package v0 Schema
 
-Updated: 2026-06-04.
+Updated: 2026-06-05.
 
 `kaspascript kernel package <contract.ks>` emits one JSON object that combines
 the compiled txscript artifact with the KaspaScript kernel package.
@@ -12,6 +12,7 @@ replacement for node, wallet, or consensus validation.
 
 ```bash
 cargo run -p kaspascript-cli -- kernel package tests/contracts/escrow.ks \
+  --target verified-tn12 \
   --output /tmp/escrow.kernel.json \
   --compute-grams 1000 \
   --tx-bytes 400
@@ -24,6 +25,9 @@ extension.
 
 ```json
 {
+  "schema_version": "kaspascript.kernel.package.v0",
+  "package_target": "verified-tn12",
+  "source_snapshots": [],
   "artifact": {},
   "bytecode_hex": "...",
   "bytecode_asm": "...",
@@ -34,11 +38,36 @@ extension.
 
 | Field | Type | Notes |
 | --- | --- | --- |
+| `schema_version` | string | Current value: `kaspascript.kernel.package.v0`. |
+| `package_target` | string | Package target selected by the CLI. |
+| `source_snapshots` | array<object> | Pinned upstream source snapshots used by the package evidence set. |
 | `artifact` | object | Compiler artifact summary. |
 | `bytecode_hex` | string | Hex-encoded compiled txscript bytes. |
 | `bytecode_asm` | string | Human-readable txscript assembly. |
 | `kernel` | object | Wallet, indexer, readiness, blueprint, and fee policy metadata. |
 | `fee_estimate` | object | Fee estimate using the selected package assumptions. |
+
+Package targets:
+
+- `verified-tn12`
+- `tn10-toccata`
+- `toccata-preview`
+- `future-mainnet`
+
+## Source Snapshots
+
+```json
+{
+  "upstream_repo": "https://github.com/kaspanet/rusty-kaspa",
+  "tag": "v1.3.0-toc.5",
+  "commit": "04b0d135f8c8023676ea74dcf496c99d5d0bc2a5",
+  "audit_date": "2026-06-05"
+}
+```
+
+The v0 package pins Rusty Kaspa snapshots for `v1.3.0-toc.5` and `tn10-toc3`.
+Consumers should treat these as evidence metadata, not as a replacement for
+node validation.
 
 ## Artifact Summary
 
@@ -70,6 +99,7 @@ extension.
 
 ```json
 {
+  "schema_version": "kaspascript.kernel.package.v0",
   "blueprint": {},
   "readiness": {},
   "wallet_previews": [],
@@ -82,6 +112,7 @@ extension.
 
 | Field | Type | Notes |
 | --- | --- | --- |
+| `schema_version` | string | Current value: `kaspascript.kernel.package.v0`. |
 | `blueprint` | object | Contract state-machine model. |
 | `readiness` | object | Evidence-based readiness report. |
 | `wallet_previews` | array<object> | Wallet-facing transition previews. |
@@ -234,11 +265,21 @@ lineage, covenant transition, and wallet preview audit table suggestions.
 {
   "contract": "Escrow",
   "network": "Tn12",
+  "level": "verified",
   "ready": true,
   "blockers": [],
   "features": []
 }
 ```
+
+Readiness levels:
+
+- `verified`: every transition requirement is satisfied for a non-preview
+  target network.
+- `preview`: evidence is sufficient for analysis, but the package target is
+  intentionally preview-scoped.
+- `blocked`: at least one blocker prevents the package from being treated as
+  ready.
 
 Feature readiness line:
 
@@ -248,6 +289,7 @@ Feature readiness line:
   "feature": "BaseScript",
   "required": "BranchCode",
   "best": "BranchCode",
+  "level": "verified",
   "satisfied": true,
   "source_label": "KaspaScript compiled artifact"
 }
@@ -283,7 +325,8 @@ bound for `transaction_bytes`. When `--compute-grams` is omitted, it uses `0`.
 
 - Enum strings are serialized as Rust variant names, for example `Tn12` and
   `BaseScript`.
+- Readiness levels are serialized as lowercase v0 labels: `verified`,
+  `preview`, and `blocked`.
 - The schema is additive while the CLI is pre-1.0. Consumers should ignore
   unknown fields and require the root fields listed above.
-- A machine-readable JSON Schema should be added when the package includes an
-  explicit schema version field.
+- Machine-readable JSON Schema should be generated from this v0 shape next.

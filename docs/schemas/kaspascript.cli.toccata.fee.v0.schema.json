@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gryszzz/Kaspa-Script/main/docs/schemas/kaspascript.cli.toccata.fee.v0.schema.json",
+  "title": "KaspaScript CLI Toccata Fee Report v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "fee_estimate",
+    "formula"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "kaspascript.cli.toccata.fee.v0"
+    },
+    "fee_estimate": {
+      "$ref": "#/$defs/fee_estimate"
+    },
+    "formula": {
+      "const": "max(compute_grams, tx_bytes * 2) * 100 sompi"
+    }
+  },
+  "$defs": {
+    "fee_estimate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "source",
+        "compute_grams",
+        "transaction_bytes",
+        "minimum_standard_fee_sompi",
+        "assumption"
+      ],
+      "properties": {
+        "policy": {
+          "const": "toccata-rpc-minimum-standard-fee"
+        },
+        "source": {
+          "type": "string"
+        },
+        "compute_grams": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "transaction_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_standard_fee_sompi": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assumption": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

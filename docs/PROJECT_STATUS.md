@@ -32,6 +32,8 @@ CLI:
   [--transition <name>] [--json]`
 - `kaspascript toccata status|targets|fee [--json]`
 - `kaspascript doctor <contract.ks> --target <target> [--json]`
+- JSON Schemas in `docs/schemas` and golden report payloads in
+  `tests/golden/cli` for the agent-facing report surfaces.
 
 Kernel:
 
@@ -74,7 +76,6 @@ Testnet readiness:
 
 The current milestone is close to alpha complete. It needs:
 
-- JSON-schema publication for the agent-facing CLI report payloads.
 - CI running `cargo fmt --check`, `cargo clippy`, and workspace tests.
 
 ### Testnet Complete
@@ -142,4 +143,11 @@ cargo run -p kaspascript-cli -- kernel check tests/contracts/escrow.ks \
 cargo run -p kaspascript-cli -- doctor tests/contracts/escrow.ks \
   --target future-mainnet \
   --json
+```
+
+Check the CLI report contracts:
+
+```bash
+cargo test -p kaspascript-cli cli_report_golden_snapshots_match
+cargo test -p kaspascript-cli cli_report_schema_files_are_valid_json
 ```

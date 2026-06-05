@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gryszzz/Kaspa-Script/main/docs/schemas/kaspascript.cli.kernel.check.v0.schema.json",
+  "title": "KaspaScript CLI Kernel Check Report v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract",
+    "target",
+    "artifact",
+    "readiness",
+    "capabilities",
+    "fee_estimate",
+    "next_commands"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "kaspascript.cli.kernel.check.v0"
+    },
+    "contract": {
+      "type": "string"
+    },
+    "target": {
+      "$ref": "#/$defs/package_target"
+    },
+    "artifact": {
+      "$ref": "#/$defs/artifact_summary"
+    },
+    "readiness": {
+      "$ref": "#/$defs/readiness_report"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/capability_profile"
+    },
+    "fee_estimate": {
+      "$ref": "kaspascript.cli.toccata.fee.v0.schema.json#/$defs/fee_estimate"
+    },
+    "next_commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "package_target": {
+      "enum": [
+        "verified-tn12",
+        "tn10-toccata",
+        "toccata-preview",
+        "future-mainnet"
+      ]
+    },
+    "network": {
+      "enum": [
+        "Mainnet",
+        "Tn10",
+        "Tn12",
+        "Simnet",
+        "Devnet",
+        "Unknown"
+      ]
+    },
+    "readiness_level": {
+      "enum": [
+        "verified",
+        "preview",
+        "blocked"
+      ]
+    },
+    "artifact_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend",
+        "target",
+        "compiler_version",
+        "bytecode_bytes",
+        "finality_depth",
+        "kip_requirements",
+        "contracts",
+        "spends"
+      ],
+      "properties": {
+        "backend": {
+          "const": "kaspa-txscript"
+        },
+        "target": {
+          "$ref": "#/$defs/package_target"
+        },
+        "compiler_version": {
+          "type": "string"
+        },
+        "bytecode_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "finality_depth": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "kip_requirements": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "spends": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "readiness_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "network",
+        "level",
+        "ready",
+        "blockers",
+        "features"
+      ],
+      "properties": {
+        "contract": {
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/$defs/network"
+        },
+        "level": {
+          "$ref": "#/$defs/readiness_level"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/feature_readiness"
+          }
+        }
+      }
+    },
+    "feature_readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transition",
+        "feature",
+        "required",
+        "best",
+        "level",
+        "satisfied",
+        "source_label"
+      ],
+      "properties": {
+        "transition": {
+          "type": "string"
+        },
+        "feature": {
+          "type": "string"
+        },
+        "required": {
+          "type": "string"
+        },
+        "best": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "level": {
+          "$ref": "#/$defs/readiness_level"
+        },
+        "satisfied": {
+          "type": "boolean"
+        },
+        "source_label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "capability_profile": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "contract",
+        "network",
+        "readiness_level",
+        "ready",
+        "execution_model",
+        "scope",
+        "features",
+        "transition_profiles",
+        "wallet_requirements",
+        "indexer_requirements",
+        "policy_limits"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "kaspascript.kernel.package.v0"
+        },
+        "contract": {
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/$defs/network"
+        },
+        "readiness_level": {
+          "$ref": "#/$defs/readiness_level"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "execution_model": {
+          "const": "kaspa-utxo-state-machine"
+        },
+        "scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "array"
+        },
+        "transition_profiles": {
+          "type": "array"
+        },
+        "wallet_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "indexer_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "policy_limits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

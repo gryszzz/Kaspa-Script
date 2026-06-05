@@ -149,19 +149,7 @@ fn kernel_check_command(args: &[String]) -> Result<()> {
 
     match options.format {
         OutputFormat::Json => {
-            let report = json!({
-                "schema_version": "kaspascript.cli.kernel.check.v0",
-                "contract": package.kernel.readiness.contract,
-                "target": package.package_target,
-                "artifact": &package.artifact,
-                "readiness": &package.kernel.readiness,
-                "capabilities": &package.kernel.capabilities,
-                "fee_estimate": &package.fee_estimate,
-                "next_commands": [
-                    format!("kaspascript kernel preview {path} --target {}", package.package_target),
-                    format!("kaspascript kernel package {path} --target {} --compute-grams {} --tx-bytes {}", package.package_target, package.fee_estimate.compute_grams, package.fee_estimate.transaction_bytes)
-                ]
-            });
+            let report = kernel_check_report(path, &package);
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
         OutputFormat::Human => print_kernel_check_human(path, &package),
@@ -195,12 +183,7 @@ fn kernel_preview_command(args: &[String]) -> Result<()> {
 
     match options.format {
         OutputFormat::Json => {
-            let report = json!({
-                "schema_version": "kaspascript.cli.kernel.preview.v0",
-                "contract": package.kernel.readiness.contract,
-                "target": package.package_target,
-                "previews": previews,
-            });
+            let report = kernel_preview_report(&package, &previews);
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
         OutputFormat::Human => print_kernel_preview_human(&package, &previews),
@@ -276,10 +259,7 @@ fn toccata_targets_command(args: &[String]) -> Result<()> {
     let targets = target_matrix();
     match format {
         OutputFormat::Json => {
-            let report = json!({
-                "schema_version": "kaspascript.cli.toccata.targets.v0",
-                "targets": targets,
-            });
+            let report = toccata_targets_report(targets);
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
         OutputFormat::Human => print_target_matrix_human(&targets),
@@ -299,11 +279,7 @@ fn toccata_fee_command(args: &[String]) -> Result<()> {
 
     match options.format {
         OutputFormat::Json => {
-            let report = json!({
-                "schema_version": "kaspascript.cli.toccata.fee.v0",
-                "fee_estimate": estimate,
-                "formula": "max(compute_grams, tx_bytes * 2) * 100 sompi",
-            });
+            let report = toccata_fee_report(&estimate);
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
         OutputFormat::Human => {
@@ -591,6 +567,49 @@ fn parse_u64_option(option: &str, value: &str) -> Result<u64> {
     value
         .parse::<u64>()
         .with_context(|| format!("{option} must be a non-negative integer"))
+}
+
+fn kernel_check_report(path: &str, package: &CompiledKernelPackage) -> Value {
+    json!({
+        "schema_version": "kaspascript.cli.kernel.check.v0",
+        "contract": package.kernel.readiness.contract,
+        "target": package.package_target,
+        "artifact": &package.artifact,
+        "readiness": &package.kernel.readiness,
+        "capabilities": &package.kernel.capabilities,
+        "fee_estimate": &package.fee_estimate,
+        "next_commands": [
+            format!("kaspascript kernel preview {path} --target {}", package.package_target),
+            format!("kaspascript kernel package {path} --target {} --compute-grams {} --tx-bytes {}", package.package_target, package.fee_estimate.compute_grams, package.fee_estimate.transaction_bytes)
+        ]
+    })
+}
+
+fn kernel_preview_report(
+    package: &CompiledKernelPackage,
+    previews: &[&kaspascript_kernel::WalletPreview],
+) -> Value {
+    json!({
+        "schema_version": "kaspascript.cli.kernel.preview.v0",
+        "contract": package.kernel.readiness.contract,
+        "target": package.package_target,
+        "previews": previews,
+    })
+}
+
+fn toccata_targets_report(targets: Vec<Value>) -> Value {
+    json!({
+        "schema_version": "kaspascript.cli.toccata.targets.v0",
+        "targets": targets,
+    })
+}
+
+fn toccata_fee_report(estimate: &kaspascript_kernel::FeeEstimate) -> Value {
+    json!({
+        "schema_version": "kaspascript.cli.toccata.fee.v0",
+        "fee_estimate": estimate,
+        "formula": "max(compute_grams, tx_bytes * 2) * 100 sompi",
+    })
 }
 
 fn toccata_status_report() -> Value {
@@ -1256,6 +1275,34 @@ mod tests {
         ),
     ];
 
+    const CLI_REPORT_SCHEMAS: &[(&str, &str, &str)] = &[
+        (
+            "kaspascript.cli.toccata.status.v0",
+            include_str!("../../docs/schemas/kaspascript.cli.toccata.status.v0.schema.json"),
+            include_str!("../../tests/golden/cli/toccata.status.json"),
+        ),
+        (
+            "kaspascript.cli.toccata.targets.v0",
+            include_str!("../../docs/schemas/kaspascript.cli.toccata.targets.v0.schema.json"),
+            include_str!("../../tests/golden/cli/toccata.targets.json"),
+        ),
+        (
+            "kaspascript.cli.toccata.fee.v0",
+            include_str!("../../docs/schemas/kaspascript.cli.toccata.fee.v0.schema.json"),
+            include_str!("../../tests/golden/cli/toccata.fee.json"),
+        ),
+        (
+            "kaspascript.cli.kernel.check.v0",
+            include_str!("../../docs/schemas/kaspascript.cli.kernel.check.v0.schema.json"),
+            include_str!("../../tests/golden/cli/kernel.check.escrow.verified-tn12.json"),
+        ),
+        (
+            "kaspascript.cli.kernel.preview.v0",
+            include_str!("../../docs/schemas/kaspascript.cli.kernel.preview.v0.schema.json"),
+            include_str!("../../tests/golden/cli/kernel.preview.escrow.release.verified-tn12.json"),
+        ),
+    ];
+
     #[test]
     fn kernel_package_command_writes_combined_artifact() {
         let dir =
@@ -1444,6 +1491,73 @@ mod tests {
     }
 
     #[test]
+    fn cli_report_schema_files_are_valid_json() {
+        for (schema_version, schema, golden) in CLI_REPORT_SCHEMAS {
+            let schema_json: Value = serde_json::from_str(schema).expect("schema json");
+            let golden_json: Value = serde_json::from_str(golden).expect("golden json");
+
+            assert_eq!(
+                schema_json["properties"]["schema_version"]["const"],
+                Value::String((*schema_version).to_owned()),
+                "{schema_version}"
+            );
+            assert_eq!(
+                golden_json["schema_version"],
+                Value::String((*schema_version).to_owned()),
+                "{schema_version}"
+            );
+            assert_eq!(
+                schema_json["$schema"],
+                Value::String("https://json-schema.org/draft/2020-12/schema".to_owned()),
+                "{schema_version}"
+            );
+        }
+    }
+
+    #[test]
+    fn cli_report_golden_snapshots_match() {
+        assert_report_snapshot(
+            "toccata.status",
+            toccata_status_report(),
+            include_str!("../../tests/golden/cli/toccata.status.json"),
+        );
+
+        assert_report_snapshot(
+            "toccata.targets",
+            toccata_targets_report(target_matrix()),
+            include_str!("../../tests/golden/cli/toccata.targets.json"),
+        );
+
+        let fee = ToccataFeePolicy::default()
+            .estimate(1000, 400, "caller-provided Toccata fee estimate inputs")
+            .expect("fee estimate");
+        assert_report_snapshot(
+            "toccata.fee",
+            toccata_fee_report(&fee),
+            include_str!("../../tests/golden/cli/toccata.fee.json"),
+        );
+
+        let package = escrow_kernel_package();
+        assert_report_snapshot(
+            "kernel.check.escrow.verified-tn12",
+            kernel_check_report("tests/contracts/escrow.ks", &package),
+            include_str!("../../tests/golden/cli/kernel.check.escrow.verified-tn12.json"),
+        );
+
+        let previews = package
+            .kernel
+            .wallet_previews
+            .iter()
+            .filter(|preview| preview.transition == "release")
+            .collect::<Vec<_>>();
+        assert_report_snapshot(
+            "kernel.preview.escrow.release.verified-tn12",
+            kernel_preview_report(&package, &previews),
+            include_str!("../../tests/golden/cli/kernel.preview.escrow.release.verified-tn12.json"),
+        );
+    }
+
+    #[test]
     fn kernel_package_golden_snapshots_match() {
         for (source_path, source, golden) in KERNEL_GOLDENS {
             let options = KernelPackageOptions {
@@ -1495,5 +1609,25 @@ mod tests {
             ReadinessLevel::Blocked
         );
         assert!(!blocked_package.kernel.readiness.ready);
+    }
+
+    fn escrow_kernel_package() -> CompiledKernelPackage {
+        let options = KernelPackageOptions {
+            output: None,
+            compute_grams: 1000,
+            tx_bytes: Some(400),
+            target: Target::VerifiedTn12,
+        };
+        build_kernel_package(
+            "tests/contracts/escrow.ks",
+            include_str!("../../tests/contracts/escrow.ks"),
+            &options,
+        )
+        .expect("escrow package")
+    }
+
+    fn assert_report_snapshot(name: &str, actual: Value, golden: &str) {
+        let expected: Value = serde_json::from_str(golden).expect("golden json");
+        assert_eq!(actual, expected, "{name}");
     }
 }

@@ -66,7 +66,7 @@ jobs:
           }
 
           rm -rf "${package_dir}" dist
-          mkdir -p "${package_dir}/bin" "${package_dir}/packages" "${package_dir}/docs" dist
+          mkdir -p "${package_dir}/bin" "${package_dir}/packages" "${package_dir}/docs/schemas" "${package_dir}/goldens/cli" dist
 
           cp "target/release/${{ matrix.binary }}" "${binary_path}"
 
@@ -83,8 +83,11 @@ jobs:
             --tx-bytes 400
 
           cp docs/KERNEL_PACKAGE_SCHEMA.md "${package_dir}/docs/KERNEL_PACKAGE_SCHEMA.md"
+          cp docs/CLI_REPORT_SCHEMAS.md "${package_dir}/docs/CLI_REPORT_SCHEMAS.md"
+          cp docs/schemas/*.schema.json "${package_dir}/docs/schemas/"
           cp docs/PROJECT_STATUS.md "${package_dir}/docs/PROJECT_STATUS.md"
           cp docs/RUSTY_KASPA_UPSTREAM_WATCH.md "${package_dir}/docs/RUSTY_KASPA_UPSTREAM_WATCH.md"
+          cp tests/golden/cli/*.json "${package_dir}/goldens/cli/"
 
           cat > "${package_dir}/RELEASE_NOTES.md" <<EOF
           # KaspaScript ${version}
@@ -98,6 +101,7 @@ jobs:
           - kaspascript CLI for ${{ matrix.label }}
           - verified TN12 kernel packages for escrow.ks and vault.ks
           - Kernel Package v0 schema reference
+          - CLI report JSON Schemas and golden snapshots
           - project status and Rusty Kaspa upstream watch docs
           - smoke verification output
           - SHA-256 checksums
@@ -169,6 +173,7 @@ jobs:
           - \`kaspascript\` CLI binary
           - verified TN12 kernel packages for \`escrow.ks\` and \`vault.ks\`
           - Kernel Package v0 schema reference
+          - CLI report JSON Schemas and golden snapshots
           - project status and Rusty Kaspa upstream watch docs
           - smoke verification output
           - internal \`SHA256SUMS.txt\`

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gryszzz/Kaspa-Script/main/docs/schemas/kaspascript.cli.toccata.targets.v0.schema.json",
+  "title": "KaspaScript CLI Toccata Targets Report v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "targets"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "kaspascript.cli.toccata.targets.v0"
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "$ref": "#/$defs/target_profile"
+      }
+    }
+  },
+  "$defs": {
+    "target_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "readiness",
+        "network",
+        "use",
+        "allows_gated_warnings",
+        "production_mainnet",
+        "recommended_for"
+      ],
+      "properties": {
+        "target": {
+          "enum": [
+            "verified-tn12",
+            "tn10-toccata",
+            "toccata-preview",
+            "future-mainnet"
+          ]
+        },
+        "readiness": {
+          "enum": [
+            "verified",
+            "preview",
+            "blocked"
+          ]
+        },
+        "network": {
+          "enum": [
+            "tn12",
+            "tn10",
+            "unknown",
+            "mainnet"
+          ]
+        },
+        "use": {
+          "type": "string"
+        },
+        "allows_gated_warnings": {
+          "type": "boolean"
+        },
+        "production_mainnet": {
+          "type": "boolean"
+        },
+        "recommended_for": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

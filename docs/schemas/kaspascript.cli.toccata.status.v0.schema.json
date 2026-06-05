@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gryszzz/Kaspa-Script/main/docs/schemas/kaspascript.cli.toccata.status.v0.schema.json",
+  "title": "KaspaScript CLI Toccata Status Report v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "upgrade",
+    "source_snapshots",
+    "evidence",
+    "targets",
+    "recommended_commands"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "kaspascript.cli.toccata.status.v0"
+    },
+    "upgrade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "rusty_kaspa_release",
+        "mainnet_activation",
+        "p2p_protocol"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "rusty_kaspa_release": {
+          "$ref": "#/$defs/rusty_kaspa_release"
+        },
+        "mainnet_activation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "daa_score",
+            "estimated_utc",
+            "status",
+            "kaspa_script_readiness"
+          ],
+          "properties": {
+            "daa_score": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "estimated_utc": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "kaspa_script_readiness": {
+              "type": "string"
+            }
+          }
+        },
+        "p2p_protocol": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required_version",
+            "restriction_window"
+          ],
+          "properties": {
+            "required_version": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "restriction_window": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "source_snapshots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_snapshot"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_evidence"
+      }
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "$ref": "kaspascript.cli.toccata.targets.v0.schema.json#/$defs/target_profile"
+      }
+    },
+    "recommended_commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "rusty_kaspa_release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo",
+        "tag",
+        "name",
+        "published_at"
+      ],
+      "properties": {
+        "repo": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "published_at": {
+          "type": "string"
+        }
+      }
+    },
+    "source_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "upstream_repo",
+        "tag",
+        "commit",
+        "audit_date"
+      ],
+      "properties": {
+        "upstream_repo": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "audit_date": {
+          "type": "string"
+        }
+      }
+    },
+    "source_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "url",
+        "audit_date",
+        "network",
+        "level",
+        "features",
+        "note"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "audit_date": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

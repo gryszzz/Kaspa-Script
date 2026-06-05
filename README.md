@@ -266,6 +266,11 @@ Every report-style command also supports `--json` for agents and CI:
 $ kaspascript doctor escrow.ks --target future-mainnet --json
 ```
 
+The report payloads are versioned contracts. JSON Schemas live in
+[`docs/schemas`](docs/schemas), and golden report snapshots live in
+[`tests/golden/cli`](tests/golden/cli). Start with
+[`docs/CLI_REPORT_SCHEMAS.md`](docs/CLI_REPORT_SCHEMAS.md).
+
 ```console
 $ kaspascript verify escrow.artifact.json
 backend: kaspa-txscript

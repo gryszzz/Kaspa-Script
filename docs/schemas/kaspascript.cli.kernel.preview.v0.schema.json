@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gryszzz/Kaspa-Script/main/docs/schemas/kaspascript.cli.kernel.preview.v0.schema.json",
+  "title": "KaspaScript CLI Kernel Preview Report v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract",
+    "target",
+    "previews"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "kaspascript.cli.kernel.preview.v0"
+    },
+    "contract": {
+      "type": "string"
+    },
+    "target": {
+      "enum": [
+        "verified-tn12",
+        "tn10-toccata",
+        "toccata-preview",
+        "future-mainnet"
+      ]
+    },
+    "previews": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/wallet_preview"
+      }
+    }
+  },
+  "$defs": {
+    "wallet_preview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "transition",
+        "network",
+        "classification",
+        "consumes",
+        "creates",
+        "signers",
+        "proof",
+        "warnings"
+      ],
+      "properties": {
+        "contract": {
+          "type": "string"
+        },
+        "transition": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        },
+        "classification": {
+          "enum": [
+            "OrdinaryPayment",
+            "CovenantStateTransition",
+            "ProofBearingTransition"
+          ]
+        },
+        "consumes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "creates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "proof": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verifier",
+            "public_inputs",
+            "payload_hint"
+          ],
+          "properties": {
+            "verifier": {
+              "type": "string"
+            },
+            "public_inputs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "payload_hint": {
+              "type": "string"
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

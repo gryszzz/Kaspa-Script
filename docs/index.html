@@ -29,8 +29,8 @@
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
         <a href="#kernel">Kernel</a>
+        <a href="#architecture">Architecture</a>
         <a href="#package">Package</a>
-        <a href="#upstream">Upstream</a>
         <a href="#roadmap">Roadmap</a>
         <a href="https://github.com/gryszzz/Kaspa-Script">GitHub</a>
       </nav>
@@ -40,14 +40,20 @@
       <section class="hero" id="top" aria-labelledby="hero-title">
         <div class="hero-media" aria-hidden="true"></div>
         <div class="hero-content">
-          <p class="eyebrow">Rust compiler workspace for Kaspa's covenant era</p>
-          <h1 id="hero-title">Kaspa contract artifacts with bytecode, kernel metadata, and upgrade gates.</h1>
+          <p class="eyebrow">Kaspa-native compiler + programmability kernel</p>
+          <h1 id="hero-title">Source-gated contract packages for Kaspa's next upgrade cycle.</h1>
           <p class="hero-copy">
             KaspaScript compiles a verified V1 contract subset into deterministic
             Kaspa txscript artifacts, then packages each contract with a
             capability profile, wallet previews, indexer schema, fee estimates,
             and a readiness report.
           </p>
+          <ul class="hero-badges" aria-label="Kernel package surfaces">
+            <li>schema v0</li>
+            <li>verified TN12</li>
+            <li>Toccata-aware</li>
+            <li>mainnet guarded</li>
+          </ul>
           <div class="hero-actions" aria-label="Project actions">
             <a class="button primary" href="https://github.com/gryszzz/Kaspa-Script">View Repo</a>
             <a class="button secondary" href="#quickstart">Run The CLI</a>
@@ -65,14 +71,28 @@
               <dt>Mainnet</dt>
               <dd>Activation Guarded</dd>
             </div>
+            <div>
+              <dt>Package</dt>
+              <dd>Golden Tested</dd>
+            </div>
           </dl>
         </div>
-        <aside class="hero-console" aria-label="Kernel package command preview">
-          <div class="console-bar">
-            <span>kernel package</span>
-            <span>escrow.ks</span>
-          </div>
-          <pre><code>$ kaspascript kernel package escrow.ks \
+        <aside class="hero-panel" aria-label="KaspaScript package preview">
+          <figure class="brand-frame">
+            <img
+              src="assets/kaspascript-hero.jpg"
+              alt="KaspaScript .ks visual identity"
+              width="1536"
+              height="1024"
+            >
+            <figcaption>Compiler output, kernel metadata, and readiness evidence in one package.</figcaption>
+          </figure>
+          <div class="hero-console">
+            <div class="console-bar">
+              <span>kernel package</span>
+              <span>escrow.ks</span>
+            </div>
+            <pre><code>$ kaspascript kernel package escrow.ks \
   --target verified-tn12 \
   --compute-grams 1000 \
   --tx-bytes 400
@@ -82,12 +102,51 @@ package_target: verified-tn12
 artifact.target: verified-tn12
 bytecode_bytes: 76
 kernel.capabilities: kaspa-utxo-state-machine
-kernel.wallet_previews: 2
-kernel.indexer_schema: covenant_lineage
+transition_profiles: release, refund
+wallet_previews: state-transition
 readiness.level: verified
-readiness.ready: true
 minimum_fee_sompi: 100000</code></pre>
+          </div>
+          <div class="signal-grid" aria-label="Package signals">
+            <div>
+              <span>Execution</span>
+              <strong>UTXO state machine</strong>
+            </div>
+            <div>
+              <span>Wallet</span>
+              <strong>Preview required</strong>
+            </div>
+            <div>
+              <span>Indexer</span>
+              <strong>Lineage schema</strong>
+            </div>
+          </div>
         </aside>
+      </section>
+
+      <section class="proof-band" aria-label="KaspaScript proof points">
+        <div class="proof-strip">
+          <article>
+            <span>01</span>
+            <strong>Compiler gated</strong>
+            <p>Unsupported or unpinned protocol surfaces fail before bytecode emission.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <strong>Package native</strong>
+            <p>Bytecode, ASM, capability profile, wallet preview, schema, fee, and readiness travel together.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <strong>Kaspa shaped</strong>
+            <p>Contracts are modeled as UTXO transitions with explicit state, signers, outputs, and lineage.</p>
+          </article>
+          <article>
+            <span>04</span>
+            <strong>Upgrade aware</strong>
+            <p>Targets separate verified TN12, TN10 Toccata, preview, and future mainnet posture.</p>
+          </article>
+        </div>
       </section>
 
       <section class="band intro-band" aria-label="Project summary">
@@ -104,6 +163,40 @@ minimum_fee_sompi: 100000</code></pre>
               track, what the fee assumptions are, and what evidence supports
               the target network.
             </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section architecture-band" id="architecture" aria-labelledby="architecture-title">
+        <div class="section-heading">
+          <p class="section-kicker">Architecture</p>
+          <h2 id="architecture-title">A compiler pipeline with a package kernel on top.</h2>
+          <p>
+            The repo is built as a Rust workspace so each stage has a clear job:
+            parse source, lower to typed IR, emit source-grounded txscript, and
+            attach package metadata that app builders can inspect.
+          </p>
+        </div>
+        <div class="kernel-map" aria-label="KaspaScript architecture stages">
+          <article>
+            <span>source.ks</span>
+            <strong>Lexer + parser</strong>
+            <p>Position-tagged syntax for contracts, params, spends, expressions, and builtins.</p>
+          </article>
+          <article>
+            <span>typed ir</span>
+            <strong>Semantic lowering</strong>
+            <p>Scope, type, finality, builtin, and target-safety checks before backend work begins.</p>
+          </article>
+          <article>
+            <span>txscript</span>
+            <strong>Backend gates</strong>
+            <p>Verified targets emit deterministic Kaspa bytes; preview surfaces warn or block explicitly.</p>
+          </article>
+          <article>
+            <span>kernel.json</span>
+            <strong>Capability package</strong>
+            <p>Wallet previews, indexer schema, fee policy, readiness, source snapshots, and transition profiles.</p>
           </article>
         </div>
       </section>
@@ -185,6 +278,10 @@ minimum_fee_sompi: 100000</code></pre>
               <p>Blueprint, capabilities, wallet previews, indexer schema, readiness, and fee policy.</p>
             </div>
             <div>
+              <span>kernel.capabilities</span>
+              <p>Execution model, feature evidence, transition profiles, wallet duties, and policy limits.</p>
+            </div>
+            <div>
               <span>fee_estimate</span>
               <p>Toccata minimum-standard-fee estimate with explicit assumptions.</p>
             </div>
@@ -204,7 +301,9 @@ minimum_fee_sompi: 100000</code></pre>
       "ready": true
     },
     "capabilities": {
-      "execution_model": "kaspa-utxo-state-machine"
+      "execution_model": "kaspa-utxo-state-machine",
+      "features": ["BaseScript", "WalletPreview"],
+      "transition_profiles": ["release", "refund"]
     },
     "wallet_previews": ["release", "refund"],
     "indexer_schema": "covenant_lineage"
@@ -313,19 +412,19 @@ minimum_fee_sompi: 100000</code></pre>
           <p class="section-kicker">Completion Roadmap</p>
           <h2 id="roadmap-title">The next work is concrete.</h2>
           <p>
-            The project is close to alpha complete. The next steps are focused
-            on golden package snapshots, target selection, CI, SDK packaging,
-            and testnet fixtures.
+            The package format is now golden-tested. The next wave turns
+            capability profiles into deeper contract analysis and tightens CI,
+            SDK packaging, and TN10 fixtures.
           </p>
         </div>
         <div class="milestone-grid">
           <article>
             <h3>Alpha Complete</h3>
-            <p>Kernel package golden snapshots, target selection, README examples, and CI checks.</p>
+            <p>Machine-readable JSON Schema, CI checks, and package generation from the SDK.</p>
           </article>
           <article>
             <h3>Testnet Complete</h3>
-            <p>Toccata tag fixture, TN10 transaction facade, covenant continuation and indexer cases.</p>
+            <p>TN10 package fixtures, transaction facade, covenant continuation, and indexer cases.</p>
           </article>
           <article>
             <h3>Mainnet Ready</h3>

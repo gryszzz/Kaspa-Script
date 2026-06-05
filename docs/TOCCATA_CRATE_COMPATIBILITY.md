@@ -61,6 +61,23 @@ completed successfully.
 - The `v1.3.0-toc.5` release is a mainnet pre-activation pre-release, not final
   mainnet activation.
 
+## Moving-Master Watch
+
+The pinned compatibility spike should remain anchored to `v1.3.0-toc.5` until a
+new release becomes the explicit target. However, `kaspanet/rusty-kaspa`
+`master` was observed 10 commits ahead of `v1.3.0-toc.5` on 2026-06-05.
+
+The moving-master lane should be non-blocking and should watch for:
+
+- `tx.mass` to `tx.storage_mass`
+- `input.mass` to `input.compute_commit`
+- required `storage_mass` in `RpcTransaction` JSON
+- wallet generator covenant bindings
+- txscript WASM script builder flags
+- TN10 reenablement and activation posture
+
+See [`RUSTY_KASPA_UPSTREAM_WATCH.md`](RUSTY_KASPA_UPSTREAM_WATCH.md).
+
 ## Next Check
 
 The scratch check used a stable target directory:

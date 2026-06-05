@@ -22,6 +22,21 @@ Important checkpoint: `v1.3.0-toc.5` is a mainnet pre-activation
 pre-release. It is for sanity testing and does not activate Toccata on mainnet.
 Operators should expect another upgrade for the final rollout.
 
+Follow-up source watch on 2026-06-05:
+
+- `kaspanet/rusty-kaspa` `master` was observed at commit
+  `580fa8b5d5a66b55db368cd47781784b8b631222`, pushed 2026-06-04T23:48:07Z.
+- `master` was 10 commits ahead of `v1.3.0-toc.5`.
+- Open PR `#1044` was observed as "Set Toccata to activate on mainnet"; it was
+  not merged during this audit. The PR text proposes DAA score `474,165,565`,
+  roughly 2026-06-30 16:15 UTC.
+- Post-release changes touched wallet covenant bindings, txscript WASM builder
+  flags, RPC transaction JSON requirements, `storage_mass`, `compute_commit`,
+  TN10 reenablement, and mempool fee/relay behavior.
+
+See [`RUSTY_KASPA_UPSTREAM_WATCH.md`](RUSTY_KASPA_UPSTREAM_WATCH.md) for the
+moving-master architecture watch.
+
 ## What Toccata Adds
 
 | Area | Upstream source | Impact for KaspaScript |
@@ -57,21 +72,24 @@ Operators should expect another upgrade for the final rollout.
 1. Source pinning: vendor or pin the exact upstream files for
    `v1.3.0-toc.5` and current `kaspanet/kips`, then make the audit generated or
    checkable.
-2. Dependency spike: test whether Kaspa crates from the Toccata line can be
+2. Moving-master watch: add a non-blocking compatibility lane for current
+   `kaspanet/rusty-kaspa` `master` so API drift is found early without
+   destabilizing pinned release tests.
+3. Dependency spike: test whether Kaspa crates from the Toccata line can be
    consumed directly or whether this repo needs git dependencies/facade types.
-3. IR split: replace broad `CovenantId`, `ZkVerifyGroth16`,
+4. IR split: replace broad `CovenantId`, `ZkVerifyGroth16`,
    `ZkVerifyRiscZero`, and `SequencingCommitment` placeholders with ABI-shaped
    instructions.
-4. Kernel integration: feed compiler artifacts into `kaspascript-kernel`
+5. Kernel integration: feed compiler artifacts into `kaspascript-kernel`
    packages so every contract ships with wallet preview, indexer schema, fee
    policy, and readiness metadata.
-5. Backend gates: add opcode constants and emission only after each instruction
+6. Backend gates: add opcode constants and emission only after each instruction
    has stack-order tests, ASM snapshots, and target-specific activation checks.
-6. SDK transaction builder: add transaction version/covenant binding support,
+7. SDK transaction builder: add transaction version/covenant binding support,
    fee estimation from RPC, and no-broadcast dry runs against upgraded TN10.
-7. Proof fixtures: generate minimal TN10 fixtures for covenant ID continuation,
+8. Proof fixtures: generate minimal TN10 fixtures for covenant ID continuation,
    `OpChainblockSeqCommit`, Groth16, and RISC0-Succinct.
-8. Mainnet posture: keep `future-mainnet` locked until the final mainnet
+9. Mainnet posture: keep `future-mainnet` locked until the final mainnet
    activation release and DAA score are pinned from primary sources.
 
 ## First Compatibility Spikes

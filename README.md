@@ -256,6 +256,8 @@ For the current Toccata/DAGKnight preparation notes, see
 [`docs/KASPA_UPGRADE_PREP.md`](docs/KASPA_UPGRADE_PREP.md). That brief records
 the latest upstream KIP and Rusty Kaspa checkpoints without unlocking
 unsupported bytecode paths prematurely.
+For the moving Rusty Kaspa architecture watch, see
+[`docs/RUSTY_KASPA_UPSTREAM_WATCH.md`](docs/RUSTY_KASPA_UPSTREAM_WATCH.md).
 For the new framework layer, see
 [`docs/KASPA_PROGRAMMABILITY_KERNEL.md`](docs/KASPA_PROGRAMMABILITY_KERNEL.md).
 For the kernel package JSON shape, see

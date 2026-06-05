@@ -43,6 +43,7 @@ Testnet readiness:
 - Feature-gated TN12/testnet harness.
 - Offline deployment previews.
 - Toccata source and crate compatibility notes.
+- Rusty Kaspa upstream watch for moving-master architecture changes.
 
 ## What This Does Not Claim Yet
 
@@ -92,9 +93,10 @@ Until those exist, `future-mainnet` remains locked.
 1. Add kernel package golden snapshots for `escrow.ks` and `vault.ks`.
 2. Add `--target verified-tn12|toccata-preview|future-mainnet` to
    `kaspascript kernel package`.
-3. Add a machine-readable JSON Schema after a schema version field lands.
-4. Update CI to run format, clippy, and workspace tests.
-5. Add a small SDK wrapper for generating kernel packages without invoking the
+3. Add a non-blocking Rusty Kaspa moving-master compatibility watch.
+4. Add a machine-readable JSON Schema after a schema version field lands.
+5. Update CI to run format, clippy, and workspace tests.
+6. Add a small SDK wrapper for generating kernel packages without invoking the
    CLI.
 
 ## Maintainer Commands

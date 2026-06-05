@@ -1,0 +1,194 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: linux-x86_64
+            binary: kaspascript
+          - os: macos-14
+            label: darwin-arm64
+            binary: kaspascript
+          - os: windows-latest
+            label: windows-x86_64
+            binary: kaspascript.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          rustc --version
+          cargo --version
+
+      - name: Build release CLI
+        run: cargo build --release -p kaspascript-cli
+
+      - name: Assemble release bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="${GITHUB_REF_NAME}"
+          asset="kaspascript-${version}-${{ matrix.label }}"
+          package_dir="${RUNNER_TEMP}/${asset}"
+          binary_path="${package_dir}/bin/${{ matrix.binary }}"
+
+          rm -rf "${package_dir}" dist
+          mkdir -p "${package_dir}/bin" "${package_dir}/packages" "${package_dir}/docs" dist
+
+          cp "target/release/${{ matrix.binary }}" "${binary_path}"
+
+          "${binary_path}" kernel package tests/contracts/escrow.ks \
+            --target verified-tn12 \
+            --output "${package_dir}/packages/escrow.verified-tn12.kernel.json" \
+            --compute-grams 1000 \
+            --tx-bytes 400
+
+          "${binary_path}" kernel package tests/contracts/vault.ks \
+            --target verified-tn12 \
+            --output "${package_dir}/packages/vault.verified-tn12.kernel.json" \
+            --compute-grams 1000 \
+            --tx-bytes 400
+
+          cp docs/KERNEL_PACKAGE_SCHEMA.md "${package_dir}/docs/KERNEL_PACKAGE_SCHEMA.md"
+          cp docs/PROJECT_STATUS.md "${package_dir}/docs/PROJECT_STATUS.md"
+          cp docs/RUSTY_KASPA_UPSTREAM_WATCH.md "${package_dir}/docs/RUSTY_KASPA_UPSTREAM_WATCH.md"
+
+          cat > "${package_dir}/RELEASE_NOTES.md" <<EOF
+          # KaspaScript ${version}
+
+          Testnet preview release for the KaspaScript compiler and programmability kernel.
+
+          This is not a mainnet smart-contract activation claim. Rusty Kaspa v2.0.0 is tracked as mainnet pre-activation evidence until activation at DAA score 474,165,565 is independently verified.
+
+          Included:
+
+          - kaspascript CLI for ${{ matrix.label }}
+          - verified TN12 kernel packages for escrow.ks and vault.ks
+          - Kernel Package v0 schema reference
+          - project status and Rusty Kaspa upstream watch docs
+          - smoke verification output
+          - SHA-256 checksums
+          EOF
+
+          {
+            echo "ref=${GITHUB_REF_NAME}"
+            echo "sha=${GITHUB_SHA}"
+            echo "runner_os=${RUNNER_OS}"
+            echo "release_label=${{ matrix.label }}"
+          } > "${package_dir}/build-info.txt"
+
+          "${binary_path}" verify tests/golden/timelock.artifact.json > "${package_dir}/verify-smoke.txt"
+
+          (
+            cd "${package_dir}"
+            find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 shasum -a 256 > SHA256SUMS.txt
+          )
+
+          tar -czf "dist/${asset}.tar.gz" -C "${RUNNER_TEMP}" "${asset}"
+          (
+            cd dist
+            shasum -a 256 "${asset}.tar.gz" > "${asset}.tar.gz.sha256"
+          )
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.label }}
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub prerelease
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Write release notes
+        run: |
+          cat > RELEASE_NOTES.md <<EOF
+          # KaspaScript ${GITHUB_REF_NAME}
+
+          Testnet preview release for the KaspaScript compiler and programmability kernel.
+
+          ## Release Type
+
+          This is a GitHub prerelease for testnet and upgrade-readiness work.
+
+          It is not a mainnet smart-contract activation claim.
+
+          ## Cross-Platform Assets
+
+          - Linux x86_64 CLI bundle
+          - macOS arm64 CLI bundle
+          - Windows x86_64 CLI bundle
+          - SHA-256 checksum file for each archive
+
+          Each bundle contains:
+
+          - \`kaspascript\` CLI binary
+          - verified TN12 kernel packages for \`escrow.ks\` and \`vault.ks\`
+          - Kernel Package v0 schema reference
+          - project status and Rusty Kaspa upstream watch docs
+          - smoke verification output
+          - internal \`SHA256SUMS.txt\`
+
+          ## Current Upstream Evidence
+
+          Rusty Kaspa \`v2.0.0\` was published on June 5, 2026 as the mainnet Toccata release. Its release notes schedule activation at DAA score \`474,165,565\`, roughly June 30, 2026 at 16:15 UTC.
+
+          KaspaScript tracks \`v2.0.0\` as mainnet pre-activation evidence until activation is independently verified.
+
+          ## Known Limits
+
+          - No active mainnet smart-contract claim.
+          - No production covenant ID lowering yet.
+          - No production ZK verifier lowering yet.
+          - No script-visible sequencing lowering yet.
+          - No real covenant-bearing mainnet transaction builder yet.
+          EOF
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release edit "${RELEASE_TAG}" \
+              --title "KaspaScript ${RELEASE_TAG}" \
+              --notes-file RELEASE_NOTES.md \
+              --prerelease
+            gh release upload "${RELEASE_TAG}" dist/* --clobber
+          else
+            gh release create "${RELEASE_TAG}" dist/* \
+              --title "KaspaScript ${RELEASE_TAG}" \
+              --notes-file RELEASE_NOTES.md \
+              --prerelease \
+              --latest=false \
+              --verify-tag
+          fi

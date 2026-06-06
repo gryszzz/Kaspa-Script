@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo.png" alt="Kaspa AI Agent Skill Logo" width="200">
+<img width="830" height="690" alt="1D3F5396-790E-43D9-B5CA-6AF71F35F286" src="https://github.com/user-attachments/assets/2ba60637-34b0-4436-8055-90c4e0effd95" />
 </p>
 
 <h1 align="center">Kaspa Script </h1>

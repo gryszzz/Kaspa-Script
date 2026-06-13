@@ -7,6 +7,7 @@ use grounding::{GroundingWarning, SourceCitation};
 use kaspascript_ir::{lower_file, Instruction, IrError};
 use kaspascript_lexer::Span;
 use kaspascript_lexer::TypeName;
+use kaspascript_model::ApplicationModel;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
@@ -69,6 +70,8 @@ pub struct CompiledArtifact {
     pub finality_depth: Option<u64>,
     pub kip_requirements: Vec<u16>,
     pub warnings: Vec<GroundingWarning>,
+    #[serde(default = "ApplicationModel::empty")]
+    pub application: ApplicationModel,
     pub contracts: Vec<ArtifactContract>,
 }
 
@@ -376,6 +379,7 @@ mod tests {
                 }],
             }],
             kip_requirements: vec![16],
+            application: ApplicationModel::empty(),
         };
 
         let error =

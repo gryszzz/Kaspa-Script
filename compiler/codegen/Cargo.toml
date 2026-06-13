@@ -7,6 +7,7 @@ rust-version.workspace = true
 [dependencies]
 kaspascript-ir = { path = "../ir" }
 kaspascript-lexer = { path = "../lexer" }
+kaspascript-model = { path = "../model" }
 serde.workspace = true
 sha2.workspace = true
 thiserror.workspace = true

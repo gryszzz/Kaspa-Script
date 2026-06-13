@@ -1,5 +1,6 @@
 //! KaspaScript opcode-agnostic IR.
 
+mod application;
 pub mod gen;
 pub mod instructions;
 pub mod types;

@@ -1,6 +1,6 @@
 # Project Status And Completion Roadmap
 
-Updated: 2026-06-05.
+Updated: 2026-06-13.
 
 KaspaScript is now a source-gated compiler plus the first slice of a
 Kaspa-native programmability kernel.
@@ -15,6 +15,10 @@ bytecode ASM/hex, and a Toccata fee estimate.
 Compiler:
 
 - Lexer, parser, semantic checks, typed IR, and deterministic backend emission.
+- Canonical `kaspascript.application.v0` model shared by compiler artifacts,
+  kernel packages, CLI inspection, and the SDK.
+- Source-derived signing requirements, classified constraints, transaction
+  shape, output bindings, continuation posture, and monetary responsibilities.
 - Golden artifacts for the verified example contracts.
 - `verified-tn12`, `tn10-toccata`, `toccata-preview`, and `future-mainnet`
   target posture.
@@ -25,6 +29,7 @@ CLI:
 - `kaspascript --help`, `--brief`, and `--version`
 - `kaspascript compile <contract.ks> --target <target>`
 - `kaspascript inspect <contract.ks>`
+- `kaspascript inspect <contract.ks|artifact.json> --json`
 - `kaspascript verify <artifact.json>`
 - `kaspascript kernel package <contract.ks> --target <target>`
 - `kaspascript kernel check <contract.ks> --target <target> [--json]`
@@ -44,6 +49,8 @@ Kernel:
 - Golden package snapshots for `escrow.ks` and `vault.ks`.
 - Capability profile with execution model, feature evidence, transition
   profiles, wallet requirements, indexer requirements, and policy limits.
+- Wallet previews backed by the same canonical transition model embedded in the
+  compiler artifact.
 - Wallet preview metadata.
 - Covenant lineage indexer schema.
 - Readiness report with mainnet activation guard.
@@ -106,15 +113,14 @@ Until those exist, `future-mainnet` remains locked.
 
 ## Immediate Next Tasks
 
-1. Add constraint extraction for signatures, timelocks, value conservation, and
-   script binding in the capability profile.
-2. Add a machine-readable JSON Schema for `kaspascript.kernel.package.v0`.
-3. Update CI to run format, clippy, workspace tests, and kernel package golden
+1. Update CI to run format, clippy, workspace tests, and kernel package golden
    checks.
-4. Add a small SDK wrapper for generating kernel packages without invoking the
+2. Add a small SDK wrapper for generating kernel packages without invoking the
    CLI.
-5. Add TN10-oriented package fixtures for Toccata readiness.
-6. Add wallet-preview and indexer fixtures for each production contract pattern.
+3. Add TN10-oriented package fixtures for Toccata readiness.
+4. Add wallet-preview and indexer fixtures for each production contract pattern.
+5. Add explicit language syntax for exact input/output counts and named
+   continuation outputs.
 
 ## Maintainer Commands
 

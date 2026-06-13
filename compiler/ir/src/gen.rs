@@ -6,6 +6,7 @@ use kaspascript_parser::{parse_file, BinaryOp, Expr, Program, Stmt, UnaryOp};
 use kaspascript_semantic::{analyze_program, AnalyzeFailure};
 use thiserror::Error;
 
+use crate::application::build_application_model;
 use crate::instructions::{Instruction, InstructionKind};
 use crate::types::Value;
 
@@ -14,6 +15,7 @@ use crate::types::Value;
 pub struct IrProgram {
     pub contracts: Vec<IrContract>,
     pub kip_requirements: Vec<u16>,
+    pub application: kaspascript_model::ApplicationModel,
 }
 
 /// Contract-level IR.
@@ -130,6 +132,7 @@ pub fn lower_program(
     Ok(IrProgram {
         contracts,
         kip_requirements,
+        application: build_application_model(program),
     })
 }
 
@@ -470,15 +473,64 @@ fn unsupported(file: &str, span: Span, message: impl Into<String>) -> IrError {
 
 impl fmt::Display for IrProgram {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "IR contracts: {}", self.contracts.len())?;
-        for contract in &self.contracts {
+        writeln!(
+            f,
+            "KaspaScript application: {}",
+            self.application.schema_version
+        )?;
+        writeln!(f, "execution model: kaspa-utxo-state-machine")?;
+        for (contract, model) in self.contracts.iter().zip(&self.application.contracts) {
             writeln!(f, "contract {}", contract.name)?;
-            for spend in &contract.spends {
+            if let Some(depth) = contract.finality_depth {
+                writeln!(f, "  finality depth: {depth}")?;
+            }
+            for (spend, transition) in contract.spends.iter().zip(&model.transitions) {
                 writeln!(
                     f,
-                    "  spend {}: {} instructions",
+                    "  transition {}: {} constraints, {} instructions",
                     spend.name,
+                    transition.constraints.len(),
                     spend.instructions.len()
+                )?;
+                if transition.signing_requirements.is_empty() {
+                    writeln!(f, "    signing: no recognized signature requirement")?;
+                } else {
+                    for signing in &transition.signing_requirements {
+                        writeln!(
+                            f,
+                            "    signing: {:?} threshold {} keys [{}] signatures [{}]",
+                            signing.scheme,
+                            signing.threshold,
+                            signing.authorized_keys.join(", "),
+                            signing.signature_arguments.join(", ")
+                        )?;
+                    }
+                }
+                writeln!(
+                    f,
+                    "    inputs: {:?}; outputs: {:?}; additional inputs/outputs permitted: {}/{}",
+                    transition.transaction_shape.referenced_inputs,
+                    transition.transaction_shape.referenced_outputs,
+                    transition.transaction_shape.additional_inputs_permitted,
+                    transition.transaction_shape.additional_outputs_permitted
+                )?;
+                for constraint in &transition.constraints {
+                    writeln!(
+                        f,
+                        "    require [{:?}]: {}",
+                        constraint.kind, constraint.expression
+                    )?;
+                }
+                writeln!(
+                    f,
+                    "    continuation: {:?} ({})",
+                    transition.continuation.kind, transition.continuation.note
+                )?;
+                writeln!(
+                    f,
+                    "    monetary: fees/change are external-explicit; compiler outputs/recipients: {}/{}",
+                    transition.monetary_policy.compiler_injects_outputs,
+                    transition.monetary_policy.compiler_injects_recipients
                 )?;
             }
         }

@@ -6,6 +6,7 @@ rust-version.workspace = true
 
 [dependencies]
 kaspascript-lexer = { path = "../lexer" }
+kaspascript-model = { path = "../model" }
 kaspascript-parser = { path = "../parser" }
 kaspascript-semantic = { path = "../semantic" }
 serde.workspace = true

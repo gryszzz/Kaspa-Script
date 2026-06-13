@@ -9,9 +9,9 @@ use kaspascript_codegen::{
 use kaspascript_ir::lower_file;
 use kaspascript_kernel::{
     current_source_snapshots, current_toccata_evidence, define_kaspa_contract,
-    package_compiled_contract, CompiledArtifactSummary, CompiledKernelPackage, ContractBlueprint,
-    EvidenceLevel, FeatureRequirement, KernelFeature, Network, SourceEvidence, StateField,
-    StateType, ToccataFeePolicy, Transition, TransitionKind,
+    package_compiled_contract, CompiledArtifactSummary, CompiledKernelPackage,
+    CompiledPackageInput, ContractBlueprint, EvidenceLevel, FeatureRequirement, KernelFeature,
+    Network, SourceEvidence, StateField, StateType, ToccataFeePolicy, Transition, TransitionKind,
 };
 use kaspascript_lexer::TypeName;
 use serde_json::{json, Value};
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
         }
         "compile" => compile_command(&args[2..]),
         "verify" if args.len() == 3 => verify_command(&args[2]),
-        "inspect" if args.len() == 3 => inspect_command(&args[2]),
+        "inspect" => inspect_command(&args[2..]),
         "kernel" => kernel_command(&args[2..]),
         "toccata" => toccata_command(&args[2..]),
         "doctor" => kernel_check_command(&args[2..]),
@@ -51,7 +51,7 @@ fn main() -> Result<()> {
 }
 
 fn usage() -> &'static str {
-    "usage: kaspascript compile <file.ks> [--target verified-tn12|tn10-toccata|toccata-preview|future-mainnet] [--output <file>]\n       kaspascript verify <artifact.json>\n       kaspascript inspect <file.ks|artifact.json>\n       kaspascript kernel package <file.ks> [--target verified-tn12|tn10-toccata|toccata-preview|future-mainnet] [--output <file>] [--compute-grams <n>] [--tx-bytes <n>]\n       kaspascript kernel check <file.ks> [--target <target>] [--compute-grams <n>] [--tx-bytes <n>] [--json]\n       kaspascript kernel preview <file.ks> [--target <target>] [--transition <name>] [--json]\n       kaspascript toccata status [--json]\n       kaspascript toccata targets [--json]\n       kaspascript toccata fee --compute-grams <n> --tx-bytes <n> [--json]\n       kaspascript doctor <file.ks> [--target <target>] [--json]\n       kaspascript wallet balance --target tn12\n       kaspascript tx lock <file.ks> --target tn12 --amount 1.0 [--dry-run|--broadcast]\n       kaspascript tx spend <artifact.json> --spend <name> --target tn12 [--dry-run|--broadcast]\n       kaspascript proof verify <proof.json>"
+    "usage: kaspascript compile <file.ks> [--target verified-tn12|tn10-toccata|toccata-preview|future-mainnet] [--output <file>]\n       kaspascript verify <artifact.json>\n       kaspascript inspect <file.ks|artifact.json> [--json]\n       kaspascript kernel package <file.ks> [--target verified-tn12|tn10-toccata|toccata-preview|future-mainnet] [--output <file>] [--compute-grams <n>] [--tx-bytes <n>]\n       kaspascript kernel check <file.ks> [--target <target>] [--compute-grams <n>] [--tx-bytes <n>] [--json]\n       kaspascript kernel preview <file.ks> [--target <target>] [--transition <name>] [--json]\n       kaspascript toccata status [--json]\n       kaspascript toccata targets [--json]\n       kaspascript toccata fee --compute-grams <n> --tx-bytes <n> [--json]\n       kaspascript doctor <file.ks> [--target <target>] [--json]\n       kaspascript wallet balance --target tn12\n       kaspascript tx lock <file.ks> --target tn12 --amount 1.0 [--dry-run|--broadcast]\n       kaspascript tx spend <artifact.json> --spend <name> --target tn12 [--dry-run|--broadcast]\n       kaspascript proof verify <proof.json>"
 }
 
 fn help() -> String {
@@ -100,16 +100,30 @@ fn verify_command(path: &str) -> Result<()> {
     Ok(())
 }
 
-fn inspect_command(path: &str) -> Result<()> {
+fn inspect_command(args: &[String]) -> Result<()> {
+    let Some(path) = args.first() else {
+        bail!("{}", usage());
+    };
+    let format = parse_report_format(&args[1..])?;
     if path.ends_with(".artifact") || path.ends_with(".artifact.json") {
         let artifact = read_artifact(path)?;
-        println!("{}", serde_json::to_string_pretty(&artifact)?);
+        match format {
+            OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&artifact)?),
+            OutputFormat::Human => {
+                println!("artifact target: {}", artifact.target);
+                println!("backend: {}", artifact.backend);
+                print_application_model(&artifact.application);
+            }
+        }
         return Ok(());
     }
 
     let source = fs::read_to_string(path).with_context(|| format!("failed to read {path}"))?;
     let ir = lower_file(&source, path).map_err(|error| anyhow::anyhow!("error: {error}"))?;
-    println!("{ir}");
+    match format {
+        OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&ir.application)?),
+        OutputFormat::Human => println!("{ir}"),
+    }
     Ok(())
 }
 
@@ -221,15 +235,16 @@ fn build_kernel_package(
     } else {
         "lower-bound estimate using compiled bytecode length as transaction_bytes and compute_grams=0"
     };
-    let package = package_compiled_contract(
-        summary,
+    let package = package_compiled_contract(CompiledPackageInput {
+        artifact: summary,
         bytecode_hex,
         bytecode_asm,
+        application: artifact.application.clone(),
         blueprint,
-        options.compute_grams,
+        compute_grams: options.compute_grams,
         transaction_bytes,
-        fee_assumption,
-    )
+        fee_assumption: fee_assumption.to_owned(),
+    })
     .map_err(|error| anyhow::anyhow!("error: {error}"))?;
 
     Ok(package)
@@ -936,12 +951,102 @@ fn print_kernel_preview_human(
         println!("  consumes: {}", join_strings(&preview.consumes));
         println!("  creates: {}", join_strings(&preview.creates));
         println!("  signers: {}", join_strings(&preview.signers));
+        if let Some(semantics) = &preview.semantics {
+            println!(
+                "  transaction inputs: {:?}",
+                semantics.transaction_shape.referenced_inputs
+            );
+            println!(
+                "  transaction outputs: {:?}",
+                semantics.transaction_shape.referenced_outputs
+            );
+            println!(
+                "  additional inputs/outputs permitted: {}/{}",
+                semantics.transaction_shape.additional_inputs_permitted,
+                semantics.transaction_shape.additional_outputs_permitted
+            );
+            println!(
+                "  continuation: {:?} ({})",
+                semantics.continuation.kind, semantics.continuation.note
+            );
+            println!("  constraints:");
+            for constraint in &semantics.constraints {
+                println!("  - {:?}: {}", constraint.kind, constraint.expression);
+            }
+        }
         if !preview.warnings.is_empty() {
             println!("  warnings:");
             for warning in &preview.warnings {
                 println!("  - {warning}");
             }
         }
+    }
+}
+
+fn print_application_model(application: &kaspascript_model::ApplicationModel) {
+    println!("application schema: {}", application.schema_version);
+    println!("execution model: {:?}", application.execution_model);
+    for contract in &application.contracts {
+        println!("contract: {}", contract.name);
+        if let Some(depth) = contract.finality_depth {
+            println!("  finality depth: {depth}");
+        }
+        println!("  state:");
+        for state in &contract.state {
+            println!("  - {}: {:?}", state.name, state.ty);
+        }
+        for transition in &contract.transitions {
+            println!("  transition: {}", transition.name);
+            if transition.signing_requirements.is_empty() {
+                println!("    signing: no recognized signature requirement");
+            } else {
+                for signing in &transition.signing_requirements {
+                    println!(
+                        "    signing: {:?}, threshold {}, keys [{}], signatures [{}]",
+                        signing.scheme,
+                        signing.threshold,
+                        signing.authorized_keys.join(", "),
+                        signing.signature_arguments.join(", ")
+                    );
+                }
+            }
+            println!(
+                "    referenced inputs/outputs: {:?}/{:?}",
+                transition.transaction_shape.referenced_inputs,
+                transition.transaction_shape.referenced_outputs
+            );
+            println!(
+                "    additional inputs/outputs permitted: {}/{}",
+                transition.transaction_shape.additional_inputs_permitted,
+                transition.transaction_shape.additional_outputs_permitted
+            );
+            for constraint in &transition.constraints {
+                println!(
+                    "    require [{:?}]: {}",
+                    constraint.kind, constraint.expression
+                );
+            }
+            println!(
+                "    continuation: {:?} ({})",
+                transition.continuation.kind, transition.continuation.note
+            );
+            println!(
+                "    monetary: fees/change external-explicit; compiler injects outputs/recipients: {}/{}",
+                transition.monetary_policy.compiler_injects_outputs,
+                transition.monetary_policy.compiler_injects_recipients
+            );
+        }
+    }
+    println!("compiler guarantees:");
+    for assurance in &application.assurances.compiler_guarantees {
+        println!("- {}: {}", assurance.id, assurance.statement);
+    }
+    println!("external obligations:");
+    for assurance in &application.assurances.external_obligations {
+        println!(
+            "- {:?} {}: {}",
+            assurance.actor, assurance.id, assurance.statement
+        );
     }
 }
 
@@ -984,6 +1089,7 @@ fn artifact_summary(artifact: &CompiledArtifact) -> CompiledArtifactSummary {
                     .map(move |spend| format!("{}.{}", contract.name, spend.name))
             })
             .collect(),
+        application_schema_version: artifact.application.schema_version.clone(),
     }
 }
 
@@ -1021,9 +1127,11 @@ fn kernel_blueprint_from_artifact(
         }
 
         for spend in &contract.spends {
+            let semantics = artifact
+                .application
+                .transition(&contract.name, &spend.name)
+                .cloned();
             let mut transition = Transition::new(&spend.name, TransitionKind::Spend)
-                .consumes(format!("{} compiled locking state", contract.name))
-                .creates("transaction outputs selected by the spend path")
                 .requires(FeatureRequirement::new(
                     KernelFeature::BaseScript,
                     EvidenceLevel::BranchCode,
@@ -1043,6 +1151,41 @@ fn kernel_blueprint_from_artifact(
                     "Review `{}` as a Kaspa contract spend path before signing.",
                     spend.name
                 ));
+
+            if let Some(semantics) = semantics {
+                if semantics.transaction_shape.referenced_inputs.is_empty() {
+                    transition =
+                        transition.consumes(format!("{} compiled locking state", contract.name));
+                } else {
+                    for input in &semantics.transaction_shape.referenced_inputs {
+                        transition =
+                            transition.consumes(format!("input({input}) referenced by source"));
+                    }
+                }
+
+                if semantics.output_bindings.is_empty() {
+                    transition =
+                        transition.creates("no output field is constrained by this spend path");
+                } else {
+                    for binding in &semantics.output_bindings {
+                        transition = transition.creates(format!(
+                            "output({}).{} {} {}",
+                            binding.output_index, binding.field, binding.relation, binding.expected
+                        ));
+                    }
+                }
+
+                if semantics.transaction_shape.additional_outputs_permitted {
+                    transition = transition.wallet_warning(
+                        "Source does not constrain the exact output count; review every additional output and recipient.",
+                    );
+                }
+                transition = transition.semantics(semantics);
+            } else {
+                transition = transition
+                    .consumes(format!("{} compiled locking state", contract.name))
+                    .creates("application model did not resolve this spend path");
+            }
 
             if artifact.kip_requirements.contains(&10) {
                 transition = transition.requires(FeatureRequirement::new(
@@ -1645,6 +1788,30 @@ mod tests {
                 "{schema_version}"
             );
         }
+    }
+
+    #[test]
+    fn kernel_package_schema_tracks_the_canonical_application_model() {
+        let schema: Value = serde_json::from_str(include_str!(
+            "../../docs/schemas/kaspascript.kernel.package.v0.schema.json"
+        ))
+        .expect("kernel package schema");
+        let package: Value =
+            serde_json::from_str(include_str!("../../tests/golden/escrow.kernel.json"))
+                .expect("kernel package golden");
+
+        assert_eq!(
+            schema["properties"]["schema_version"]["const"],
+            Value::String("kaspascript.kernel.package.v0".to_owned())
+        );
+        assert_eq!(
+            package["kernel"]["application"]["schema_version"],
+            Value::String("kaspascript.application.v0".to_owned())
+        );
+        assert_eq!(
+            package["artifact"]["application_schema_version"],
+            Value::String("kaspascript.application.v0".to_owned())
+        );
     }
 
     #[test]

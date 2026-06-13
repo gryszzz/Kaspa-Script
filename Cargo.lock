@@ -2570,6 +2570,7 @@ dependencies = [
  "kaspascript-ir",
  "kaspascript-kernel",
  "kaspascript-lexer",
+ "kaspascript-model",
  "kaspascript-sdk",
  "serde_json",
  "tokio",
@@ -2582,6 +2583,7 @@ dependencies = [
  "criterion",
  "kaspascript-ir",
  "kaspascript-lexer",
+ "kaspascript-model",
  "pretty_assertions",
  "serde",
  "serde_json",
@@ -2594,6 +2596,7 @@ name = "kaspascript-ir"
 version = "0.1.0"
 dependencies = [
  "kaspascript-lexer",
+ "kaspascript-model",
  "kaspascript-parser",
  "kaspascript-semantic",
  "serde",
@@ -2604,6 +2607,7 @@ dependencies = [
 name = "kaspascript-kernel"
 version = "0.1.0"
 dependencies = [
+ "kaspascript-model",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -2616,6 +2620,15 @@ dependencies = [
  "logos",
  "serde",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "kaspascript-model"
+version = "0.1.0"
+dependencies = [
+ "kaspascript-lexer",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2646,6 +2659,7 @@ dependencies = [
  "kaspascript-codegen",
  "kaspascript-ir",
  "kaspascript-lexer",
+ "kaspascript-model",
  "secp256k1",
  "serde",
  "serde_json",

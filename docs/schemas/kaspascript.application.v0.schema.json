@@ -1,0 +1,475 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gryszzz.github.io/Kaspa-Script/schemas/kaspascript.application.v0.schema.json",
+  "title": "KaspaScript Application Model v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_model",
+    "contracts",
+    "assurances"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "kaspascript.application.v0"
+    },
+    "execution_model": {
+      "const": "kaspa-utxo-state-machine"
+    },
+    "contracts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/contract"
+      }
+    },
+    "assurances": {
+      "$ref": "#/$defs/assurance_profile"
+    }
+  },
+  "$defs": {
+    "type_name": {
+      "enum": [
+        "PublicKey",
+        "Signature",
+        "Hash",
+        "BlockHeight",
+        "Amount",
+        "Bool",
+        "Bytes",
+        "CovenantID",
+        "ZKProof",
+        "UTXO",
+        "Output",
+        "Input"
+      ]
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "ty"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ty": {
+          "$ref": "#/$defs/type_name"
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "state",
+        "finality_depth",
+        "transitions"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          }
+        },
+        "finality_depth": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/transition"
+          }
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "arguments",
+        "signing_requirements",
+        "constraints",
+        "transaction_shape",
+        "monetary_policy",
+        "output_bindings",
+        "continuation"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          }
+        },
+        "signing_requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signing_requirement"
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/constraint"
+          }
+        },
+        "transaction_shape": {
+          "$ref": "#/$defs/transaction_shape"
+        },
+        "monetary_policy": {
+          "$ref": "#/$defs/monetary_policy"
+        },
+        "output_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/output_binding"
+          }
+        },
+        "continuation": {
+          "$ref": "#/$defs/continuation"
+        }
+      }
+    },
+    "signing_requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "threshold",
+        "authorized_keys",
+        "signature_arguments"
+      ],
+      "properties": {
+        "scheme": {
+          "enum": [
+            "single-signature",
+            "multisig"
+          ]
+        },
+        "threshold": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "authorized_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "signature_arguments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "constraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "expression",
+        "source_span"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "authorization",
+            "value",
+            "script",
+            "timelock",
+            "hashlock",
+            "covenant",
+            "sequencing",
+            "proof",
+            "transaction-shape",
+            "generic"
+          ]
+        },
+        "expression": {
+          "$ref": "#/$defs/expression"
+        },
+        "source_span": {
+          "$ref": "#/$defs/span"
+        }
+      }
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "expression": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "symbol",
+            "integer",
+            "string",
+            "bool",
+            "array",
+            "unary",
+            "binary",
+            "call",
+            "field"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {},
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "op": {
+          "type": "string"
+        },
+        "operand": {
+          "$ref": "#/$defs/expression"
+        },
+        "left": {
+          "$ref": "#/$defs/expression"
+        },
+        "right": {
+          "$ref": "#/$defs/expression"
+        },
+        "function": {
+          "type": "string"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "object": {
+          "$ref": "#/$defs/expression"
+        },
+        "field": {
+          "type": "string"
+        }
+      }
+    },
+    "transaction_shape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "referenced_inputs",
+        "referenced_outputs",
+        "exact_input_count",
+        "exact_output_count",
+        "additional_inputs_permitted",
+        "additional_outputs_permitted"
+      ],
+      "properties": {
+        "referenced_inputs": {
+          "$ref": "#/$defs/indexes"
+        },
+        "referenced_outputs": {
+          "$ref": "#/$defs/indexes"
+        },
+        "exact_input_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "exact_output_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "additional_inputs_permitted": {
+          "type": "boolean"
+        },
+        "additional_outputs_permitted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "indexes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "monetary_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value_constraint_count",
+        "fee_handling",
+        "change_handling",
+        "compiler_injects_outputs",
+        "compiler_injects_recipients"
+      ],
+      "properties": {
+        "value_constraint_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fee_handling": {
+          "const": "external-explicit"
+        },
+        "change_handling": {
+          "const": "external-explicit"
+        },
+        "compiler_injects_outputs": {
+          "const": false
+        },
+        "compiler_injects_recipients": {
+          "const": false
+        }
+      }
+    },
+    "output_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_index",
+        "field",
+        "relation",
+        "expected"
+      ],
+      "properties": {
+        "output_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "field": {
+          "enum": [
+            "value",
+            "script",
+            "covenant-id"
+          ]
+        },
+        "relation": {
+          "type": "string"
+        },
+        "expected": {
+          "$ref": "#/$defs/expression"
+        }
+      }
+    },
+    "continuation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "successor_outputs",
+        "note"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "unspecified",
+            "output-script-bound",
+            "covenant-lineage-bound"
+          ]
+        },
+        "successor_outputs": {
+          "$ref": "#/$defs/indexes"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "assurance_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compiler_guarantees",
+        "external_obligations"
+      ],
+      "properties": {
+        "compiler_guarantees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assurance"
+          }
+        },
+        "external_obligations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assurance"
+          }
+        }
+      }
+    },
+    "assurance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "actor",
+        "statement"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor": {
+          "enum": [
+            "compiler",
+            "application",
+            "wallet",
+            "indexer",
+            "node",
+            "operator"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

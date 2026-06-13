@@ -1,1 +1,194 @@
-{"contract":"Escrow","previews":[{"classification":"CovenantStateTransition","consumes":["Escrow compiled locking state"],"contract":"Escrow","creates":["transaction outputs selected by the spend path"],"network":"Tn12","proof":{"payload_hint":"no proof payload","public_inputs":[],"verifier":"None"},"signers":["sig_a","sig_b"],"transition":"release","warnings":["Review `release` as a Kaspa contract spend path before signing.","This is a covenant state transition preview, not an ordinary payment preview."]}],"schema_version":"kaspascript.cli.kernel.preview.v0","target":"verified-tn12"}
+{
+  "contract": "Escrow",
+  "previews": [
+    {
+      "classification": "CovenantStateTransition",
+      "consumes": [
+        "input(0) referenced by source"
+      ],
+      "contract": "Escrow",
+      "creates": [
+        "output(0).value >= input(0).value"
+      ],
+      "network": "Tn12",
+      "proof": {
+        "payload_hint": "no proof payload",
+        "public_inputs": [],
+        "verifier": "None"
+      },
+      "semantics": {
+        "arguments": [
+          {
+            "name": "sig_a",
+            "ty": "Signature"
+          },
+          {
+            "name": "sig_b",
+            "ty": "Signature"
+          }
+        ],
+        "constraints": [
+          {
+            "expression": {
+              "arguments": [
+                {
+                  "kind": "integer",
+                  "value": 2
+                },
+                {
+                  "elements": [
+                    {
+                      "kind": "symbol",
+                      "name": "buyer"
+                    },
+                    {
+                      "kind": "symbol",
+                      "name": "seller"
+                    },
+                    {
+                      "kind": "symbol",
+                      "name": "arbiter"
+                    }
+                  ],
+                  "kind": "array"
+                },
+                {
+                  "elements": [
+                    {
+                      "kind": "symbol",
+                      "name": "sig_a"
+                    },
+                    {
+                      "kind": "symbol",
+                      "name": "sig_b"
+                    }
+                  ],
+                  "kind": "array"
+                }
+              ],
+              "function": "multisig",
+              "kind": "call"
+            },
+            "kind": "authorization",
+            "source_span": {
+              "end": 272,
+              "start": 219
+            }
+          },
+          {
+            "expression": {
+              "kind": "binary",
+              "left": {
+                "field": "value",
+                "kind": "field",
+                "object": {
+                  "arguments": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    }
+                  ],
+                  "function": "output",
+                  "kind": "call"
+                }
+              },
+              "op": "greater-equal",
+              "right": {
+                "field": "value",
+                "kind": "field",
+                "object": {
+                  "arguments": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    }
+                  ],
+                  "function": "input",
+                  "kind": "call"
+                }
+              }
+            },
+            "kind": "value",
+            "source_span": {
+              "end": 319,
+              "start": 286
+            }
+          }
+        ],
+        "continuation": {
+          "kind": "unspecified",
+          "note": "Source does not identify a successor state output; wallets and applications must not infer continuation.",
+          "successor_outputs": []
+        },
+        "monetary_policy": {
+          "change_handling": "external-explicit",
+          "compiler_injects_outputs": false,
+          "compiler_injects_recipients": false,
+          "fee_handling": "external-explicit",
+          "value_constraint_count": 1
+        },
+        "name": "release",
+        "output_bindings": [
+          {
+            "expected": {
+              "field": "value",
+              "kind": "field",
+              "object": {
+                "arguments": [
+                  {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                ],
+                "function": "input",
+                "kind": "call"
+              }
+            },
+            "field": "value",
+            "output_index": 0,
+            "relation": "greater-equal"
+          }
+        ],
+        "signing_requirements": [
+          {
+            "authorized_keys": [
+              "buyer",
+              "seller",
+              "arbiter"
+            ],
+            "scheme": "multisig",
+            "signature_arguments": [
+              "sig_a",
+              "sig_b"
+            ],
+            "threshold": 2
+          }
+        ],
+        "transaction_shape": {
+          "additional_inputs_permitted": true,
+          "additional_outputs_permitted": true,
+          "exact_input_count": null,
+          "exact_output_count": null,
+          "referenced_inputs": [
+            0
+          ],
+          "referenced_outputs": [
+            0
+          ]
+        }
+      },
+      "signers": [
+        "sig_a",
+        "sig_b"
+      ],
+      "transition": "release",
+      "warnings": [
+        "Review `release` as a Kaspa contract spend path before signing.",
+        "Source does not constrain the exact output count; review every additional output and recipient.",
+        "This is a covenant state transition preview, not an ordinary payment preview."
+      ]
+    }
+  ],
+  "schema_version": "kaspascript.cli.kernel.preview.v0",
+  "target": "verified-tn12"
+}

@@ -2240,6 +2240,7 @@ mod tests {
             finality_depth: None,
             kip_requirements: Vec::new(),
             warnings: Vec::new(),
+            application: kaspascript_model::ApplicationModel::empty(),
             contracts: Vec::new(),
         };
         let err = instantiate_contract(

@@ -106,6 +106,9 @@
             }
           }
         },
+        "semantics": {
+          "$ref": "kaspascript.application.v0.schema.json#/$defs/transition"
+        },
         "warnings": {
           "type": "array",
           "items": {

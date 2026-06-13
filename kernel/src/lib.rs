@@ -6,6 +6,10 @@
 //! not unlock Toccata bytecode lowering until the compiler backend has pinned
 //! opcode ABI tests.
 
+use kaspascript_model::{
+    ApplicationModel, ConstraintKind, ContinuationModel, MonetaryPolicy, TransactionShape,
+    TransitionModel,
+};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt;
@@ -294,6 +298,8 @@ pub struct Transition {
     pub requirements: Vec<FeatureRequirement>,
     pub proof: ProofRequirement,
     pub wallet_warnings: Vec<String>,
+    #[serde(skip)]
+    pub semantics: Option<TransitionModel>,
 }
 
 impl Transition {
@@ -311,6 +317,7 @@ impl Transition {
                 payload_hint: "no proof payload".to_owned(),
             },
             wallet_warnings: Vec::new(),
+            semantics: None,
         }
     }
 
@@ -341,6 +348,11 @@ impl Transition {
 
     pub fn wallet_warning(mut self, warning: impl Into<String>) -> Self {
         self.wallet_warnings.push(warning.into());
+        self
+    }
+
+    pub fn semantics(mut self, semantics: TransitionModel) -> Self {
+        self.semantics = Some(semantics);
         self
     }
 }
@@ -408,6 +420,7 @@ impl ContractBlueprint {
             creates: transition.creates.clone(),
             signers: transition.signers.clone(),
             proof: transition.proof.clone(),
+            semantics: transition.semantics.clone(),
             warnings,
         })
     }
@@ -536,6 +549,7 @@ impl ContractBlueprint {
             wallet_previews,
             indexer_schema: self.indexer_schema(),
             fee_policy: ToccataFeePolicy::default(),
+            application: None,
         })
     }
 
@@ -701,6 +715,8 @@ pub struct WalletPreview {
     pub creates: Vec<String>,
     pub signers: Vec<String>,
     pub proof: ProofRequirement,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub semantics: Option<TransitionModel>,
     pub warnings: Vec<String>,
 }
 
@@ -786,6 +802,13 @@ pub struct TransitionCapability {
     pub proof_verifier: ProofVerifier,
     pub required_features: Vec<KernelFeature>,
     pub wallet_effect: String,
+    pub constraint_kinds: Vec<ConstraintKind>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_shape: Option<TransactionShape>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub monetary_policy: Option<MonetaryPolicy>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub continuation: Option<ContinuationModel>,
 }
 
 impl TransitionCapability {
@@ -803,6 +826,31 @@ impl TransitionCapability {
             proof_verifier: transition.proof.verifier.clone(),
             required_features,
             wallet_effect: transition_wallet_effect(transition),
+            constraint_kinds: transition
+                .semantics
+                .as_ref()
+                .map(|semantics| {
+                    let mut kinds = Vec::new();
+                    for constraint in &semantics.constraints {
+                        if !kinds.contains(&constraint.kind) {
+                            kinds.push(constraint.kind);
+                        }
+                    }
+                    kinds
+                })
+                .unwrap_or_default(),
+            transaction_shape: transition
+                .semantics
+                .as_ref()
+                .map(|semantics| semantics.transaction_shape.clone()),
+            monetary_policy: transition
+                .semantics
+                .as_ref()
+                .map(|semantics| semantics.monetary_policy.clone()),
+            continuation: transition
+                .semantics
+                .as_ref()
+                .map(|semantics| semantics.continuation.clone()),
         }
     }
 }
@@ -817,6 +865,8 @@ pub struct KernelPackage {
     pub wallet_previews: Vec<WalletPreview>,
     pub indexer_schema: IndexerSchema,
     pub fee_policy: ToccataFeePolicy,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub application: Option<ApplicationModel>,
 }
 
 /// Compiler artifact summary embedded in CLI kernel packages.
@@ -830,6 +880,8 @@ pub struct CompiledArtifactSummary {
     pub kip_requirements: Vec<u16>,
     pub contracts: Vec<String>,
     pub spends: Vec<String>,
+    #[serde(default)]
+    pub application_schema_version: String,
 }
 
 /// Fee estimate with explicit assumptions.
@@ -854,6 +906,19 @@ pub struct CompiledKernelPackage {
     pub bytecode_asm: String,
     pub kernel: KernelPackage,
     pub fee_estimate: FeeEstimate,
+}
+
+/// Inputs required to combine a compiler artifact with a kernel package.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompiledPackageInput {
+    pub artifact: CompiledArtifactSummary,
+    pub bytecode_hex: String,
+    pub bytecode_asm: String,
+    pub application: ApplicationModel,
+    pub blueprint: ContractBlueprint,
+    pub compute_grams: u64,
+    pub transaction_bytes: u64,
+    pub fee_assumption: String,
 }
 
 /// Toccata pre-activation RPC minimum-standard-fee policy.
@@ -924,25 +989,25 @@ pub fn define_kaspa_contract(name: impl Into<String>) -> ContractBuilder {
 
 /// Combines a compiler artifact summary and kernel blueprint into one package.
 pub fn package_compiled_contract(
-    artifact: CompiledArtifactSummary,
-    bytecode_hex: impl Into<String>,
-    bytecode_asm: impl Into<String>,
-    blueprint: ContractBlueprint,
-    compute_grams: u64,
-    transaction_bytes: u64,
-    fee_assumption: impl Into<String>,
+    input: CompiledPackageInput,
 ) -> Result<CompiledKernelPackage, KernelError> {
     let fee_policy = ToccataFeePolicy::default();
-    let package_target = artifact.target.clone();
+    let package_target = input.artifact.target.clone();
+    let mut kernel = input.blueprint.package()?;
+    kernel.application = Some(input.application);
     Ok(CompiledKernelPackage {
         schema_version: KERNEL_PACKAGE_SCHEMA_VERSION.to_owned(),
         package_target,
         source_snapshots: current_source_snapshots(),
-        artifact,
-        bytecode_hex: bytecode_hex.into(),
-        bytecode_asm: bytecode_asm.into(),
-        kernel: blueprint.package()?,
-        fee_estimate: fee_policy.estimate(compute_grams, transaction_bytes, fee_assumption)?,
+        artifact: input.artifact,
+        bytecode_hex: input.bytecode_hex,
+        bytecode_asm: input.bytecode_asm,
+        kernel,
+        fee_estimate: fee_policy.estimate(
+            input.compute_grams,
+            input.transaction_bytes,
+            input.fee_assumption,
+        )?,
     })
 }
 
@@ -974,6 +1039,25 @@ fn feature_description(feature: KernelFeature) -> &'static str {
 }
 
 fn transition_wallet_effect(transition: &Transition) -> String {
+    if let Some(semantics) = &transition.semantics {
+        let bindings = semantics
+            .output_bindings
+            .iter()
+            .map(|binding| {
+                format!(
+                    "output({}).{} {} {}",
+                    binding.output_index, binding.field, binding.relation, binding.expected
+                )
+            })
+            .collect::<Vec<_>>();
+        if !bindings.is_empty() {
+            return format!(
+                "Reads inputs {:?}; constrains {}.",
+                semantics.transaction_shape.referenced_inputs,
+                bindings.join(", ")
+            );
+        }
+    }
     format!(
         "Consumes {} and creates {}.",
         join_or_default(&transition.consumes, "no declared input state"),

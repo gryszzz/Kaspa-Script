@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gryszzz.github.io/Kaspa-Script/schemas/kaspascript.kernel.package.v0.schema.json",
+  "title": "KaspaScript Compiled Kernel Package v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "package_target",
+    "source_snapshots",
+    "artifact",
+    "bytecode_hex",
+    "bytecode_asm",
+    "kernel",
+    "fee_estimate"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "kaspascript.kernel.package.v0"
+    },
+    "package_target": {
+      "enum": [
+        "verified-tn12",
+        "tn10-toccata",
+        "toccata-preview",
+        "future-mainnet"
+      ]
+    },
+    "source_snapshots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_snapshot"
+      }
+    },
+    "artifact": {
+      "$ref": "#/$defs/artifact_summary"
+    },
+    "bytecode_hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]+$"
+    },
+    "bytecode_asm": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kernel": {
+      "$ref": "#/$defs/kernel"
+    },
+    "fee_estimate": {
+      "$ref": "kaspascript.cli.toccata.fee.v0.schema.json#/$defs/fee_estimate"
+    }
+  },
+  "$defs": {
+    "source_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "upstream_repo",
+        "tag",
+        "commit",
+        "audit_date"
+      ],
+      "properties": {
+        "upstream_repo": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "audit_date": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend",
+        "target",
+        "compiler_version",
+        "bytecode_bytes",
+        "finality_depth",
+        "kip_requirements",
+        "contracts",
+        "spends",
+        "application_schema_version"
+      ],
+      "properties": {
+        "backend": {
+          "const": "kaspa-txscript"
+        },
+        "target": {
+          "type": "string"
+        },
+        "compiler_version": {
+          "type": "string"
+        },
+        "bytecode_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "finality_depth": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "kip_requirements": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "spends": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "application_schema_version": {
+          "const": "kaspascript.application.v0"
+        }
+      }
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "blueprint",
+        "readiness",
+        "capabilities",
+        "wallet_previews",
+        "indexer_schema",
+        "fee_policy",
+        "application"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "kaspascript.kernel.package.v0"
+        },
+        "blueprint": {
+          "type": "object"
+        },
+        "readiness": {
+          "type": "object"
+        },
+        "capabilities": {
+          "type": "object"
+        },
+        "wallet_previews": {
+          "type": "array"
+        },
+        "indexer_schema": {
+          "type": "object"
+        },
+        "fee_policy": {
+          "type": "object"
+        },
+        "application": {
+          "$ref": "kaspascript.application.v0.schema.json"
+        }
+      }
+    }
+  }
+}

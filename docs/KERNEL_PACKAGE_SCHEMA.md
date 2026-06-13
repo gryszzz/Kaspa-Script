@@ -1,6 +1,6 @@
 # Kernel Package v0 Schema
 
-Updated: 2026-06-05.
+Updated: 2026-06-13.
 
 `kaspascript kernel package <contract.ks>` emits one JSON object that combines
 the compiled txscript artifact with the KaspaScript kernel package.
@@ -109,7 +109,8 @@ snapshots as evidence metadata, not as a replacement for node validation.
   "indexer_schema": {},
   "fee_policy": {
     "sompi_per_unit": 100
-  }
+  },
+  "application": {}
 }
 ```
 
@@ -122,6 +123,14 @@ snapshots as evidence metadata, not as a replacement for node validation.
 | `wallet_previews` | array<object> | Wallet-facing transition previews. |
 | `indexer_schema` | object | Suggested indexer tables and columns. |
 | `fee_policy.sompi_per_unit` | number | Toccata pre-activation minimum fee unit. |
+| `application` | object | Canonical `kaspascript.application.v0` model shared with the compiler artifact and SDK. |
+
+The application model is defined in
+[`KASPASCRIPT_PROGRAM_MODEL.md`](KASPASCRIPT_PROGRAM_MODEL.md) and has a
+machine-readable schema at
+[`schemas/kaspascript.application.v0.schema.json`](schemas/kaspascript.application.v0.schema.json).
+The complete compiled package schema is
+[`schemas/kaspascript.kernel.package.v0.schema.json`](schemas/kaspascript.kernel.package.v0.schema.json).
 
 ## Blueprint
 
@@ -174,6 +183,10 @@ Transition:
   "wallet_warnings": []
 }
 ```
+
+Compiled transitions also carry an internal link to their canonical transition
+model. The link is used to build wallet previews and capability summaries but
+is not duplicated inside serialized blueprint transitions.
 
 Current `kind` values are `Deposit`, `Spend`, `Timeout`, `Recover`, `Close`,
 or `{"Custom": "label"}`.
@@ -229,6 +242,11 @@ Evidence:
   "warnings": []
 }
 ```
+
+Compiled wallet previews include `semantics`, which is the selected canonical
+transition model. It exposes signing requirements, classified source
+constraints, referenced input/output indexes, exact-count limitations,
+monetary responsibility, output bindings, and continuation posture.
 
 Current `classification` values are `OrdinaryPayment`,
 `CovenantStateTransition`, and `ProofBearingTransition`.
@@ -372,6 +390,13 @@ Transition profile:
 }
 ```
 
+Compiled transition profiles additionally include:
+
+- `constraint_kinds`
+- `transaction_shape`
+- `monetary_policy`
+- `continuation`
+
 ## Fee Estimate
 
 ```json
@@ -402,4 +427,5 @@ bound for `transaction_bytes`. When `--compute-grams` is omitted, it uses `0`.
   `preview`, and `blocked`.
 - The schema is additive while the CLI is pre-1.0. Consumers should ignore
   unknown fields and require the root fields listed above.
-- Machine-readable JSON Schema should be generated from this v0 shape next.
+- Machine-readable JSON Schemas are published for the application model,
+  compiled kernel package, and stable CLI reports.

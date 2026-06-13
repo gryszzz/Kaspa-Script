@@ -1,13 +1,12 @@
 [package]
-name = "kaspascript-kernel"
+name = "kaspascript-model"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-kaspascript-model = { path = "../compiler/model" }
+kaspascript-lexer = { path = "../lexer" }
 serde.workspace = true
-thiserror.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

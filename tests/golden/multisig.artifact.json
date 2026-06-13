@@ -75,6 +75,186 @@
   "finality_depth": null,
   "kip_requirements": [],
   "warnings": [],
+  "application": {
+    "schema_version": "kaspascript.application.v0",
+    "execution_model": "kaspa-utxo-state-machine",
+    "contracts": [
+      {
+        "name": "TeamMultisig",
+        "state": [
+          {
+            "name": "key_a",
+            "ty": "PublicKey"
+          },
+          {
+            "name": "key_b",
+            "ty": "PublicKey"
+          },
+          {
+            "name": "key_c",
+            "ty": "PublicKey"
+          }
+        ],
+        "finality_depth": null,
+        "transitions": [
+          {
+            "name": "approve",
+            "arguments": [
+              {
+                "name": "sig_a",
+                "ty": "Signature"
+              },
+              {
+                "name": "sig_b",
+                "ty": "Signature"
+              }
+            ],
+            "signing_requirements": [
+              {
+                "scheme": "multisig",
+                "threshold": 2,
+                "authorized_keys": [
+                  "key_a",
+                  "key_b",
+                  "key_c"
+                ],
+                "signature_arguments": [
+                  "sig_a",
+                  "sig_b"
+                ]
+              }
+            ],
+            "constraints": [
+              {
+                "kind": "authorization",
+                "expression": {
+                  "kind": "call",
+                  "function": "multisig",
+                  "arguments": [
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "array",
+                      "elements": [
+                        {
+                          "kind": "symbol",
+                          "name": "key_a"
+                        },
+                        {
+                          "kind": "symbol",
+                          "name": "key_b"
+                        },
+                        {
+                          "kind": "symbol",
+                          "name": "key_c"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "array",
+                      "elements": [
+                        {
+                          "kind": "symbol",
+                          "name": "sig_a"
+                        },
+                        {
+                          "kind": "symbol",
+                          "name": "sig_b"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "source_span": {
+                  "start": 172,
+                  "end": 222
+                }
+              }
+            ],
+            "transaction_shape": {
+              "referenced_inputs": [],
+              "referenced_outputs": [],
+              "exact_input_count": null,
+              "exact_output_count": null,
+              "additional_inputs_permitted": true,
+              "additional_outputs_permitted": true
+            },
+            "monetary_policy": {
+              "value_constraint_count": 0,
+              "fee_handling": "external-explicit",
+              "change_handling": "external-explicit",
+              "compiler_injects_outputs": false,
+              "compiler_injects_recipients": false
+            },
+            "output_bindings": [],
+            "continuation": {
+              "kind": "unspecified",
+              "successor_outputs": [],
+              "note": "Source does not identify a successor state output; wallets and applications must not infer continuation."
+            }
+          }
+        ]
+      }
+    ],
+    "assurances": {
+      "compiler_guarantees": [
+        {
+          "id": "checked-source",
+          "actor": "compiler",
+          "statement": "The source parsed and passed KaspaScript semantic checks."
+        },
+        {
+          "id": "deterministic-lowering",
+          "actor": "compiler",
+          "statement": "The checked program lowers deterministically to typed IR and artifact metadata."
+        },
+        {
+          "id": "explicit-monetary-effects",
+          "actor": "compiler",
+          "statement": "Compilation does not create transaction outputs, recipients, fees, or change."
+        },
+        {
+          "id": "inspectable-signing-intent",
+          "actor": "compiler",
+          "statement": "Recognized signature requirements and transaction constraints are preserved in the application model."
+        }
+      ],
+      "external_obligations": [
+        {
+          "id": "transaction-instantiation",
+          "actor": "application",
+          "statement": "Construct concrete inputs, outputs, arguments, and continuation records that satisfy every transition constraint."
+        },
+        {
+          "id": "fees-and-change",
+          "actor": "wallet",
+          "statement": "Choose and display fees, change, and every recipient explicitly before signing."
+        },
+        {
+          "id": "signature-collection",
+          "actor": "wallet",
+          "statement": "Resolve authorized keys and collect the signatures required by the selected transition."
+        },
+        {
+          "id": "network-validation",
+          "actor": "node",
+          "statement": "Validate consensus, standardness, mass, fee policy, and target-network rules."
+        },
+        {
+          "id": "lineage-and-reorgs",
+          "actor": "indexer",
+          "statement": "Track accepted UTXOs, covenant lineage, duplicate transitions, and reorg effects."
+        },
+        {
+          "id": "activation-evidence",
+          "actor": "operator",
+          "statement": "Verify release, network, KIP, and activation assumptions against current primary sources."
+        }
+      ]
+    }
+  },
   "contracts": [
     {
       "name": "TeamMultisig",

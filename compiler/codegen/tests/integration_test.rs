@@ -1,6 +1,7 @@
 use kaspascript_codegen::{
     bytecode_asm, bytecode_hex, compile_file, verify_artifact, CodegenError,
 };
+use kaspascript_model::{ConstraintKind, ContinuationKind, SigningScheme};
 use pretty_assertions::assert_eq;
 
 const CONTRACTS: &[(&str, &str)] = &[
@@ -78,6 +79,38 @@ fn compiles_all_v1_contract_patterns() {
         assert_eq!(artifact.target, "verified-tn12");
         bytecode_asm(&artifact.bytecode).expect(file);
     }
+}
+
+#[test]
+fn artifact_preserves_application_level_transition_semantics() {
+    let source = include_str!("../../../tests/contracts/escrow.ks");
+    let artifact = compile_file(source, "escrow.ks").expect("escrow");
+    let release = artifact
+        .application
+        .transition("Escrow", "release")
+        .expect("release model");
+    let refund = artifact
+        .application
+        .transition("Escrow", "refund")
+        .expect("refund model");
+
+    assert_eq!(
+        release.signing_requirements[0].scheme,
+        SigningScheme::Multisig
+    );
+    assert_eq!(release.signing_requirements[0].threshold, 2);
+    assert_eq!(release.transaction_shape.referenced_inputs, vec![0]);
+    assert_eq!(release.transaction_shape.referenced_outputs, vec![0]);
+    assert!(release
+        .constraints
+        .iter()
+        .any(|constraint| constraint.kind == ConstraintKind::Value));
+    assert_eq!(
+        refund.continuation.kind,
+        ContinuationKind::OutputScriptBound
+    );
+    assert!(!release.monetary_policy.compiler_injects_outputs);
+    assert!(!release.monetary_policy.compiler_injects_recipients);
 }
 
 #[test]

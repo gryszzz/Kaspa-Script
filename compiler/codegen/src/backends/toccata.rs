@@ -89,6 +89,7 @@ pub fn compile_toccata(
             .max(),
         kip_requirements: ir.kip_requirements.clone(),
         warnings,
+        application: ir.application.clone(),
         contracts: ir
             .contracts
             .iter()
@@ -340,6 +341,7 @@ mod tests {
                 }],
             }],
             kip_requirements: vec![15],
+            application: kaspascript_model::ApplicationModel::empty(),
         };
 
         let err = compile_toccata("preview", &ir, "test", Target::VerifiedTn12)
@@ -364,6 +366,7 @@ mod tests {
                 }],
             }],
             kip_requirements: vec![16],
+            application: kaspascript_model::ApplicationModel::empty(),
         };
 
         let artifact =
@@ -388,6 +391,7 @@ mod tests {
                 }],
             }],
             kip_requirements: vec![20],
+            application: kaspascript_model::ApplicationModel::empty(),
         };
 
         let artifact = compile_toccata("tn10", &ir, "test", Target::Tn10Toccata).expect("tn10");
@@ -412,6 +416,7 @@ mod tests {
                 }],
             }],
             kip_requirements: vec![20],
+            application: kaspascript_model::ApplicationModel::empty(),
         };
 
         let err = compile_toccata("future", &ir, "test", Target::FutureMainnet)

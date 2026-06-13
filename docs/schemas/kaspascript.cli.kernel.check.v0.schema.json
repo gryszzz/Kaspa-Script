@@ -80,7 +80,8 @@
         "finality_depth",
         "kip_requirements",
         "contracts",
-        "spends"
+        "spends",
+        "application_schema_version"
       ],
       "properties": {
         "backend": {
@@ -121,6 +122,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "application_schema_version": {
+          "const": "kaspascript.application.v0"
         }
       }
     },

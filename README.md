@@ -1,81 +1,156 @@
 <p align="center">
-<img width="830" height="690" alt="1D3F5396-790E-43D9-B5CA-6AF71F35F286" src="https://github.com/user-attachments/assets/2ba60637-34b0-4436-8055-90c4e0effd95" />
+  <img src="./logo.png" alt="KaspaScript" width="680">
 </p>
 
-<h1 align="center">Kaspa Script </h1>
-> Production-grade contract compiler architecture for Kaspa's covenant era.
+<p align="center">
+  <strong>A readable, deterministic language and toolkit for programmable UTXOs on Kaspa.</strong>
+</p>
 
-![Rust](https://img.shields.io/badge/Rust-1.80+-111111?style=flat-square&logo=rust)
-![Deterministic Builds](https://img.shields.io/badge/Deterministic-Builds-111111?style=flat-square)
-![TN12 Target](https://img.shields.io/badge/Target-TN12-111111?style=flat-square)
-![Tests Passing](https://img.shields.io/badge/Tests-Passing-111111?style=flat-square)
-![LLVM-style Architecture](https://img.shields.io/badge/LLVM--style-Architecture-111111?style=flat-square)
-![Source-Grounded](https://img.shields.io/badge/Protocol-Source--Grounded-111111?style=flat-square)
+<p align="center">
+  Write contract intent in <code>.ks</code>. Inspect the UTXO transition model. Compile source-grounded txscript. Package everything wallets, indexers, SDKs, and applications need to understand it.
+</p>
 
-KaspaScript is a Rust compiler workspace for deterministic Kaspa contract
-artifacts. It exists to make covenant-era contract construction inspectable:
-source becomes typed IR, IR becomes target-gated txscript bytes, and every
-protocol-sensitive claim is pinned to a source. Kernel packages now also emit a
-capability profile for wallets, SDKs, indexers, and agents.
+<p align="center">
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#what-kaspascript-does">What It Does</a> ·
+  <a href="#example">Example</a> ·
+  <a href="#current-status">Status</a> ·
+  <a href="https://gryszzz.github.io/Kaspa-Script/">Project Site</a>
+</p>
 
-The project is built for reviewers, tooling, and coding agents that need stable
-compiler surfaces: golden artifacts, explicit target gates, bytecode
-verification, and no hidden transaction behavior.
-
-Current status:
-
-- Verified compiler and golden test suite for the V1 txscript subset.
-- First Kaspa programmability kernel crate and v0 package command.
-- Toccata upgrade prep is tracked, but mainnet activation remains unclaimed.
-
-Read the status roadmap: [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
-Kernel package schema:
-[`docs/KERNEL_PACKAGE_SCHEMA.md`](docs/KERNEL_PACKAGE_SCHEMA.md).
-Project site: [`https://gryszzz.github.io/Kaspa-Script/`](https://gryszzz.github.io/Kaspa-Script/).
+<p align="center">
+  <img alt="Rust 1.80+" src="https://img.shields.io/badge/Rust-1.80%2B-111827?style=flat-square&logo=rust">
+  <img alt="Deterministic artifacts" src="https://img.shields.io/badge/Artifacts-Deterministic-0f766e?style=flat-square">
+  <img alt="Source grounded" src="https://img.shields.io/badge/Protocol-Source_Grounded-0891b2?style=flat-square">
+  <img alt="Verified TN12 target" src="https://img.shields.io/badge/Target-Verified_TN12-2563eb?style=flat-square">
+  <img alt="Mainnet status" src="https://img.shields.io/badge/Mainnet-Not_Claimed-7c3aed?style=flat-square">
+</p>
 
 ---
 
-## Architecture
+## What Is KaspaScript?
+
+KaspaScript is a Rust-based language, compiler, and programmability toolkit for
+expressing Kaspa-native UTXO behavior without writing raw txscript opcodes.
+
+It is designed around how Kaspa actually works:
+
+- UTXOs and explicit value movement
+- deterministic scripts and artifacts
+- transaction-level input and output constraints
+- signatures, timelocks, hashlocks, and multisig
+- covenant lineage and state-transition modeling
+- BlockDAG-aware finality and sequencing assumptions
+- wallet signing intent and indexer interpretation
+- target-specific protocol evidence and readiness gates
+
+KaspaScript is not an Ethereum-style account runtime, and it does not pretend
+that preview or testnet capabilities are active on mainnet.
 
 ```text
-┌───────────┐    ┌────────┐    ┌────────┐    ┌─────┐
-│ Source.ks │ -> │ Lexer  │ -> │ Parser │ -> │ AST │
-└───────────┘    └────────┘    └────────┘    └─────┘
-                                                   │
-                                                   v
-┌──────────┐    ┌────────────────┐    ┌───────────┐
-│ Artifact │ <- │ Kaspa txscript │ <- │ Typed IR  │
-└──────────┘    │ backend/gates  │    └───────────┘
-                └────────────────┘          ^
-                        ^                    │
-                        │             ┌──────────────┐
-                        └──────────── │ Semantics    │
-                                      └──────────────┘
-
-┌────────────────────────────────────────────────────────┐
-│ Programmability Kernel                                 │
-│ contract blueprints, capability profile, wallet        │
-│ previews, indexer schema, source evidence, Toccata fee │
-│ policy, readiness reports                              │
-└────────────────────────────────────────────────────────┘
-
-Optimization passes are planned; today the compiler favors verifiable lowering
-and deterministic emission over speculative transformation.
+Readable .ks source
+        ↓
+Semantic checks and typed constraints
+        ↓
+Canonical UTXO application model
+        ↓
+Typed opcode-agnostic IR
+        ↓
+Target-gated Kaspa txscript
+        ↓
+Deterministic artifact and kernel package
+        ↓
+Wallet · SDK · Indexer · Node · Application
 ```
 
-| Stage | Role |
+## Quick Start
+
+### Prerequisites
+
+- Rust 1.80 or newer
+- Git
+
+### Build The Project
+
+```bash
+git clone https://github.com/gryszzz/Kaspa-Script.git
+cd Kaspa-Script
+cargo build --workspace
+```
+
+### Explore A Contract
+
+Start with the included escrow contract:
+
+```bash
+cargo run -p kaspascript-cli -- \
+  inspect tests/contracts/escrow.ks
+```
+
+KaspaScript explains the important parts:
+
+```text
+contract Escrow
+  transition release
+    signing: 2-of-3 multisig
+    require: output(0).value >= input(0).value
+    fees/change: external and explicit
+
+  transition refund
+    signing: buyer
+    require: block.height >= timeout
+    require: output(0).script == buyer
+```
+
+### Compile It
+
+```bash
+cargo run -p kaspascript-cli -- \
+  compile tests/contracts/escrow.ks \
+  --target verified-tn12 \
+  --output /tmp/escrow.artifact.json
+```
+
+The artifact contains deterministic bytecode plus the application model,
+signing intent, source hash, target, KIP requirements, and warnings.
+
+### Build An Application Package
+
+```bash
+cargo run -p kaspascript-cli -- \
+  kernel package tests/contracts/escrow.ks \
+  --target verified-tn12 \
+  --compute-grams 1000 \
+  --tx-bytes 400 \
+  --output /tmp/escrow.kernel.json
+```
+
+The kernel package adds wallet previews, capability profiles, indexer
+requirements, fee assumptions, source evidence, and network readiness.
+
+## What KaspaScript Does
+
+| Surface | What you get |
 | --- | --- |
-| Lexer | Position-tagged token stream with line, column, and byte spans. |
-| Parser | Contract AST for params, spend paths, calls, arrays, fields, and expressions. |
-| Semantic Analysis | Collects type, scope, finality, builtin, and target-safety errors. |
-| Typed IR | Opcode-agnostic instruction layer for contract verification and backend selection. |
-| Backend Gates | Emits only source-grounded txscript for `verified-tn12`; gates preview surfaces. |
-| Artifact | Deterministic JSON containing bytecode, source hash, target, KIP requirements, and warnings. |
-| Kernel | Packages Kaspa-native contract blueprints with capability profiles, wallet previews, covenant lineage schema, fee policy, and network readiness. |
+| Language | Readable `.ks` contracts with typed parameters and explicit spend paths. |
+| Compiler | Lexer, parser, semantic analysis, typed IR, target gates, and deterministic txscript. |
+| Application model | Signing requirements, constraints, UTXO references, output bindings, continuation, and monetary responsibilities. |
+| Inspector | Human-readable and JSON explanations of what each transition requires. |
+| Kernel package | A single package for wallets, SDKs, indexers, agents, and review tools. |
+| Protocol grounding | Claims tied to pinned Kaspa sources, KIPs, releases, and activation posture. |
+| Verification | Golden artifacts, ASM/hex snapshots, negative tests, determinism tests, and fuzz smoke tests. |
 
----
+### Design Principles
 
-## Example Contract
+- No hidden recipients, fees, change, or monetary behavior.
+- No secret-key handling in generated application logic.
+- No abstraction that hides signing intent or UTXO ownership.
+- No unsupported opcode invention.
+- No mainnet claim beyond available evidence.
+- No linear-chain assumptions where BlockDAG behavior matters.
+- Every compiler output should be inspectable and explainable.
+
+## Example
 
 ```kaspascript
 contract Escrow {
@@ -100,292 +175,196 @@ contract Escrow {
 }
 ```
 
-Artifact metadata:
+KaspaScript preserves more than bytecode. The compiled application model can
+answer:
 
-```json
-{
-  "backend": "kaspa-txscript",
-  "target": "verified-tn12",
-  "compiler_version": "0.1.0",
-  "finality_depth": 10,
-  "kip_requirements": [10],
-  "warnings": []
-}
+- Who can authorize `release` and `refund`?
+- Which inputs and outputs are referenced?
+- Which value and script constraints must hold?
+- Are extra outputs still permitted?
+- Does the source bind a successor state output?
+- Who remains responsible for fees and change?
+- What did the compiler prove, and what must a wallet or node verify?
+
+Machine-readable inspection is available for applications and coding agents:
+
+```bash
+cargo run -p kaspascript-cli -- \
+  inspect tests/contracts/escrow.ks --json
 ```
 
-IR preview:
+## Core Commands
 
-```text
-IR contracts: 1
-contract Escrow
-  spend release: 10 instructions
-  spend refund: 9 instructions
+```bash
+# Explain source or a compiled artifact
+kaspascript inspect contract.ks
+kaspascript inspect contract.ks --json
+kaspascript inspect contract.artifact.json
+
+# Compile deterministic artifacts
+kaspascript compile contract.ks --target verified-tn12
+
+# Verify emitted bytecode
+kaspascript verify contract.artifact.json
+
+# Check readiness and assumptions
+kaspascript kernel check contract.ks --target verified-tn12
+kaspascript doctor contract.ks --target future-mainnet --json
+
+# Preview wallet signing intent
+kaspascript kernel preview contract.ks --transition release
+
+# Package compiler, wallet, indexer, evidence, and fee metadata
+kaspascript kernel package contract.ks \
+  --target verified-tn12 \
+  --compute-grams 1000 \
+  --tx-bytes 400
+
+# Inspect Toccata target and fee posture
+kaspascript toccata status
+kaspascript toccata targets
+kaspascript toccata fee --compute-grams 1000 --tx-bytes 400
 ```
 
-Compile output:
+When developing from the repository, prefix commands with:
 
-```console
-$ kaspascript compile escrow.ks
-escrow.artifact.json
+```bash
+cargo run -p kaspascript-cli --
 ```
-
----
-
-## Compiler Philosophy
-
-KaspaScript treats compilation as an auditable system boundary.
-
-| Principle | Meaning |
-| --- | --- |
-| Deterministic artifacts | The same source must produce the same bytecode and source hash every time. |
-| No hidden behavior | The compiler and SDK do not inject invisible fees, treasury outputs, or implicit spend paths. |
-| Source-grounded protocol support | Backend opcodes and KIP claims must cite pinned Kaspa sources before they can be verified. |
-| Upgrade-safe targets | `verified-tn12`, `tn10-toccata`, `toccata-preview`, and `future-mainnet` are separate target gates. |
-| Verification first | Unsupported behavior fails before bytecode emission; preview behavior must warn explicitly. |
-
-The compiler refuses to guess. Uncertain protocol support is a gate, not a
-branch.
-
----
-
-## Features
-
-### Implemented
-
-| Area | Status |
-| --- | --- |
-| Lexer, parser, AST | Complete V1 front end with source positions. |
-| Semantic analysis | Collects all errors instead of stopping at the first failure. |
-| Typed IR | Opcode-agnostic lowering for verified V1 patterns. |
-| Kaspa txscript backend | Emits deterministic bytes for source-grounded opcodes. |
-| CLI | Target-aware `compile`, `inspect`, `verify`, Toccata status/fee commands, and kernel package/check/preview workflows. |
-| Golden artifacts | JSON, hex, and ASM snapshots for every example contract. |
-| Kernel package goldens | v0 `.kernel.json` snapshots for escrow and vault. |
-| SDK preview model | Compile API plus finality-depth checks; not a real Kaspa transaction builder yet. |
-| TN12 test harness | Feature-gated live RPC/wallet preflight with gated proof files. |
-| Programmability kernel | `kaspascript-kernel` crate plus `kaspascript kernel package <contract.ks>` for bytecode, capability profiles, wallet previews, indexer schema, readiness levels, source snapshots, and fee estimates. |
-
-### Verified
-
-| Surface | Evidence |
-| --- | --- |
-| Base txscript opcodes | Pinned `rusty-kaspa` txscript sources. |
-| Canonical pushes | Pinned `rusty-kaspa` script builder behavior. |
-| KIP-10 introspection | `input` / `output` value and script opcodes. |
-| KIP-15 sequencing | Verified as a block-header commitment, not a script opcode. |
-
-### Target-Gated
-
-| Surface | Gate |
-| --- | --- |
-| `block.height` template values | Verified opcode, but transaction instantiation is still preview. |
-| Covenant IDs | No pinned txscript opcode yet. |
-| ZK verification | No pinned txscript verifier opcode yet. |
-| Script-level sequencing access | KIP-15 is not script-visible in pinned sources. |
-| Future mainnet target | Locked until mainnet sources are pinned. |
-
-### Planned
-
-| Area | Direction |
-| --- | --- |
-| Optimization passes | Deterministic IR transforms after verification invariants are fixed. |
-| Real transaction builder | Rusty Kaspa transaction construction and submission. |
-| WASM SDK | Stable compiler bindings for TypeScript tooling. |
-| Contract registry tooling | Artifact fingerprinting and bytecode inspection workflows. |
-
----
-
-## CLI Usage
-
-```console
-$ kaspascript --help
-KaspaScript is a source-grounded Kaspa contract compiler and programmability kernel...
-```
-
-```console
-$ kaspascript toccata status
-upgrade: Toccata
-rusty_kaspa_release: v2.0.0 (2026-06-05T12:09:13Z)
-mainnet_activation: DAA 474165565 estimated 2026-06-30T16:15:00Z
-kaspa_script_readiness: blocked-for-production-mainnet
-guide: https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md
-fee_policy: 100 sompi * max(compute grams, 2 * transaction bytes)
-```
-
-```console
-$ kaspascript toccata targets
-target: verified-tn12
-  readiness: verified
-  network: tn12
-  use: deterministic txscript packages for the source-grounded V1 subset
-```
-
-```console
-$ kaspascript compile escrow.ks --target verified-tn12
-escrow.artifact.json
-```
-
-```console
-$ kaspascript inspect escrow.ks
-IR contracts: 1
-contract Escrow
-  spend release: 10 instructions
-  spend refund: 9 instructions
-```
-
-```console
-$ kaspascript kernel check escrow.ks --target verified-tn12 --compute-grams 1000 --tx-bytes 400
-contract: Escrow
-target: verified-tn12
-readiness: verified
-ready: true
-minimum_standard_fee_sompi: 100000
-```
-
-```console
-$ kaspascript kernel preview escrow.ks --target verified-tn12 --transition release
-contract: Escrow
-target: verified-tn12
-transition: release
-  classification: CovenantStateTransition
-```
-
-```console
-$ kaspascript kernel package escrow.ks --target verified-tn12 --compute-grams 1000 --tx-bytes 400
-escrow.kernel.json
-```
-
-```console
-$ kaspascript toccata fee --compute-grams 1000 --tx-bytes 400
-policy: toccata-rpc-minimum-standard-fee
-minimum_standard_fee_sompi: 100000
-formula: max(compute_grams, tx_bytes * 2) * 100 sompi
-```
-
-Every report-style command also supports `--json` for agents and CI:
-
-```console
-$ kaspascript doctor escrow.ks --target future-mainnet --json
-```
-
-The report payloads are versioned contracts. JSON Schemas live in
-[`docs/schemas`](docs/schemas), and golden report snapshots live in
-[`tests/golden/cli`](tests/golden/cli). Start with
-[`docs/CLI_REPORT_SCHEMAS.md`](docs/CLI_REPORT_SCHEMAS.md).
-
-```console
-$ kaspascript verify escrow.artifact.json
-backend: kaspa-txscript
-target: verified-tn12
-compiler: 0.1.0
-bytecode_bytes: 75
-finality_depth: Some(10)
-kip_requirements: [10]
-```
-
----
 
 ## Contract Patterns
 
-| Pattern | Description | Target status |
+Ready-to-study examples live in [`tests/contracts`](tests/contracts).
+
+| Pattern | Demonstrates | Current posture |
 | --- | --- | --- |
-| Escrow | 2-of-3 release path with timeout refund and output value checks. | Verified TN12 |
-| Timelock | Signature spend gated by `OP_CHECKLOCKTIMEVERIFY`. | Verified TN12 |
-| Multisig | Static threshold signatures lowered to `OP_CHECKMULTISIG`. | Verified TN12 |
-| Atomic swap | Hash preimage-style claim path plus refund timeout. | Verified TN12 |
-| Covenant vault | Finality-aware vault pattern using verified txscript constraints today; covenant lineage remains future-gated. | Partial / gated |
-| DAGSafe channel | Hash-committed cooperative close, timeout refund, and mediated close using verified script primitives. | Verified TN12 |
-| DAGSafeVault kernel blueprint | UTXO covenant state-machine package with wallet previews, indexer schema, TN10 readiness report, and mainnet activation guard. | Kernel / TN10-gated |
+| Escrow | 2-of-3 release, timeout refund, value and script constraints | Verified TN12 subset |
+| Timelock | Signature authorization after a block-height threshold | Verified TN12 subset |
+| Multisig | Static threshold signatures | Verified TN12 subset |
+| Atomic swap | Hashlock claim path and timeout refund | Verified TN12 subset |
+| Vault | Owner/recovery paths with explicit output constraints | Verified subset, lineage future-gated |
+| DAGSafe channel | Cooperative, mediated, and timeout close paths | Verified TN12 subset |
+| DAGSafeVault | Covenant-oriented UTXO state-machine blueprint | TN10/kernel preview |
 
-Examples live in `tests/contracts`; committed outputs live in `tests/golden`.
+Committed deterministic outputs live in [`tests/golden`](tests/golden).
 
----
-
-## Determinism & Verification
-
-KaspaScript keeps bytecode generation measurable.
-
-| Check | Coverage |
-| --- | --- |
-| Determinism | Escrow compiles 1000 times with identical bytecode and source hash. |
-| Golden snapshots | Each example checks artifact JSON, expected hex, and expected ASM; escrow and vault also check v0 kernel package JSON. |
-| Negative tests | Wrong signature type, invalid input index, bad finality depth, and unsupported covenant features fail. |
-| Fuzz smoke | Random lexer/parser input must not panic. |
-| Clippy | Workspace is clean under `-D warnings`. |
-
-For the current Toccata/DAGKnight preparation notes, see
-[`docs/KASPA_UPGRADE_PREP.md`](docs/KASPA_UPGRADE_PREP.md). That brief records
-the latest upstream KIP and Rusty Kaspa checkpoints without unlocking
-unsupported bytecode paths prematurely.
-For the moving Rusty Kaspa architecture watch, see
-[`docs/RUSTY_KASPA_UPSTREAM_WATCH.md`](docs/RUSTY_KASPA_UPSTREAM_WATCH.md).
-For the new framework layer, see
-[`docs/KASPA_PROGRAMMABILITY_KERNEL.md`](docs/KASPA_PROGRAMMABILITY_KERNEL.md).
-For the kernel package JSON shape, see
-[`docs/KERNEL_PACKAGE_SCHEMA.md`](docs/KERNEL_PACKAGE_SCHEMA.md).
-For the completion roadmap, see
-[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
-The crate compatibility spike is in
-[`docs/TOCCATA_CRATE_COMPATIBILITY.md`](docs/TOCCATA_CRATE_COMPATIBILITY.md).
-
----
-
-## Repository Layout
+## How The Pieces Fit
 
 ```text
-kaspascript/
-├── compiler/
-│   ├── lexer/       tokenization with line/column/byte spans
-│   ├── parser/      AST construction and Pratt expressions
-│   ├── semantic/    scope, type, builtin, and finality checks
-│   ├── ir/          opcode-agnostic contract IR
-│   ├── codegen/     target gates, txscript backend, artifacts
-│   └── protocol/    target manifests and feature gates
-├── kernel/          Kaspa-native app kernel: blueprints, wallet preview, indexer schema
-├── sdk/             Rust compile API and preview transaction model
-├── cli/             kaspascript command-line interface
-├── tests/
-│   ├── contracts/   verified example contracts
-│   └── golden/      artifact JSON, hex, and ASM snapshots
-├── docs/            source-grounded protocol audit
-└── contracts/       future-gated design fixtures
+compiler/
+├── lexer       source positions and tokens
+├── parser      contracts, params, spends, and expressions
+├── semantic    types, scopes, builtins, and finality checks
+├── model       canonical Kaspa UTXO application model
+├── ir          opcode-agnostic instructions
+├── codegen     source-grounded txscript and artifacts
+└── protocol    target manifests and feature gates
+
+kernel/         wallet previews, capability profiles, indexer schemas,
+                source evidence, fee policy, and readiness reports
+
+sdk/            Rust compile API and preview transaction surfaces
+cli/            human and JSON workflows
+tests/          contracts, deterministic goldens, and integration tests
+docs/           architecture, schemas, protocol audits, and roadmaps
+```
+
+The important architectural rule is simple: the compiler, kernel, CLI, SDK,
+wallet integrations, and indexers should describe the same application model.
+
+Read the deeper design:
+
+- [KaspaScript Program Model](docs/KASPASCRIPT_PROGRAM_MODEL.md)
+- [Architecture Decision: Canonical Application Model](docs/architecture/ADR-001-canonical-application-model.md)
+- [Kaspa Programmability Kernel](docs/KASPA_PROGRAMMABILITY_KERNEL.md)
+- [Kernel Package Schema](docs/KERNEL_PACKAGE_SCHEMA.md)
+
+## Current Status
+
+KaspaScript is an active developer-preview project with a verified compiler
+subset and deterministic tooling.
+
+### Available Today
+
+- complete V1 lexer, parser, semantic checker, typed IR, and txscript backend
+- canonical `kaspascript.application.v0` model
+- deterministic JSON, hex, and ASM artifacts
+- `verified-tn12`, `tn10-toccata`, `toccata-preview`, and `future-mainnet` gates
+- wallet previews and signing-intent metadata
+- kernel packages and versioned JSON report schemas
+- offline SDK and feature-gated testnet harnesses
+
+### Intentionally Gated
+
+- production covenant-ID lowering
+- production ZK verifier lowering
+- script-visible sequencing flows
+- complete Rusty Kaspa transaction construction and broadcasting
+- production mainnet treatment
+
+`future-mainnet` remains blocked until activation, source compatibility,
+wallet/indexer assumptions, and fee behavior are independently verified.
+
+See [Project Status](docs/PROJECT_STATUS.md) for the current roadmap and
+[Kaspa Source Audit](docs/kaspa-source-audit.md) for the evidence boundary.
+
+## Quality Gates
+
+```bash
+cargo fmt --check
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace --features testnet-integration
+```
+
+The repository checks:
+
+- deterministic compilation across repeated runs
+- committed artifact, bytecode, ASM, kernel, and CLI-report goldens
+- semantic and unsupported-feature failures
+- random-input lexer/parser panic resistance
+- feature-gated offline and live-testnet workflows
+
+Live RPC tests remain ignored unless the required testnet environment is
+configured. See [Testnet Guide](docs/TESTNET.md).
+
+## Documentation
+
+| Start here | Purpose |
+| --- | --- |
+| [Project Status](docs/PROJECT_STATUS.md) | What works, what is gated, and what comes next |
+| [Program Model](docs/KASPASCRIPT_PROGRAM_MODEL.md) | What a KaspaScript program means at every layer |
+| [Kernel Package](docs/KERNEL_PACKAGE_SCHEMA.md) | Wallet, indexer, evidence, and readiness package format |
+| [CLI Report Schemas](docs/CLI_REPORT_SCHEMAS.md) | Stable JSON contracts for agents and CI |
+| [Source Grounding](docs/source-grounding.md) | How protocol-sensitive claims are verified |
+| [Toccata Integration](docs/TOCCATA_V2_INTEGRATION.md) | Upgrade and integration posture |
+| [Transaction Builder](docs/TRANSACTION_BUILDER.md) | Current builder boundary and roadmap |
+
+## Contributing
+
+Useful contributions include:
+
+- language and semantic tests
+- deterministic compiler passes
+- wallet-preview fixtures
+- indexer lineage and reorg fixtures
+- protocol source audits
+- Rusty Kaspa compatibility work
+- documentation and beginner examples
+
+Please keep changes deterministic, source-grounded, explicit about monetary
+behavior, and honest about network readiness.
+
+## Support Development
+
+Kaspa:
+
+```text
+kaspa:qpv7fcvdlz6th4hqjtm9qkkms2dw0raem963x3hm8glu3kjgj7922vy69hv85
 ```
 
 ---
 
-## Performance & Quality Gates
-
-```console
-$ cargo test --workspace
-# unit, integration, fuzz-smoke, determinism, and golden tests
-
-$ cargo clippy --workspace --all-targets -- -D warnings
-# warning-clean workspace
-
-$ cargo test --features tn12-integration -- --ignored
-# live TN12 RPC/wallet preflight and gated proof files
-
-$ cargo bench -p kaspascript-codegen --bench escrow
-# escrow full-pipeline benchmark
-```
-
-See `docs/TESTNET.md` for the exact TN12 setup, required environment
-variables, and proof-file format.
-
-Current benchmark target: full escrow compile pipeline under 1 ms on a typical
-developer machine.
-
----
-
-## Protocol Honesty
-
-KaspaScript does not claim live mainnet smart-contract support.
-
-Verified protocol evidence currently covers base Kaspa txscript behavior and
-KIP-10 transaction introspection from pinned Kaspa sources. Covenant IDs, ZK
-verification opcodes, and script-visible sequencing remain gated until primary
-Kaspa sources define them.
-
-Read the audit: [`docs/kaspa-source-audit.md`](docs/kaspa-source-audit.md).
-
-Support Dev <3 : kaspa:qpv7fcvdlz6th4hqjtm9qkkms2dw0raem963x3hm8glu3kjgj7922vy69hv85
+<p align="center">
+  <strong>Make simple things simple, advanced things possible, and dangerous things obvious.</strong>
+</p>

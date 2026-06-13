@@ -6,6 +6,7 @@ pub mod testnet;
 pub mod tn12;
 
 use kaspascript_codegen::{compile_file, CompiledArtifact};
+use kaspascript_model::ApplicationModel;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -66,6 +67,11 @@ pub fn compile(src: &str, file: &str) -> Result<CompiledArtifact, CompileError> 
     compile_file(src, file)
 }
 
+/// Compiles source and returns its canonical KaspaScript application model.
+pub fn compile_application(src: &str, file: &str) -> Result<ApplicationModel, CompileError> {
+    compile(src, file).map(|artifact| artifact.application)
+}
+
 /// Builds a preview spend transaction with finality enforcement and no hidden fees.
 pub fn build_spend_tx(
     artifact: &CompiledArtifact,
@@ -115,6 +121,7 @@ mod tests {
             finality_depth: Some(10),
             kip_requirements: vec![10],
             warnings: Vec::new(),
+            application: ApplicationModel::empty(),
             contracts: Vec::new(),
         };
         let result = build_spend_tx(
@@ -145,6 +152,7 @@ mod tests {
             finality_depth: None,
             kip_requirements: Vec::new(),
             warnings: Vec::new(),
+            application: ApplicationModel::empty(),
             contracts: Vec::new(),
         };
         let tx = build_spend_tx(
@@ -164,5 +172,16 @@ mod tests {
         assert_eq!(tx.outputs.len(), 1);
         assert_eq!(tx.outputs[0].value, 100_000);
         assert_eq!(tx.outputs[0].script_pubkey, vec![1]);
+    }
+
+    #[test]
+    fn exposes_the_same_application_model_as_the_compiler_artifact() {
+        let source = include_str!("../../tests/contracts/escrow.ks");
+        let artifact = compile(source, "escrow.ks").expect("compile");
+        let application = compile_application(source, "escrow.ks").expect("application");
+
+        assert_eq!(application, artifact.application);
+        assert_eq!(application.contracts[0].name, "Escrow");
+        assert_eq!(application.contracts[0].transitions.len(), 2);
     }
 }

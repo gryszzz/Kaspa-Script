@@ -32,6 +32,9 @@
         "rusty_kaspa_release": {
           "$ref": "#/$defs/rusty_kaspa_release"
         },
+        "baseline_toccata_release": {
+          "$ref": "#/$defs/baseline_toccata_release"
+        },
         "mainnet_activation": {
           "type": "object",
           "additionalProperties": false,
@@ -81,6 +84,12 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/release_asset"
+          }
+        },
+        "maintenance_changes": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         },
         "node_requirements": {
@@ -152,6 +161,36 @@
           "type": "string"
         },
         "published_at": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "upgrade_note": {
+          "type": "string"
+        }
+      }
+    },
+    "baseline_toccata_release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tag",
+        "published_at",
+        "commit",
+        "role"
+      ],
+      "properties": {
+        "tag": {
+          "type": "string"
+        },
+        "published_at": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "role": {
           "type": "string"
         }
       }

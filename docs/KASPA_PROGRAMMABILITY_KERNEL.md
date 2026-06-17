@@ -104,12 +104,16 @@ production bytecode lowering is claimed.
 
 ## Evidence Posture
 
-The bundled kernel evidence is pinned to the June 5, 2026 source audit:
+The bundled kernel evidence is pinned to the June 17, 2026 source audit:
 
-- `v2.0.0` is the mainnet Toccata release published on June 5, 2026. Its
+- `v2.0.1` is the current mainnet Toccata maintenance release published on
+  June 15, 2026. It is usable as the upgrade version for pre-Toccata 1.x
+  nodes and includes seq-commit lane-proof RPC and covenant-binding
+  refinements.
+- `v2.0.0` is the baseline Toccata release published on June 5, 2026. Its
   release notes schedule activation at DAA score `474,165,565`, roughly
-  June 30, 2026 at 16:15 UTC, so KaspaScript treats it as mainnet
-  pre-activation evidence until activation is independently verified.
+  June 30, 2026 at 16:15 UTC, so KaspaScript treats both release tags as
+  mainnet pre-activation evidence until activation is independently verified.
 - `v1.3.0-toc.5` is mainnet pre-activation evidence only. It does not activate
   Toccata on mainnet.
 - PR #1000 is merged Toccata implementation evidence.
@@ -120,7 +124,7 @@ The bundled kernel evidence is pinned to the June 5, 2026 source audit:
 Mainnet blueprints remain blocked until activation itself, crate compatibility,
 wallet/indexer support posture, and fee/mass behavior are pinned.
 
-The tagged `v2.0.0` Toccata guide is now the fee-policy source used by
+The tagged `v2.0.1` Toccata guide is now the fee-policy source used by
 `ToccataFeePolicy`; see
 [`TOCCATA_V2_INTEGRATION.md`](TOCCATA_V2_INTEGRATION.md).
 
@@ -133,7 +137,7 @@ The tagged `v2.0.0` Toccata guide is now the fee-policy source used by
 4. Add constraint extraction for signature, timelock, value, and script-binding
    checks inside the capability profile.
 5. Feed real node/RPC fee estimates into the package when available.
-6. Add a non-default Rusty Kaspa `v2.0.0` compatibility feature for SDK
+6. Add a non-default Rusty Kaspa `v2.0.1` compatibility feature for SDK
    transaction-builder work.
 
 See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the completion roadmap.

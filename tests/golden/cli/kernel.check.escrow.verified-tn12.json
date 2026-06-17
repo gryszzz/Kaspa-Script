@@ -170,7 +170,7 @@
     "compute_grams": 1000,
     "minimum_standard_fee_sompi": 100000,
     "policy": "toccata-rpc-minimum-standard-fee",
-    "source": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md",
+    "source": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md",
     "transaction_bytes": 400
   },
   "next_commands": [

@@ -1,6 +1,6 @@
 # Kaspa Toccata Upgrade Prep
 
-Prepared: 2026-06-04.
+Prepared: 2026-06-04. Updated: 2026-06-17.
 
 This note is the working training brief for getting KaspaScript ready for the
 current Kaspa upgrade cycle. It separates upstream facts from KaspaScript work
@@ -12,7 +12,11 @@ Primary sources checked:
 
 - `kaspanet/rusty-kaspa` release `v2.0.0`, published 2026-06-05:
   https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.0
-- Tagged `v2.0.0` Toccata guide:
+- `kaspanet/rusty-kaspa` release `v2.0.1`, published 2026-06-15:
+  https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.1
+- Tagged `v2.0.1` Toccata guide:
+  https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md
+- Baseline tagged `v2.0.0` Toccata guide:
   https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md
 - `kaspanet/rusty-kaspa` release `v1.3.0-toc.5`, published 2026-06-03:
   https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.3.0-toc.5
@@ -22,16 +26,22 @@ Primary sources checked:
   `1aba3b8321c1d27e00b7d87bd7c74ef879efabdc`:
   https://github.com/kaspanet/kips
 
-Important checkpoint: `v2.0.0` is the mainnet Toccata release, but its release
-notes schedule activation at DAA score `474,165,565`, roughly 2026-06-30
-16:15 UTC. Until activation is independently verified, KaspaScript treats this
-as mainnet pre-activation evidence.
+Important checkpoint: `v2.0.1` is the current mainnet Toccata maintenance
+release and can be used as the upgrade version for pre-Toccata 1.x nodes.
+`v2.0.0` remains the baseline release whose notes schedule activation at DAA
+score `474,165,565`, roughly 2026-06-30 16:15 UTC. Until activation is
+independently verified, KaspaScript treats both tags as mainnet
+pre-activation evidence.
 
-Follow-up source watch on 2026-06-05:
+Follow-up source watch through 2026-06-17:
 
 - `kaspanet/rusty-kaspa` published `v2.0.0` after the earlier moving-master
   watch, replacing the open activation-PR signal with a tagged release and
   scheduled activation DAA.
+- `kaspanet/rusty-kaspa` published `v2.0.1` on 2026-06-15 with seq-commit
+  lane-proof RPC support, SMT sync notifications, SMT inspection tooling,
+  user-lane transaction generation, covenant-binding refinements, and a Wasm
+  transaction v0 deserialization fix.
 - Post-release changes touched wallet covenant bindings, txscript WASM builder
   flags, RPC transaction JSON requirements, `storage_mass`, `compute_commit`,
   TN10 reenablement, and mempool fee/relay behavior.
@@ -50,9 +60,11 @@ release integration brief now wired into the CLI status report.
 | Expanded covenants | KIP-17; transaction introspection, payload substrings, `OpCat`, `OpSubstr`, bitwise ops, keyed hashes, `OpBlake3`, signature-from-stack | The language can grow beyond KIP-10 input/output checks, but every opcode needs target gates and bytecode snapshots. |
 | Covenant IDs | KIP-20; UTXO/output covenant ID model; `OpInputCovenantId`, `OpOutputCovenantId`, authorized-output context | `input(0).covenant_id` and `output(0).covenant_id` need distinct IR, plus transaction output covenant bindings in the SDK. |
 | Partitioned sequencing | KIP-21; `OpChainblockSeqCommit` `0xd4` | `sequencing` needs a block-hash witness model, depth/reorg policy, and proof tests. |
-| Fee policy | Tagged `v2.0.0` Toccata guide | Transaction submission must not rely on stale fixed-fee assumptions; fees should come from node APIs where possible. |
-| Transaction shape | Tagged `v2.0.0` Toccata guide | Toccata v1 transactions add output covenant bindings and input compute commitments; builders must preserve both. |
-| Node DB upgrade | Tagged `v2.0.0` Toccata guide | Upgraded node databases cannot be downgraded without resyncing. |
+| Fee policy | Tagged `v2.0.1` Toccata guide | Transaction submission must not rely on stale fixed-fee assumptions; fees should come from node APIs where possible. |
+| Transaction shape | Tagged `v2.0.1` Toccata guide | Toccata v1 transactions add output covenant bindings and input compute commitments; builders must preserve both. |
+| Seq-commit lane proof RPC | Rusty Kaspa `v2.0.1` | Sequencing readiness needs request/response fixtures before proof-bearing lowering is claimed. |
+| Covenant binding refinements | Rusty Kaspa `v2.0.1` | SDK transaction facade should isolate upstream representation changes behind local package fields. |
+| Node DB upgrade | Tagged `v2.0.1` Toccata guide | Upgraded node databases cannot be downgraded without resyncing. |
 
 ## Local Readiness Snapshot
 
@@ -63,11 +75,12 @@ release integration brief now wired into the CLI status report.
 - `kaspascript kernel package <contract.ks>` now emits v0 bytecode plus kernel
   package JSON: schema version, source snapshots, wallet previews, indexer
   schema, fee estimate, and readiness report.
-- `kaspascript toccata status --json` now emits a v2.0.0 integration profile
-  for release assets, node guide, fee policy, v1 transaction fields, KIP map,
+- `kaspascript toccata status --json` now emits a current `v2.0.1`
+  integration profile plus the baseline `v2.0.0` activation release for
+  release assets, node guide, fee policy, v1 transaction fields, KIP map,
   and integrator actions.
 - The SDK testnet integration depends on Kaspa crates `0.15.0`; Toccata
-  compatibility must now be respiked against the `v2.0.0` line.
+  compatibility must now be respiked against the `v2.0.1` line.
 - The first Toccata crate compatibility spike is recorded in
   [TOCCATA_CRATE_COMPATIBILITY.md](TOCCATA_CRATE_COMPATIBILITY.md).
 - `docs/kaspa-source-audit.md` now records current upstream Toccata evidence,
@@ -78,9 +91,9 @@ release integration brief now wired into the CLI status report.
 
 ## Preparation Plan
 
-1. Source pinning: vendor or pin the exact upstream files for `v2.0.0`,
-   historical `v1.3.0-toc.5`, and current `kaspanet/kips`, then make the audit generated or
-   checkable.
+1. Source pinning: vendor or pin the exact upstream files for current
+   `v2.0.1`, baseline `v2.0.0`, historical `v1.3.0-toc.5`, and current
+   `kaspanet/kips`, then make the audit generated or checkable.
 2. Moving-master watch: add a non-blocking compatibility lane for current
    `kaspanet/rusty-kaspa` `master` so API drift is found early without
    destabilizing pinned release tests.
@@ -97,7 +110,8 @@ release integration brief now wired into the CLI status report.
 7. SDK transaction builder: add transaction version/covenant binding support,
    fee estimation from RPC, and no-broadcast dry runs against upgraded TN10.
 8. Proof fixtures: generate minimal TN10 fixtures for covenant ID continuation,
-   `OpChainblockSeqCommit`, Groth16, and RISC0-Succinct.
+   seq-commit lane-proof RPCs, `OpChainblockSeqCommit`, Groth16, and
+   RISC0-Succinct.
 9. Mainnet posture: keep `future-mainnet` locked until activation at DAA score
    `474,165,565` is independently verified from primary sources.
 

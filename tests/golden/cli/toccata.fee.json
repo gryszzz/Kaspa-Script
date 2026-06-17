@@ -1,1 +1,12 @@
-{"fee_estimate":{"assumption":"caller-provided Toccata fee estimate inputs","compute_grams":1000,"minimum_standard_fee_sompi":100000,"policy":"toccata-rpc-minimum-standard-fee","source":"https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md","transaction_bytes":400},"formula":"max(compute_grams, tx_bytes * 2) * 100 sompi","schema_version":"kaspascript.cli.toccata.fee.v0"}
+{
+  "fee_estimate": {
+    "assumption": "caller-provided Toccata fee estimate inputs",
+    "compute_grams": 1000,
+    "minimum_standard_fee_sompi": 100000,
+    "policy": "toccata-rpc-minimum-standard-fee",
+    "source": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md",
+    "transaction_bytes": 400
+  },
+  "formula": "max(compute_grams, tx_bytes * 2) * 100 sompi",
+  "schema_version": "kaspascript.cli.toccata.fee.v0"
+}

@@ -1,9 +1,9 @@
 # Toccata Crate Compatibility Spike
 
-Prepared: 2026-06-05.
+Prepared: 2026-06-05. Updated: 2026-06-17.
 
 This spike checks whether the Kaspa crates used by the SDK can move from the
-published `0.15.0` crates.io line toward the tagged Toccata `v2.0.0` line.
+published `0.15.0` crates.io line toward the tagged Toccata `v2.0.x` line.
 
 ## Local SDK Crates
 
@@ -20,27 +20,27 @@ published `0.15.0` crates.io line toward the tagged Toccata `v2.0.0` line.
 `cargo search kaspa-txscript --limit 5` was rechecked on 2026-06-05 and still
 reports `kaspa-txscript = "0.15.0"` as the published crates.io line.
 
-## Toccata v2.0.0 Target
+## Toccata v2.0.1 Target
 
-Rusty Kaspa `v2.0.0` is now the explicit compatibility target:
+Rusty Kaspa `v2.0.1` is now the explicit compatibility target:
 
-- upstream tag: `v2.0.0`
-- tag commit: `90dbf074275d60c1fe74a3491883196f110970c0`
+- upstream tag: `v2.0.1`
+- tag commit: `cfafeb4c093fa37a303f1b9f19c58f986b870ce3`
 - workspace MSRV observed in the tagged `Cargo.toml`: `1.91.0`
 - workspace edition observed in the tagged `Cargo.toml`: `2024`
-- workspace package version observed in the tagged `Cargo.toml`: `2.0.0`
+- workspace package version observed in the tagged `Cargo.toml`: `2.0.1`
 
 Future Toccata compatibility probes should use:
 
 ```toml
 [dependencies]
-kaspa-addresses = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
-kaspa-consensus-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
-kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
-kaspa-rpc-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
-kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
-kaspa-wallet-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
-kaspa-wrpc-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.0" }
+kaspa-addresses = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.1" }
+kaspa-consensus-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.1" }
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.1" }
+kaspa-rpc-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.1" }
+kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.1" }
+kaspa-wallet-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.1" }
+kaspa-wrpc-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v2.0.1" }
 ```
 
 The repo should introduce this as a non-default compatibility feature or
@@ -81,17 +81,19 @@ completed successfully.
 
 - Toccata `kaspa-txscript` pulls in ZK dependencies such as Arkworks and RISC0,
   making the graph much heavier than the current `0.15.0` line.
-- The final Toccata workspace uses edition 2024 and version `2.0.0`.
+- The final Toccata workspace uses edition 2024 and version `2.0.x`.
 - The SDK currently assumes transaction constructors, mass calculation, script
   validation, RPC conversions, and wallet network params from `0.15.0`; each
   import in `sdk/src/testnet.rs` needs an API check before bumping.
-- The `v2.0.0` release is a mainnet release, but activation is still scheduled
-  for DAA score `474,165,565`; it is not proof of activation by itself.
+- The `v2.0.1` release is the current upgrade release and `v2.0.0` is the
+  baseline activation release, but activation is still scheduled for DAA score
+  `474,165,565`; neither tag is proof of activation by itself.
 
 ## Moving-Master Watch
 
-The pinned compatibility spike should now anchor to `v2.0.0`. The older
-`v1.3.0-toc.5` probe remains useful only as a historical diff point.
+The pinned compatibility spike should now anchor to `v2.0.1`, while retaining
+`v2.0.0` as the baseline activation comparison point. The older `v1.3.0-toc.5`
+probe remains useful only as a historical diff point.
 
 The moving-master lane should be non-blocking and should watch for:
 
@@ -99,6 +101,7 @@ The moving-master lane should be non-blocking and should watch for:
 - `input.mass` to `input.compute_commit`
 - required `storage_mass` in `RpcTransaction` JSON
 - wallet generator covenant bindings
+- seq-commit state and lane-proof RPCs
 - txscript WASM script builder flags
 - TN10 reenablement and activation posture
 

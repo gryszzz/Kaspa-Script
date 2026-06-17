@@ -1,6 +1,6 @@
 # Rusty Kaspa Upstream Watch
 
-Updated: 2026-06-05.
+Updated: 2026-06-17.
 
 This brief tracks `kaspanet/rusty-kaspa` as the primary upstream source for
 KaspaScript architecture, compatibility, and Toccata readiness.
@@ -16,12 +16,19 @@ Source repository:
 [`kaspanet/rusty-kaspa`](https://github.com/kaspanet/rusty-kaspa).
 
 Tagged Toccata guide:
-[`docs/toccata-guide.md` at `v2.0.0`](https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md).
+[`docs/toccata-guide.md` at `v2.0.1`](https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md).
+The baseline `v2.0.0` guide remains useful for comparing the original
+activation release.
 
 As of this audit:
 
 - default branch: `master`
 - latest release:
+  [`v2.0.1`](https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.1),
+  published 2026-06-15
+- `v2.0.1` tag commit:
+  [`cfafeb4c093f`](https://github.com/kaspanet/rusty-kaspa/commit/cfafeb4c093fa37a303f1b9f19c58f986b870ce3)
+- baseline Toccata release:
   [`v2.0.0`](https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.0),
   published 2026-06-05
 - `v2.0.0` tag commit:
@@ -30,9 +37,12 @@ As of this audit:
 - activation schedule from the release notes: DAA score `474,165,565`,
   roughly 2026-06-30 16:15 UTC
 
-`v2.0.0` is the mainnet Toccata release, but at this audit date activation is
-scheduled in the future. KaspaScript therefore treats it as mainnet
-pre-activation evidence, not as proof that mainnet contract support is active.
+`v2.0.1` is the current mainnet Toccata maintenance release and can be used as
+the upgrade version for pre-Toccata 1.x nodes. `v2.0.0` remains the baseline
+release that scheduled activation at DAA score `474,165,565`. At this audit
+date activation is still scheduled in the future, so KaspaScript treats both
+release tags as mainnet pre-activation evidence, not as proof that mainnet
+contract support is active.
 
 ## Why This Matters
 
@@ -41,7 +51,8 @@ ahead of the tag during this audit.
 
 That means KaspaScript needs three upstream lanes:
 
-- release lane: reproducible compatibility against `v2.0.0`
+- release lane: reproducible compatibility against current `v2.0.1` while
+  keeping `v2.0.0` as the baseline activation release
 - legacy pinned lane: comparison against `v1.3.0-toc.5`
 - moving master lane: early warning for API, RPC, wallet, and txscript changes
 
@@ -62,11 +73,19 @@ The release lane protects tests. The moving lane trains the architecture.
 | [`bbadf5e57170`](https://github.com/kaspanet/rusty-kaspa/commit/bbadf5e5717042ad30634f389505a3e2f8b6902a) | Wallet generator includes covenant bindings. | Contract transaction builders must preserve covenant bindings; wallet preview metadata should eventually show them. |
 | [`580fa8b5d5a6`](https://github.com/kaspanet/rusty-kaspa/commit/580fa8b5d5a66b55db368cd47781784b8b631222) | WASM mempool entries request args are required. | Do not assume empty RPC/WASM request objects are accepted; package clients should send explicit args. |
 
+## Maintenance Delta Since `v2.0.0`
+
+| Upstream commit | Change | Architecture signal for KaspaScript |
+| --- | --- | --- |
+| [`2787953efb84`](https://github.com/kaspanet/rusty-kaspa/commit/2787953efb84d58f5cdda282953e60bea7da253b) | Added seq-commit lane proof RPC over gRPC and wRPC. | Add lane-proof request/response fixtures and expose sequencing proof readiness without enabling production lowering. |
+| [`c53a83bf482`](https://github.com/kaspanet/rusty-kaspa/commit/c53a83bf4829d430d5179fd02f6d756dab782028) | Changed consensus-client covenant binding inner type. | Keep covenant-binding metadata behind facade types so SDK callers do not depend on unstable upstream representation. |
+| [`b2d8759c540`](https://github.com/kaspanet/rusty-kaspa/commit/b2d8759c5408cdea9c6ce4306d0285e4cdafa0d2) | Added transaction generation targeting user lanes. | Extend no-broadcast dry-run design to preserve lane target metadata in previews. |
+| [`cfafeb4c093`](https://github.com/kaspanet/rusty-kaspa/commit/cfafeb4c093fa37a303f1b9f19c58f986b870ce3) | Fixed Wasm client transaction v0 deserialization. | Add compatibility checks that legacy transaction decoding still works around Toccata clients. |
+
 ## Open PRs To Watch
 
 | PR | Why it matters |
 | --- | --- |
-| [`#961 Add get_seq_commit_lane_proof RPC`](https://github.com/kaspanet/rusty-kaspa/pull/961) | Sequencing/lane proof RPCs could become part of kernel readiness, indexer schema, or proof-bearing package output. |
 | [`#1025 remove TRANSIENT_BYTE_TO_MASS_FACTOR`](https://github.com/kaspanet/rusty-kaspa/pull/1025) | Mass/fee terminology is still being cleaned up in the Toccata lane. |
 | [`#953 Zk sdk`](https://github.com/kaspanet/rusty-kaspa/pull/953) | ZK SDK shape may determine how KaspaScript packages proof hints and verifier payloads. |
 | [`#991 UtxoIndex keyed by DAA score`](https://github.com/kaspanet/rusty-kaspa/pull/991) | DAA-indexed UTXO queries could help contract indexer fixtures and readiness reports. |
@@ -87,8 +106,9 @@ The release lane protects tests. The moving lane trains the architecture.
 
 1. Keep `future-mainnet` locked until activation at DAA score `474,165,565` is
    independently verified.
-2. Move Toccata crate compatibility work to `v2.0.0`, while keeping
-   `v1.3.0-toc.5` as a historical comparison point.
+2. Move Toccata crate compatibility work to `v2.0.1`, while keeping
+   `v2.0.0` as the baseline activation release and `v1.3.0-toc.5` as a
+   historical comparison point.
 3. Add TN10-oriented readiness fixtures for `tn10-toccata`.
 4. Keep the CLI Toccata status schema as the machine-readable digest of the
    current tagged release.
@@ -96,7 +116,9 @@ The release lane protects tests. The moving lane trains the architecture.
    the SDK transaction builder plan.
 6. Add wallet-preview fields for covenant bindings once the transaction builder
    can construct them.
-7. Extend source snapshot metadata with upstream branch watches once the moving
+7. Add compatibility fixtures for seq-commit lane-proof RPCs, covenant-binding
+   representations, and legacy transaction v0 deserialization.
+8. Extend source snapshot metadata with upstream branch watches once the moving
    master lane is automated.
 
 ## Training Loop

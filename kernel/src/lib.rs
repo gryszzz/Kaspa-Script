@@ -16,13 +16,13 @@ use std::fmt;
 use thiserror::Error;
 
 /// Source audit date for the bundled Toccata evidence set.
-pub const TOCCATA_AUDIT_DATE: &str = "2026-06-05T13:00:00Z";
+pub const TOCCATA_AUDIT_DATE: &str = "2026-06-17T13:00:00Z";
 
 /// Kernel package schema version emitted by v0 packages.
 pub const KERNEL_PACKAGE_SCHEMA_VERSION: &str = "kaspascript.kernel.package.v0";
 
 /// Source snapshot audit date for the bundled v0 upstream metadata.
-pub const SOURCE_SNAPSHOT_AUDIT_DATE: &str = "2026-06-05";
+pub const SOURCE_SNAPSHOT_AUDIT_DATE: &str = "2026-06-17";
 
 /// Kaspa network scope for a kernel artifact.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -958,7 +958,7 @@ impl ToccataFeePolicy {
     ) -> Result<FeeEstimate, KernelError> {
         Ok(FeeEstimate {
             policy: "toccata-rpc-minimum-standard-fee".to_owned(),
-            source: "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md"
+            source: "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md"
                 .to_owned(),
             compute_grams,
             transaction_bytes,
@@ -1078,6 +1078,12 @@ pub fn current_source_snapshots() -> Vec<SourceSnapshot> {
     vec![
         SourceSnapshot::new(
             "https://github.com/kaspanet/rusty-kaspa",
+            "v2.0.1",
+            "cfafeb4c093fa37a303f1b9f19c58f986b870ce3",
+            SOURCE_SNAPSHOT_AUDIT_DATE,
+        ),
+        SourceSnapshot::new(
+            "https://github.com/kaspanet/rusty-kaspa",
             "v2.0.0",
             "90dbf074275d60c1fe74a3491883196f110970c0",
             SOURCE_SNAPSHOT_AUDIT_DATE,
@@ -1100,6 +1106,20 @@ pub fn current_source_snapshots() -> Vec<SourceSnapshot> {
 /// Current bundled Toccata evidence used by examples and tests.
 pub fn current_toccata_evidence() -> Vec<SourceEvidence> {
     vec![
+        SourceEvidence::new(
+            "rusty-kaspa v2.0.1",
+            "https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.1",
+            Network::Mainnet,
+            EvidenceLevel::MainnetPreActivation,
+            vec![
+                KernelFeature::TransactionIntrospection,
+                KernelFeature::CovenantIds,
+                KernelFeature::SequencingCommitments,
+                KernelFeature::ZkVerification,
+                KernelFeature::FeePolicy,
+            ],
+            "mainnet Toccata maintenance release published 2026-06-15; usable as a drop-in upgrade version for v2.0.0 nodes and pre-Toccata 1.x nodes, with seq-commit lane-proof RPC and covenant-binding refinements; activation is still scheduled and not independently verified",
+        ),
         SourceEvidence::new(
             "rusty-kaspa v2.0.0",
             "https://github.com/kaspanet/rusty-kaspa/releases/tag/v2.0.0",
@@ -1404,6 +1424,10 @@ mod tests {
     fn source_snapshots_pin_upstream_tags() {
         let snapshots = current_source_snapshots();
 
+        assert!(snapshots.iter().any(|snapshot| {
+            snapshot.tag == "v2.0.1"
+                && snapshot.commit == "cfafeb4c093fa37a303f1b9f19c58f986b870ce3"
+        }));
         assert!(snapshots.iter().any(|snapshot| {
             snapshot.tag == "v2.0.0"
                 && snapshot.commit == "90dbf074275d60c1fe74a3491883196f110970c0"

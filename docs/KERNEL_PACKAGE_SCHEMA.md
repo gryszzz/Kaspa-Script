@@ -1,6 +1,6 @@
 # Kernel Package v0 Schema
 
-Updated: 2026-06-13.
+Updated: 2026-06-17.
 
 `kaspascript kernel package <contract.ks>` emits one JSON object that combines
 the compiled txscript artifact with the KaspaScript kernel package.
@@ -59,17 +59,19 @@ Package targets:
 ```json
 {
   "upstream_repo": "https://github.com/kaspanet/rusty-kaspa",
-  "tag": "v2.0.0",
-  "commit": "90dbf074275d60c1fe74a3491883196f110970c0",
-  "audit_date": "2026-06-05"
+  "tag": "v2.0.1",
+  "commit": "cfafeb4c093fa37a303f1b9f19c58f986b870ce3",
+  "audit_date": "2026-06-17"
 }
 ```
 
-The v0 package pins Rusty Kaspa snapshots for `v2.0.0`, `v1.3.0-toc.5`, and
-`tn10-toc3`. `v2.0.0` is a mainnet Toccata release with activation scheduled
-for DAA score `474,165,565`, roughly June 30, 2026 at 16:15 UTC; it is still
-treated as pre-activation evidence at this audit date. Consumers should treat
-snapshots as evidence metadata, not as a replacement for node validation.
+The v0 package pins Rusty Kaspa snapshots for `v2.0.1`, `v2.0.0`,
+`v1.3.0-toc.5`, and `tn10-toc3`. `v2.0.1` is the current Toccata upgrade
+release at this audit date. `v2.0.0` remains the baseline activation release,
+with activation scheduled for DAA score `474,165,565`, roughly June 30, 2026 at
+16:15 UTC; both releases are still treated as pre-activation evidence at this
+audit date. Consumers should treat snapshots as evidence metadata, not as a
+replacement for node validation.
 
 ## Artifact Summary
 
@@ -215,7 +217,7 @@ Evidence:
 {
   "label": "KaspaScript compiled artifact",
   "url": "tests/contracts/escrow.ks",
-  "audit_date": "2026-06-05T13:00:00Z",
+  "audit_date": "2026-06-17T13:00:00Z",
   "network": "Tn12",
   "level": "BranchCode",
   "features": ["BaseScript", "WalletPreview", "IndexerLineage"],
@@ -402,7 +404,7 @@ Compiled transition profiles additionally include:
 ```json
 {
   "policy": "toccata-rpc-minimum-standard-fee",
-  "source": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md",
+  "source": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md",
   "compute_grams": 1000,
   "transaction_bytes": 400,
   "minimum_standard_fee_sompi": 100000,

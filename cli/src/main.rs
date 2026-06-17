@@ -629,32 +629,48 @@ fn toccata_upgrade_profile() -> Value {
         "name": "Toccata",
         "rusty_kaspa_release": {
             "repo": "https://github.com/kaspanet/rusty-kaspa",
+            "tag": "v2.0.1",
+            "name": "Mainnet Toccata Release - v2.0.1",
+            "published_at": "2026-06-15T19:14:22Z",
+            "commit": "cfafeb4c093fa37a303f1b9f19c58f986b870ce3",
+            "upgrade_note": "drop-in update for v2.0.0 nodes and Toccata upgrade version for pre-Toccata 1.x nodes",
+        },
+        "baseline_toccata_release": {
             "tag": "v2.0.0",
-            "name": "Mainnet Toccata Release - v2.0.0",
             "published_at": "2026-06-05T12:09:13Z",
+            "commit": "90dbf074275d60c1fe74a3491883196f110970c0",
+            "role": "baseline release that announced the mainnet activation DAA score",
         },
         "node_upgrade_guide": {
-            "url": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md",
+            "url": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md",
             "database_upgrade": "one-way; downgrade requires resync",
             "recommended_rehearsal_network": "testnet-10",
         },
         "release_assets": [
             {
-                "name": "kaspa-wasm32-sdk-v2.0.0.zip",
-                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.0/kaspa-wasm32-sdk-v2.0.0.zip",
+                "name": "kaspa-wasm32-sdk-v2.0.1.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.1/kaspa-wasm32-sdk-v2.0.1.zip",
             },
             {
-                "name": "rusty-kaspa-v2.0.0-linux-amd64.zip",
-                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.0/rusty-kaspa-v2.0.0-linux-amd64.zip",
+                "name": "rusty-kaspa-v2.0.1-linux-amd64.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.1/rusty-kaspa-v2.0.1-linux-amd64.zip",
             },
             {
-                "name": "rusty-kaspa-v2.0.0-osx.zip",
-                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.0/rusty-kaspa-v2.0.0-osx.zip",
+                "name": "rusty-kaspa-v2.0.1-osx.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.1/rusty-kaspa-v2.0.1-osx.zip",
             },
             {
-                "name": "rusty-kaspa-v2.0.0-win64.zip",
-                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.0/rusty-kaspa-v2.0.0-win64.zip",
+                "name": "rusty-kaspa-v2.0.1-win64.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.1/rusty-kaspa-v2.0.1-win64.zip",
             },
+        ],
+        "maintenance_changes": [
+            "seq-commit state and lane-proof RPC support",
+            "wallet/core and Wasm SMT sync progress notifications",
+            "SMT database inspection tooling",
+            "transaction-generation tooling for user-lane workflows",
+            "covenant binding handling refinements across client and wallet components",
+            "Wasm client transaction v0 deserialization fix",
         ],
         "mainnet_activation": {
             "daa_score": 474_165_565u64,
@@ -737,8 +753,9 @@ fn toccata_upgrade_profile() -> Value {
             },
         ],
         "integrator_actions": [
-            "Upgrade nodes to rusty-kaspa v2.0.0 before the scheduled activation window.",
+            "Upgrade nodes to rusty-kaspa v2.0.1 before the scheduled activation window.",
             "Run full wallet, explorer, miner, pool, and indexer rehearsal on Testnet-10.",
+            "Add compatibility coverage for seq-commit lane-proof RPCs and covenant binding refinements.",
             "Update gRPC/protobuf integrations for transaction version 1 covenant and compute_commit fields.",
             "Use node fee estimation when available; otherwise apply the Toccata minimum standard fee formula.",
             "Prefer storage_mass/storageMass in new JSON and protobuf integrations; treat mass as deprecated compatibility only.",
@@ -1424,6 +1441,10 @@ mod tests {
             .is_some_and(|profiles| profiles.len() == 2));
         assert_eq!(
             package["source_snapshots"][0]["tag"],
+            Value::String("v2.0.1".to_owned())
+        );
+        assert_eq!(
+            package["source_snapshots"][1]["tag"],
             Value::String("v2.0.0".to_owned())
         );
 
@@ -1519,9 +1540,17 @@ mod tests {
             Value::String("blocked-for-production-mainnet".to_owned())
         );
         assert_eq!(
+            report["upgrade"]["rusty_kaspa_release"]["tag"],
+            Value::String("v2.0.1".to_owned())
+        );
+        assert_eq!(
+            report["upgrade"]["baseline_toccata_release"]["tag"],
+            Value::String("v2.0.0".to_owned())
+        );
+        assert_eq!(
             report["upgrade"]["node_upgrade_guide"]["url"],
             Value::String(
-                "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.0/docs/toccata-guide.md"
+                "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md"
                     .to_owned()
             )
         );

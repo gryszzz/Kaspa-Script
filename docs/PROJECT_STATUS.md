@@ -57,7 +57,8 @@ Kernel:
 - Human-readable kernel package schema reference.
 - Toccata pre-activation fee policy:
   `100 sompi * max(compute grams, 2 * transaction bytes)`.
-- `kaspascript toccata status --json` includes the `v2.0.0` release digest:
+- `kaspascript toccata status --json` includes the current `v2.0.1`
+  release digest plus the baseline `v2.0.0` activation release:
   tagged guide, release assets, node requirements, v1 transaction fields,
   KIP integration map, and wallet/indexer/miner action checklist.
 
@@ -69,9 +70,9 @@ Testnet readiness:
 - TN10 Toccata kernel package fixtures for `escrow.ks` and `vault.ks`.
 - Toccata source and crate compatibility notes.
 - Rusty Kaspa upstream watch for moving-master architecture changes.
-- Rusty Kaspa `v2.0.0` is tracked as mainnet pre-activation evidence; its
-  release notes schedule activation at DAA score `474,165,565`, roughly
-  June 30, 2026 at 16:15 UTC.
+- Rusty Kaspa `v2.0.1` is tracked as the current Toccata upgrade release.
+  The baseline `v2.0.0` release notes schedule activation at DAA score
+  `474,165,565`, roughly June 30, 2026 at 16:15 UTC.
 
 ## What This Does Not Claim Yet
 
@@ -100,6 +101,8 @@ The testnet milestone needs:
 
 - Toccata git-tag compatibility fixture in CI or a documented local check.
 - TN10-compatible transaction builder facade.
+- Seq-commit lane-proof RPC and covenant-binding compatibility fixtures for
+  the `v2.0.1` maintenance release.
 - Covenant ID continuation fixtures.
 - Wallet preview golden cases for each production contract pattern.
 - Indexer fixtures for genesis, continuation, duplicate transition, reorg, and
@@ -119,8 +122,10 @@ Until those exist, `future-mainnet` remains locked.
 
 ## Immediate Next Tasks
 
-1. Add wallet-preview and indexer fixtures for each production contract pattern.
-2. Add explicit language syntax for exact input/output counts and named
+1. Add seq-commit lane-proof RPC and covenant-binding compatibility fixtures
+   for the `v2.0.1` maintenance release.
+2. Add wallet-preview and indexer fixtures for each production contract pattern.
+3. Add explicit language syntax for exact input/output counts and named
    continuation outputs.
 
 ## Maintainer Commands

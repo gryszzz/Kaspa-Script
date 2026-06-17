@@ -9,9 +9,10 @@ schema. A report schema version must not make incompatible shape changes
 without a new `schema_version` value.
 
 `kaspascript.cli.toccata.status.v0` is the upgrade intelligence payload for the
-Rusty Kaspa `v2.0.0` line: release metadata, tagged upgrade guide, release
-assets, activation guard, node requirements, Toccata fee policy, v1 transaction
-field changes, KIP mapping, and integrator actions.
+Rusty Kaspa `v2.0.x` Toccata line. It currently reports `v2.0.1` as the active
+upgrade release and `v2.0.0` as the baseline activation release, plus tagged
+guide links, release assets, activation guard, node requirements, Toccata fee
+policy, v1 transaction field changes, KIP mapping, and integrator actions.
 
 ## Schemas
 

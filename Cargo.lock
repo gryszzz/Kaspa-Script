@@ -2658,6 +2658,7 @@ dependencies = [
  "kaspa-wrpc-client",
  "kaspascript-codegen",
  "kaspascript-ir",
+ "kaspascript-kernel",
  "kaspascript-lexer",
  "kaspascript-model",
  "secp256k1",

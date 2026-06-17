@@ -10,13 +10,36 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  checks:
+    name: Format, lint, and test
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+    - uses: actions/checkout@v6
+
+    - name: Show toolchain
+      run: |
+        rustc --version
+        cargo --version
+
+    - name: Install Rust components
+      run: rustup component add rustfmt clippy
+
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+
+    - name: Clippy
+      run: cargo clippy --workspace --all-targets -- -D warnings
+
+    - name: Workspace tests
+      run: cargo test --workspace
+
+    - name: Testnet feature tests
+      run: cargo test --workspace --features testnet-integration
+
+    - name: CLI report schema and golden tests
+      run: |
+        cargo test -p kaspascript-cli cli_report_schema_files_are_valid_json
+        cargo test -p kaspascript-cli cli_report_golden_snapshots_match
+        cargo test -p kaspascript-cli kernel_package_golden_snapshots_match

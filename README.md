@@ -263,7 +263,7 @@ compiler/
 kernel/         wallet previews, capability profiles, indexer schemas,
                 source evidence, fee policy, and readiness reports
 
-sdk/            Rust compile API and preview transaction surfaces
+sdk/            Rust compile API, kernel package builder, and preview transaction surfaces
 cli/            human and JSON workflows
 tests/          contracts, deterministic goldens, and integration tests
 docs/           architecture, schemas, protocol audits, and roadmaps
@@ -292,7 +292,7 @@ subset and deterministic tooling.
 - `verified-tn12`, `tn10-toccata`, `toccata-preview`, and `future-mainnet` gates
 - wallet previews and signing-intent metadata
 - kernel packages and versioned JSON report schemas
-- offline SDK and feature-gated testnet harnesses
+- SDK kernel package builder, offline SDK flows, and feature-gated testnet harnesses
 
 ### Intentionally Gated
 
@@ -311,7 +311,7 @@ See [Project Status](docs/PROJECT_STATUS.md) for the current roadmap and
 ## Quality Gates
 
 ```bash
-cargo fmt --check
+cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --features testnet-integration

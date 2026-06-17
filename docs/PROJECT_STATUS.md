@@ -1,6 +1,6 @@
 # Project Status And Completion Roadmap
 
-Updated: 2026-06-13.
+Updated: 2026-06-17.
 
 KaspaScript is now a source-gated compiler plus the first slice of a
 Kaspa-native programmability kernel.
@@ -65,6 +65,8 @@ Testnet readiness:
 
 - Feature-gated TN12/testnet harness.
 - Offline deployment previews.
+- SDK kernel package builder for applications that should not invoke the CLI.
+- TN10 Toccata kernel package fixtures for `escrow.ks` and `vault.ks`.
 - Toccata source and crate compatibility notes.
 - Rusty Kaspa upstream watch for moving-master architecture changes.
 - Rusty Kaspa `v2.0.0` is tracked as mainnet pre-activation evidence; its
@@ -84,9 +86,13 @@ Testnet readiness:
 
 ### Alpha Complete
 
-The current milestone is close to alpha complete. It needs:
+The alpha milestone now has CI coverage for:
 
-- CI running `cargo fmt --check`, `cargo clippy`, and workspace tests.
+- `cargo fmt --all -- --check`
+- `cargo clippy --workspace --all-targets -- -D warnings`
+- `cargo test --workspace`
+- `cargo test --workspace --features testnet-integration`
+- CLI report schema, report golden, and kernel package golden checks.
 
 ### Testnet Complete
 
@@ -113,19 +119,14 @@ Until those exist, `future-mainnet` remains locked.
 
 ## Immediate Next Tasks
 
-1. Update CI to run format, clippy, workspace tests, and kernel package golden
-   checks.
-2. Add a small SDK wrapper for generating kernel packages without invoking the
-   CLI.
-3. Add TN10-oriented package fixtures for Toccata readiness.
-4. Add wallet-preview and indexer fixtures for each production contract pattern.
-5. Add explicit language syntax for exact input/output counts and named
+1. Add wallet-preview and indexer fixtures for each production contract pattern.
+2. Add explicit language syntax for exact input/output counts and named
    continuation outputs.
 
 ## Maintainer Commands
 
 ```bash
-cargo fmt --check
+cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --features testnet-integration

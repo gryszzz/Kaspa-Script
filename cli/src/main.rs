@@ -8,12 +8,11 @@ use kaspascript_codegen::{
 };
 use kaspascript_ir::lower_file;
 use kaspascript_kernel::{
-    current_source_snapshots, current_toccata_evidence, define_kaspa_contract,
-    package_compiled_contract, CompiledArtifactSummary, CompiledKernelPackage,
-    CompiledPackageInput, ContractBlueprint, EvidenceLevel, FeatureRequirement, KernelFeature,
-    Network, SourceEvidence, StateField, StateType, ToccataFeePolicy, Transition, TransitionKind,
+    current_source_snapshots, current_toccata_evidence, CompiledKernelPackage, ToccataFeePolicy,
 };
-use kaspascript_lexer::TypeName;
+use kaspascript_sdk::{
+    build_kernel_package as build_sdk_kernel_package, KernelPackageBuildOptions,
+};
 use serde_json::{json, Value};
 
 const CLI_BRIEF: &str = "KaspaScript is a source-grounded Kaspa contract compiler and programmability kernel for target-gated txscript bytecode, Toccata readiness, wallet previews, indexer schemas, and fee-aware package metadata.";
@@ -219,35 +218,8 @@ fn build_kernel_package(
     source: &str,
     options: &KernelPackageOptions,
 ) -> Result<CompiledKernelPackage> {
-    let artifact = compile_file_for_target(source, path, options.target)
-        .map_err(|error| anyhow::anyhow!("error: {error}"))?;
-    verify_artifact(&artifact).map_err(|error| anyhow::anyhow!("error: {error}"))?;
-
-    let bytecode_hex = bytecode_hex(&artifact.bytecode);
-    let bytecode_asm = bytecode_asm(&artifact.bytecode)?;
-    let summary = artifact_summary(&artifact);
-    let blueprint = kernel_blueprint_from_artifact(path, &artifact)?;
-    let transaction_bytes = options
-        .tx_bytes
-        .unwrap_or_else(|| u64::try_from(artifact.bytecode.len()).unwrap_or(u64::MAX));
-    let fee_assumption = if options.tx_bytes.is_some() || options.compute_grams != 0 {
-        "caller-provided fee estimate inputs"
-    } else {
-        "lower-bound estimate using compiled bytecode length as transaction_bytes and compute_grams=0"
-    };
-    let package = package_compiled_contract(CompiledPackageInput {
-        artifact: summary,
-        bytecode_hex,
-        bytecode_asm,
-        application: artifact.application.clone(),
-        blueprint,
-        compute_grams: options.compute_grams,
-        transaction_bytes,
-        fee_assumption: fee_assumption.to_owned(),
-    })
-    .map_err(|error| anyhow::anyhow!("error: {error}"))?;
-
-    Ok(package)
+    build_sdk_kernel_package(source, path, options.sdk_options())
+        .map_err(|error| anyhow::anyhow!("error: {error}"))
 }
 
 fn toccata_command(args: &[String]) -> Result<()> {
@@ -415,6 +387,15 @@ impl KernelPackageOptions {
             index += 1;
         }
         Ok(options)
+    }
+
+    fn sdk_options(&self) -> KernelPackageBuildOptions {
+        let mut options =
+            KernelPackageBuildOptions::new(self.target).with_compute_grams(self.compute_grams);
+        if let Some(tx_bytes) = self.tx_bytes {
+            options = options.with_tx_bytes(tx_bytes);
+        }
+        options
     }
 }
 
@@ -1066,207 +1047,6 @@ fn join_strings(values: &[String]) -> String {
     }
 }
 
-fn artifact_summary(artifact: &CompiledArtifact) -> CompiledArtifactSummary {
-    CompiledArtifactSummary {
-        backend: artifact.backend.clone(),
-        target: artifact.target.clone(),
-        compiler_version: artifact.compiler_version.clone(),
-        bytecode_bytes: artifact.bytecode.len(),
-        finality_depth: artifact.finality_depth,
-        kip_requirements: artifact.kip_requirements.clone(),
-        contracts: artifact
-            .contracts
-            .iter()
-            .map(|contract| contract.name.clone())
-            .collect(),
-        spends: artifact
-            .contracts
-            .iter()
-            .flat_map(|contract| {
-                contract
-                    .spends
-                    .iter()
-                    .map(move |spend| format!("{}.{}", contract.name, spend.name))
-            })
-            .collect(),
-        application_schema_version: artifact.application.schema_version.clone(),
-    }
-}
-
-fn kernel_blueprint_from_artifact(
-    source_path: &str,
-    artifact: &CompiledArtifact,
-) -> Result<ContractBlueprint> {
-    let network = network_from_target(&artifact.target);
-    let contract_name = if artifact.contracts.len() == 1 {
-        artifact.contracts[0].name.clone()
-    } else {
-        contract_name_from_path_without_cfg(source_path)
-    };
-
-    let mut builder = define_kaspa_contract(contract_name)
-        .network(network)
-        .evidence(local_artifact_evidence(source_path, network, artifact));
-
-    for evidence in current_toccata_evidence() {
-        builder = builder.evidence(evidence);
-    }
-
-    for contract in &artifact.contracts {
-        for param in &contract.params {
-            let field_name = if artifact.contracts.len() == 1 {
-                param.name.clone()
-            } else {
-                format!("{}.{}", contract.name, param.name)
-            };
-            builder = builder.state_field(StateField::new(
-                field_name,
-                state_type_from_type_name(param.ty),
-                format!("compiled parameter from contract {}", contract.name),
-            ));
-        }
-
-        for spend in &contract.spends {
-            let semantics = artifact
-                .application
-                .transition(&contract.name, &spend.name)
-                .cloned();
-            let mut transition = Transition::new(&spend.name, TransitionKind::Spend)
-                .requires(FeatureRequirement::new(
-                    KernelFeature::BaseScript,
-                    EvidenceLevel::BranchCode,
-                    "compiled artifact emitted verified Kaspa txscript bytecode",
-                ))
-                .requires(FeatureRequirement::new(
-                    KernelFeature::WalletPreview,
-                    EvidenceLevel::BranchCode,
-                    "kernel package emits wallet preview metadata",
-                ))
-                .requires(FeatureRequirement::new(
-                    KernelFeature::IndexerLineage,
-                    EvidenceLevel::BranchCode,
-                    "kernel package emits indexer schema metadata",
-                ))
-                .wallet_warning(format!(
-                    "Review `{}` as a Kaspa contract spend path before signing.",
-                    spend.name
-                ));
-
-            if let Some(semantics) = semantics {
-                if semantics.transaction_shape.referenced_inputs.is_empty() {
-                    transition =
-                        transition.consumes(format!("{} compiled locking state", contract.name));
-                } else {
-                    for input in &semantics.transaction_shape.referenced_inputs {
-                        transition =
-                            transition.consumes(format!("input({input}) referenced by source"));
-                    }
-                }
-
-                if semantics.output_bindings.is_empty() {
-                    transition =
-                        transition.creates("no output field is constrained by this spend path");
-                } else {
-                    for binding in &semantics.output_bindings {
-                        transition = transition.creates(format!(
-                            "output({}).{} {} {}",
-                            binding.output_index, binding.field, binding.relation, binding.expected
-                        ));
-                    }
-                }
-
-                if semantics.transaction_shape.additional_outputs_permitted {
-                    transition = transition.wallet_warning(
-                        "Source does not constrain the exact output count; review every additional output and recipient.",
-                    );
-                }
-                transition = transition.semantics(semantics);
-            } else {
-                transition = transition
-                    .consumes(format!("{} compiled locking state", contract.name))
-                    .creates("application model did not resolve this spend path");
-            }
-
-            if artifact.kip_requirements.contains(&10) {
-                transition = transition.requires(FeatureRequirement::new(
-                    KernelFeature::TransactionIntrospection,
-                    EvidenceLevel::BranchCode,
-                    "artifact declares KIP-10 transaction introspection requirements",
-                ));
-            }
-
-            for param in &spend.params {
-                if param.ty == TypeName::Signature {
-                    transition = transition.signer(&param.name);
-                }
-            }
-
-            builder = builder.transition(transition);
-        }
-    }
-
-    builder
-        .build()
-        .map_err(|error| anyhow::anyhow!("error: {error}"))
-}
-
-fn local_artifact_evidence(
-    source_path: &str,
-    network: Network,
-    artifact: &CompiledArtifact,
-) -> SourceEvidence {
-    let mut features = vec![
-        KernelFeature::BaseScript,
-        KernelFeature::WalletPreview,
-        KernelFeature::IndexerLineage,
-    ];
-    if artifact.kip_requirements.contains(&10) {
-        features.push(KernelFeature::TransactionIntrospection);
-    }
-
-    SourceEvidence::new(
-        "KaspaScript compiled artifact",
-        source_path,
-        network,
-        EvidenceLevel::BranchCode,
-        features,
-        "local compiler artifact verified before kernel package emission",
-    )
-}
-
-fn network_from_target(target: &str) -> Network {
-    match target {
-        "verified-tn12" => Network::Tn12,
-        "tn10-toccata" => Network::Tn10,
-        "future-mainnet" => Network::Mainnet,
-        "toccata-preview" => Network::Unknown,
-        _ => Network::Unknown,
-    }
-}
-
-fn state_type_from_type_name(ty: TypeName) -> StateType {
-    match ty {
-        TypeName::PublicKey => StateType::PublicKey,
-        TypeName::Signature => StateType::Signature,
-        TypeName::Hash => StateType::Hash,
-        TypeName::BlockHeight => StateType::BlockHeight,
-        TypeName::Amount => StateType::Sompi,
-        TypeName::Bool => StateType::Bool,
-        TypeName::Bytes => StateType::Bytes,
-        TypeName::CovenantID => StateType::CovenantId,
-        TypeName::ZKProof | TypeName::UTXO | TypeName::Output | TypeName::Input => StateType::Bytes,
-    }
-}
-
-fn contract_name_from_path_without_cfg(path: &str) -> String {
-    Path::new(path)
-        .file_stem()
-        .and_then(|stem| stem.to_str())
-        .filter(|stem| !stem.is_empty())
-        .unwrap_or("KaspaScriptPackage")
-        .to_owned()
-}
-
 #[cfg(any(feature = "tn12-integration", feature = "testnet-integration"))]
 fn wallet_command(args: &[String]) -> Result<()> {
     if args.first().map(String::as_str) != Some("balance") {
@@ -1522,16 +1302,30 @@ mod tests {
     use kaspascript_kernel::ReadinessLevel;
     use serde_json::Value;
 
-    const KERNEL_GOLDENS: &[(&str, &str, &str)] = &[
+    const KERNEL_GOLDENS: &[(&str, &str, Target, &str)] = &[
         (
             "tests/contracts/escrow.ks",
             include_str!("../../tests/contracts/escrow.ks"),
+            Target::VerifiedTn12,
             include_str!("../../tests/golden/escrow.kernel.json"),
         ),
         (
             "tests/contracts/vault.ks",
             include_str!("../../tests/contracts/vault.ks"),
+            Target::VerifiedTn12,
             include_str!("../../tests/golden/vault.kernel.json"),
+        ),
+        (
+            "tests/contracts/escrow.ks",
+            include_str!("../../tests/contracts/escrow.ks"),
+            Target::Tn10Toccata,
+            include_str!("../../tests/golden/escrow.tn10.kernel.json"),
+        ),
+        (
+            "tests/contracts/vault.ks",
+            include_str!("../../tests/contracts/vault.ks"),
+            Target::Tn10Toccata,
+            include_str!("../../tests/golden/vault.tn10.kernel.json"),
         ),
     ];
 
@@ -1859,12 +1653,12 @@ mod tests {
 
     #[test]
     fn kernel_package_golden_snapshots_match() {
-        for (source_path, source, golden) in KERNEL_GOLDENS {
+        for (source_path, source, target, golden) in KERNEL_GOLDENS {
             let options = KernelPackageOptions {
                 output: None,
                 compute_grams: 1000,
                 tx_bytes: Some(400),
-                target: Target::VerifiedTn12,
+                target: *target,
             };
 
             let package =

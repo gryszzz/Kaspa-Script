@@ -116,8 +116,8 @@ CARGO_TARGET_DIR=/Users/anthonygryszkin/Desktop/kaspa-script/target/toccata-spik
   cargo check --manifest-path /tmp/kaspa-toccata-compat-spike/Cargo.toml -j 1
 ```
 
-The next repo change should introduce a Cargo feature such as
-`toccata-v2-git-deps` or a small compatibility facade instead of replacing the
-current `0.15.0` dependencies globally. The follow-up check should compile
-`sdk/src/testnet.rs` itself against the Toccata feature, not only an isolated
-API smoke crate.
+The repo now has a small `sdk::toccata` compatibility facade and fixture set
+instead of replacing the current `0.15.0` dependencies globally. The next
+compatibility change should introduce a non-default Cargo feature such as
+`toccata-v2-git-deps` and compile the facade, plus the relevant
+`sdk/src/testnet.rs` transaction/RPC paths, against Rusty Kaspa `v2.0.1`.

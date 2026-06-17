@@ -73,6 +73,10 @@ Testnet readiness:
 - Rusty Kaspa `v2.0.1` is tracked as the current Toccata upgrade release.
   The baseline `v2.0.0` release notes schedule activation at DAA score
   `474,165,565`, roughly June 30, 2026 at 16:15 UTC.
+- SDK Toccata facade fixtures now preserve transaction version `1`,
+  `storage_mass`, input `compute_commit`, output covenant bindings, user-lane
+  target metadata, and seq-commit lane-proof request/response shape as
+  fixture-only JSON.
 
 ## What This Does Not Claim Yet
 
@@ -100,9 +104,9 @@ The alpha milestone now has CI coverage for:
 The testnet milestone needs:
 
 - Toccata git-tag compatibility fixture in CI or a documented local check.
-- TN10-compatible transaction builder facade.
-- Seq-commit lane-proof RPC and covenant-binding compatibility fixtures for
-  the `v2.0.1` maintenance release.
+- TN10-compatible transaction builder facade wired to Rusty Kaspa APIs.
+- Live or no-broadcast TN10 checks for seq-commit lane-proof RPC and covenant
+  binding fixture assumptions.
 - Covenant ID continuation fixtures.
 - Wallet preview golden cases for each production contract pattern.
 - Indexer fixtures for genesis, continuation, duplicate transition, reorg, and
@@ -122,10 +126,13 @@ Until those exist, `future-mainnet` remains locked.
 
 ## Immediate Next Tasks
 
-1. Add seq-commit lane-proof RPC and covenant-binding compatibility fixtures
-   for the `v2.0.1` maintenance release.
+1. Add a Toccata `v2.0.1` git-crate API probe that checks the SDK facade
+   against Rusty Kaspa transaction/RPC types without replacing the stable
+   `0.15.0` dependency lane.
 2. Add wallet-preview and indexer fixtures for each production contract pattern.
-3. Add explicit language syntax for exact input/output counts and named
+3. Add live or no-broadcast TN10 checks for the seq-commit lane-proof and
+   covenant-binding fixture assumptions.
+4. Add explicit language syntax for exact input/output counts and named
    continuation outputs.
 
 ## Maintainer Commands

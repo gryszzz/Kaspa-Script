@@ -79,6 +79,9 @@ release integration brief now wired into the CLI status report.
   integration profile plus the baseline `v2.0.0` activation release for
   release assets, node guide, fee policy, v1 transaction fields, KIP map,
   and integrator actions.
+- `sdk::toccata` now exposes fixture-only facade types and a published JSON
+  fixture for Toccata v1 transaction fields, output covenant bindings,
+  user-lane targets, and seq-commit lane-proof request/response shape.
 - The SDK testnet integration depends on Kaspa crates `0.15.0`; Toccata
   compatibility must now be respiked against the `v2.0.1` line.
 - The first Toccata crate compatibility spike is recorded in

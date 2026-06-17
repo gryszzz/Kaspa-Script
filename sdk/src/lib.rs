@@ -4,6 +4,7 @@
 pub mod testnet;
 #[cfg(any(feature = "tn12-integration", feature = "testnet-integration"))]
 pub mod tn12;
+pub mod toccata;
 
 use kaspascript_codegen::{
     bytecode_asm, bytecode_hex, compile_file, compile_file_for_target, verify_artifact,

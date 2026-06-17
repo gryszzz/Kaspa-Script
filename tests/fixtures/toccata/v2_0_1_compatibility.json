@@ -1,0 +1,77 @@
+{
+  "schema_version": "kaspascript.sdk.toccata.compatibility-fixtures.v0",
+  "source_release": {
+    "repo": "https://github.com/kaspanet/rusty-kaspa",
+    "tag": "v2.0.1",
+    "commit": "cfafeb4c093fa37a303f1b9f19c58f986b870ce3",
+    "published_at": "2026-06-15T19:14:22Z",
+    "role": "current Toccata compatibility target for KaspaScript SDK facade fixtures"
+  },
+  "transaction_facade": {
+    "schema_version": "kaspascript.sdk.toccata.transaction-facade.v0",
+    "rusty_kaspa_tag": "v2.0.1",
+    "transaction_version": 1,
+    "storage_mass": 640,
+    "builder_status": "fixture-only-not-a-rusty-kaspa-transaction",
+    "inputs": [
+      {
+        "previous_outpoint": "9f0d6e2a9b9f5c3d8e7a6b5c4d3e2f109876543210abcdef0011223344556677:0",
+        "sequence": 0,
+        "compute_commit": "3b1f0f0a8c6d4e2c1a09f8e7d6c5b4a39281716151413121100ffeeddccbbaa9",
+        "role": "state-input"
+      }
+    ],
+    "outputs": [
+      {
+        "value": 100000000,
+        "script_public_key_hex": "20d0f1c2b3a4958675647382910ffeeddccbbaa99887766554433221100aabbccac",
+        "covenant": {
+          "covenant_id": "4f8b2c6d0a1e3f5799aabbccddeeff00112233445566778899aabbccddeeff00",
+          "payload_hash": "68a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff",
+          "state_index": 0,
+          "source_field": "TransactionOutput.covenant"
+        }
+      }
+    ],
+    "lane_target": {
+      "lane_id": 7,
+      "source": "v2.0.1 user-lane transaction generation fixture"
+    },
+    "proof_requirements": [
+      {
+        "kind": "seq_commit_lane_proof",
+        "source": "get_seq_commit_lane_proof",
+        "reason": "sequencing-aware transitions need lane proof payloads before production lowering"
+      },
+      {
+        "kind": "covenant_binding",
+        "source": "TransactionOutput.covenant",
+        "reason": "state continuation must preserve covenant lineage"
+      }
+    ]
+  },
+  "seq_commit_lane_proof": {
+    "rpc_surface": "grpc_and_wrpc",
+    "source": "rusty-kaspa v2.0.1 get_seq_commit_lane_proof RPC",
+    "request": {
+      "daa_score": 474165565,
+      "lane_id": 7,
+      "block_hash": "0000000f6a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5",
+      "accepted_id_merkle_root": "56e7d6c5b4a39281716151413121100ffeeddccbbaa99887766554433221100aa"
+    },
+    "response": {
+      "lane_root": "a0b1c2d3e4f5061728394a5b6c7d8e9f00112233445566778899aabbccddeeff",
+      "proof_hash": "bbccddee00112233445566778899aabbccddeeff00112233445566778899aa",
+      "item_count": 2,
+      "inactive_lane_shortcut": false
+    }
+  },
+  "readiness": {
+    "status": "fixture-only",
+    "blockers": [
+      "not wired to rusty-kaspa transaction builders",
+      "not broadcastable",
+      "mainnet activation has not been independently verified"
+    ]
+  }
+}

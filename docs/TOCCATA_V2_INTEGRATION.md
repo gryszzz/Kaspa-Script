@@ -90,6 +90,17 @@ that needs lane witness metadata.
 - KIP-to-KaspaScript integration map
 - integrator actions for wallets, CI, agents, miners, pools, and indexers
 
+The SDK also exposes fixture-only Toccata compatibility surfaces:
+
+- `sdk::toccata::ToccataTransactionFacade` preserves transaction version `1`,
+  `storage_mass`, input `compute_commit`, output covenant bindings, user-lane
+  target metadata, and proof requirements without pretending to be a Rusty
+  Kaspa transaction.
+- `sdk::toccata::ToccataCompatibilityFixtures` round-trips the published
+  fixture at `tests/fixtures/toccata/v2_0_1_compatibility.json`.
+- The fixture schema is
+  [`schemas/kaspascript.sdk.toccata.compatibility-fixtures.v0.schema.json`](schemas/kaspascript.sdk.toccata.compatibility-fixtures.v0.schema.json).
+
 The payload is published under
 `kaspascript.cli.toccata.status.v0` and described by
 [`schemas/kaspascript.cli.toccata.status.v0.schema.json`](schemas/kaspascript.cli.toccata.status.v0.schema.json).
@@ -97,14 +108,12 @@ The payload is published under
 ## Next Engineering Moves
 
 1. Add a non-default Toccata git-dependency compatibility feature pinned to
-   Rusty Kaspa `v2.0.1`.
-2. Build a covenant transaction builder facade that knows transaction version
-   `1`, covenant bindings, `compute_commit`, and `storage_mass`.
-3. Add fixtures for seq-commit lane-proof RPCs and covenant-binding
-   representations added/refined in `v2.0.1`.
-4. Add IR nodes for covenant IDs, authorized outputs, output covenant binding
+   Rusty Kaspa `v2.0.1` and check it against the SDK facade.
+2. Replace fixture-only transaction facade paths with a no-broadcast TN10
+   builder once Rusty Kaspa APIs are pinned.
+3. Add IR nodes for covenant IDs, authorized outputs, output covenant binding
    inspection, and sequencing lane witnesses.
-5. Add opcode ABI snapshots from Rusty Kaspa `crypto/txscript` before enabling
+4. Add opcode ABI snapshots from Rusty Kaspa `crypto/txscript` before enabling
    lowering.
-6. Add TN10 integration fixtures for covenant genesis, continuation,
+5. Add TN10 integration fixtures for covenant genesis, continuation,
    fee-policy rejection, and wallet preview signing flows.

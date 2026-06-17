@@ -1,0 +1,337 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gryszzz.github.io/Kaspa-Script/schemas/kaspascript.sdk.toccata.compatibility-fixtures.v0.schema.json",
+  "title": "KaspaScript SDK Toccata Compatibility Fixtures v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_release",
+    "transaction_facade",
+    "seq_commit_lane_proof",
+    "readiness"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "kaspascript.sdk.toccata.compatibility-fixtures.v0"
+    },
+    "source_release": {
+      "$ref": "#/$defs/source_release"
+    },
+    "transaction_facade": {
+      "$ref": "#/$defs/transaction_facade"
+    },
+    "seq_commit_lane_proof": {
+      "$ref": "#/$defs/seq_commit_lane_proof"
+    },
+    "readiness": {
+      "$ref": "#/$defs/readiness"
+    }
+  },
+  "$defs": {
+    "source_release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo",
+        "tag",
+        "commit",
+        "published_at",
+        "role"
+      ],
+      "properties": {
+        "repo": {
+          "type": "string"
+        },
+        "tag": {
+          "const": "v2.0.1"
+        },
+        "commit": {
+          "const": "cfafeb4c093fa37a303f1b9f19c58f986b870ce3"
+        },
+        "published_at": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      }
+    },
+    "transaction_facade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "rusty_kaspa_tag",
+        "transaction_version",
+        "storage_mass",
+        "builder_status",
+        "inputs",
+        "outputs",
+        "lane_target",
+        "proof_requirements"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "kaspascript.sdk.toccata.transaction-facade.v0"
+        },
+        "rusty_kaspa_tag": {
+          "const": "v2.0.1"
+        },
+        "transaction_version": {
+          "const": 1
+        },
+        "storage_mass": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "builder_status": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/transaction_input"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/transaction_output"
+          }
+        },
+        "lane_target": {
+          "$ref": "#/$defs/lane_target"
+        },
+        "proof_requirements": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/proof_requirement"
+          }
+        }
+      }
+    },
+    "transaction_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "previous_outpoint",
+        "sequence",
+        "compute_commit",
+        "role"
+      ],
+      "properties": {
+        "previous_outpoint": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "compute_commit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string"
+        }
+      }
+    },
+    "transaction_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "script_public_key_hex",
+        "covenant"
+      ],
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "script_public_key_hex": {
+          "type": "string"
+        },
+        "covenant": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/covenant_binding"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "covenant_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "covenant_id",
+        "payload_hash",
+        "state_index",
+        "source_field"
+      ],
+      "properties": {
+        "covenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload_hash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_field": {
+          "const": "TransactionOutput.covenant"
+        }
+      }
+    },
+    "lane_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lane_id",
+        "source"
+      ],
+      "properties": {
+        "lane_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "proof_requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "source",
+        "reason"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "seq_commit_lane_proof",
+            "covenant_binding"
+          ]
+        },
+        "source": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "seq_commit_lane_proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rpc_surface",
+        "source",
+        "request",
+        "response"
+      ],
+      "properties": {
+        "rpc_surface": {
+          "const": "grpc_and_wrpc"
+        },
+        "source": {
+          "type": "string"
+        },
+        "request": {
+          "$ref": "#/$defs/seq_commit_lane_proof_request"
+        },
+        "response": {
+          "$ref": "#/$defs/seq_commit_lane_proof_response"
+        }
+      }
+    },
+    "seq_commit_lane_proof_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "daa_score",
+        "lane_id",
+        "block_hash",
+        "accepted_id_merkle_root"
+      ],
+      "properties": {
+        "daa_score": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lane_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block_hash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "accepted_id_merkle_root": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "seq_commit_lane_proof_response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lane_root",
+        "proof_hash",
+        "item_count",
+        "inactive_lane_shortcut"
+      ],
+      "properties": {
+        "lane_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "proof_hash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "item_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inactive_lane_shortcut": {
+          "type": "boolean"
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "blockers"
+      ],
+      "properties": {
+        "status": {
+          "const": "fixture-only"
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

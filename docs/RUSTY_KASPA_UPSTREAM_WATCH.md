@@ -112,12 +112,12 @@ The release lane protects tests. The moving lane trains the architecture.
 3. Add TN10-oriented readiness fixtures for `tn10-toccata`.
 4. Keep the CLI Toccata status schema as the machine-readable digest of the
    current tagged release.
-5. Track `storage_mass`, `compute_commit`, and covenant bindings explicitly in
-   the SDK transaction builder plan.
+5. Keep `storage_mass`, `compute_commit`, covenant bindings, user-lane targets,
+   and seq-commit lane-proof payloads explicit in the SDK Toccata facade.
 6. Add wallet-preview fields for covenant bindings once the transaction builder
    can construct them.
-7. Add compatibility fixtures for seq-commit lane-proof RPCs, covenant-binding
-   representations, and legacy transaction v0 deserialization.
+7. Validate the compatibility fixture set against Rusty Kaspa `v2.0.1` git
+   crates and add legacy transaction v0 deserialization checks.
 8. Extend source snapshot metadata with upstream branch watches once the moving
    master lane is automated.
 

@@ -128,16 +128,23 @@ The tagged `v2.0.1` Toccata guide is now the fee-policy source used by
 `ToccataFeePolicy`; see
 [`TOCCATA_V2_INTEGRATION.md`](TOCCATA_V2_INTEGRATION.md).
 
+The SDK now carries fixture-only Toccata facade types for transaction version
+`1`, `storage_mass`, `compute_commit`, covenant bindings, user-lane targets,
+and seq-commit lane-proof request/response payloads. These are intentionally
+not Rusty Kaspa transactions yet; they are compatibility fixtures that make the
+next crate-integration step reviewable.
+
 ## Next Kernel Upgrades
 
-1. Add Toccata git-tag compatibility fixtures to validate Kaspa crate APIs.
+1. Add Toccata git-tag compatibility fixtures to validate Kaspa crate APIs
+   against the SDK facade types.
 2. Add wallet-preview golden tests for each production contract pattern.
 3. Add indexer fixtures for covenant genesis, continuation, reorg, and
    wrong-network cases.
 4. Add constraint extraction for signature, timelock, value, and script-binding
    checks inside the capability profile.
 5. Feed real node/RPC fee estimates into the package when available.
-6. Add a non-default Rusty Kaspa `v2.0.1` compatibility feature for SDK
+6. Add a non-default Rusty Kaspa `v2.0.1` compatibility feature for live SDK
    transaction-builder work.
 
 See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the completion roadmap.

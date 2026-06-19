@@ -2,9 +2,9 @@ use std::collections::BTreeSet;
 
 use kaspascript_model::{
     ApplicationModel, BinaryOperator, Constraint, ConstraintKind, ContinuationKind,
-    ContinuationModel, ContractModel, MonetaryPolicy, MonetaryResponsibility, NormalizedExpression,
-    OutputBinding, OutputField, Parameter, SigningRequirement, SigningScheme, TransactionShape,
-    TransitionModel, UnaryOperator,
+    ContinuationModel, ContractModel, MonetaryPolicy, MonetaryResponsibility,
+    NamedContinuationOutput, NormalizedExpression, OutputBinding, OutputField, Parameter,
+    SigningRequirement, SigningScheme, TransactionShape, TransitionModel, UnaryOperator,
 };
 use kaspascript_parser::{BinaryOp, Expr, Program, Spend, Stmt, UnaryOp};
 
@@ -62,11 +62,13 @@ fn build_transition_model(spend: &Spend) -> TransitionModel {
             Stmt::Let { .. } | Stmt::Return { .. } => None,
         })
         .collect::<Vec<_>>();
-    let continuation = continuation_model(&output_bindings);
+    let named_successor_outputs = named_successor_outputs(spend);
+    let continuation = continuation_model(&output_bindings, &named_successor_outputs);
     let value_constraint_count = constraints
         .iter()
         .filter(|constraint| constraint.kind == ConstraintKind::Value)
         .count();
+    let (exact_input_count, exact_output_count) = exact_transaction_counts(spend);
 
     TransitionModel {
         name: spend.name.name.clone(),
@@ -83,10 +85,10 @@ fn build_transition_model(spend: &Spend) -> TransitionModel {
         transaction_shape: TransactionShape {
             referenced_inputs: referenced_inputs.into_iter().collect(),
             referenced_outputs: referenced_outputs.into_iter().collect(),
-            exact_input_count: None,
-            exact_output_count: None,
-            additional_inputs_permitted: true,
-            additional_outputs_permitted: true,
+            exact_input_count,
+            exact_output_count,
+            additional_inputs_permitted: exact_input_count.is_none(),
+            additional_outputs_permitted: exact_output_count.is_none(),
         },
         monetary_policy: MonetaryPolicy {
             value_constraint_count,
@@ -189,7 +191,9 @@ fn classify_constraint(expr: &Expr) -> ConstraintKind {
         ConstraintKind::Value
     } else if expression_contains_field(expr, "script") {
         ConstraintKind::Script
-    } else if expression_contains(expr, |name| matches!(name, "input_count" | "output_count")) {
+    } else if expression_contains(expr, |name| {
+        matches!(name, "input_count" | "output_count" | "continuation")
+    }) {
         ConstraintKind::TransactionShape
     } else {
         ConstraintKind::Generic
@@ -382,6 +386,145 @@ fn output_binding(expr: &Expr) -> Option<OutputBinding> {
     None
 }
 
+fn exact_transaction_counts(spend: &Spend) -> (Option<u32>, Option<u32>) {
+    let mut input_count = None;
+    let mut output_count = None;
+
+    for stmt in &spend.body {
+        let Stmt::Require { expr, .. } = stmt else {
+            continue;
+        };
+        collect_exact_transaction_counts(expr, &mut input_count, &mut output_count);
+    }
+
+    (input_count, output_count)
+}
+
+fn collect_exact_transaction_counts(
+    expr: &Expr,
+    input_count: &mut Option<u32>,
+    output_count: &mut Option<u32>,
+) {
+    if let Expr::Binary {
+        left,
+        op: BinaryOp::And,
+        right,
+        ..
+    } = expr
+    {
+        collect_exact_transaction_counts(left, input_count, output_count);
+        collect_exact_transaction_counts(right, input_count, output_count);
+        return;
+    }
+
+    let Some((subject, count)) = exact_count_constraint(expr) else {
+        return;
+    };
+    match subject {
+        CountSubject::Input => {
+            *input_count = Some(count);
+        }
+        CountSubject::Output => {
+            *output_count = Some(count);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CountSubject {
+    Input,
+    Output,
+}
+
+fn exact_count_constraint(expr: &Expr) -> Option<(CountSubject, u32)> {
+    let Expr::Binary {
+        left,
+        op: BinaryOp::Equal,
+        right,
+        ..
+    } = expr
+    else {
+        return None;
+    };
+
+    if let (Some(subject), Expr::Integer { value, .. }) = (count_subject(left), &**right) {
+        return Some((subject, u32::try_from(*value).ok()?));
+    }
+    if let (Expr::Integer { value, .. }, Some(subject)) = (&**left, count_subject(right)) {
+        return Some((subject, u32::try_from(*value).ok()?));
+    }
+    None
+}
+
+fn count_subject(expr: &Expr) -> Option<CountSubject> {
+    let Expr::Ident(ident) = expr else {
+        return None;
+    };
+    match ident.name.as_str() {
+        "input_count" => Some(CountSubject::Input),
+        "output_count" => Some(CountSubject::Output),
+        _ => None,
+    }
+}
+
+fn named_successor_outputs(spend: &Spend) -> Vec<NamedContinuationOutput> {
+    let mut outputs = Vec::new();
+    for stmt in &spend.body {
+        let Stmt::Require { expr, .. } = stmt else {
+            continue;
+        };
+        collect_named_successor_outputs(expr, &mut outputs);
+    }
+    outputs
+}
+
+fn collect_named_successor_outputs(expr: &Expr, out: &mut Vec<NamedContinuationOutput>) {
+    if let Some(output) = named_successor_output(expr) {
+        out.push(output);
+    }
+
+    match expr {
+        Expr::Array { elements, .. } => {
+            for element in elements {
+                collect_named_successor_outputs(element, out);
+            }
+        }
+        Expr::Unary { expr, .. } => collect_named_successor_outputs(expr, out),
+        Expr::Binary { left, right, .. } => {
+            collect_named_successor_outputs(left, out);
+            collect_named_successor_outputs(right, out);
+        }
+        Expr::Call { callee, args, .. } => {
+            collect_named_successor_outputs(callee, out);
+            for arg in args {
+                collect_named_successor_outputs(arg, out);
+            }
+        }
+        Expr::Field { object, .. } => collect_named_successor_outputs(object, out),
+        Expr::Ident(_) | Expr::Integer { .. } | Expr::String { .. } | Expr::Bool { .. } => {}
+    }
+}
+
+fn named_successor_output(expr: &Expr) -> Option<NamedContinuationOutput> {
+    let Expr::Call { callee, args, .. } = expr else {
+        return None;
+    };
+    let Expr::Ident(ident) = &**callee else {
+        return None;
+    };
+    if ident.name != "continuation" {
+        return None;
+    }
+    let Some(Expr::String { value: name, .. }) = args.first() else {
+        return None;
+    };
+    let output_index = args.get(1).and_then(output_call_index)?;
+    Some(NamedContinuationOutput {
+        name: name.clone(),
+        output_index,
+    })
+}
+
 fn output_field(expr: &Expr) -> Option<(u32, OutputField)> {
     let Expr::Field { object, field, .. } = expr else {
         return None;
@@ -393,6 +536,9 @@ fn output_field(expr: &Expr) -> Option<(u32, OutputField)> {
         return None;
     };
     if root.name != "output" {
+        return None;
+    }
+    if args.len() != 1 {
         return None;
     }
     let Some(Expr::Integer { value, .. }) = args.first() else {
@@ -408,6 +554,25 @@ fn output_field(expr: &Expr) -> Option<(u32, OutputField)> {
     Some((index, field))
 }
 
+fn output_call_index(expr: &Expr) -> Option<u32> {
+    let Expr::Call { callee, args, .. } = expr else {
+        return None;
+    };
+    let Expr::Ident(root) = &**callee else {
+        return None;
+    };
+    if root.name != "output" {
+        return None;
+    }
+    if args.len() != 1 {
+        return None;
+    }
+    let Some(Expr::Integer { value, .. }) = args.first() else {
+        return None;
+    };
+    u32::try_from(*value).ok()
+}
+
 fn reverse_relation(relation: BinaryOperator) -> BinaryOperator {
     match relation {
         BinaryOperator::Greater => BinaryOperator::Less,
@@ -418,16 +583,25 @@ fn reverse_relation(relation: BinaryOperator) -> BinaryOperator {
     }
 }
 
-fn continuation_model(bindings: &[OutputBinding]) -> ContinuationModel {
+fn continuation_model(
+    bindings: &[OutputBinding],
+    named_successor_outputs: &[NamedContinuationOutput],
+) -> ContinuationModel {
     let mut covenant_outputs = bindings
         .iter()
         .filter(|binding| binding.field == OutputField::CovenantId)
         .map(|binding| binding.output_index)
         .collect::<BTreeSet<_>>();
+    let named_indexes = named_successor_outputs
+        .iter()
+        .map(|output| output.output_index)
+        .collect::<BTreeSet<_>>();
     if !covenant_outputs.is_empty() {
+        covenant_outputs.extend(named_indexes);
         return ContinuationModel {
             kind: ContinuationKind::CovenantLineageBound,
             successor_outputs: covenant_outputs.iter().copied().collect(),
+            named_successor_outputs: named_successor_outputs.to_vec(),
             note: "Source binds successor output covenant lineage.".to_owned(),
         };
     }
@@ -439,10 +613,27 @@ fn continuation_model(bindings: &[OutputBinding]) -> ContinuationModel {
             .map(|binding| binding.output_index),
     );
     if !covenant_outputs.is_empty() {
+        covenant_outputs.extend(named_indexes);
         return ContinuationModel {
             kind: ContinuationKind::OutputScriptBound,
             successor_outputs: covenant_outputs.iter().copied().collect(),
+            named_successor_outputs: named_successor_outputs.to_vec(),
             note: "Source binds successor output ownership/script, but does not prove covenant lineage."
+                .to_owned(),
+        };
+    }
+
+    if !named_successor_outputs.is_empty() {
+        return ContinuationModel {
+            kind: ContinuationKind::NamedOutput,
+            successor_outputs: named_successor_outputs
+                .iter()
+                .map(|output| output.output_index)
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect(),
+            named_successor_outputs: named_successor_outputs.to_vec(),
+            note: "Source names successor output(s), but does not bind ownership/script or covenant lineage."
                 .to_owned(),
         };
     }
@@ -450,6 +641,7 @@ fn continuation_model(bindings: &[OutputBinding]) -> ContinuationModel {
     ContinuationModel {
         kind: ContinuationKind::Unspecified,
         successor_outputs: Vec::new(),
+        named_successor_outputs: Vec::new(),
         note: "Source does not identify a successor state output; wallets and applications must not infer continuation."
             .to_owned(),
     }
@@ -495,5 +687,40 @@ mod tests {
             ContinuationKind::OutputScriptBound
         );
         assert!(!transition.monetary_policy.compiler_injects_outputs);
+    }
+
+    #[test]
+    fn extracts_exact_counts_and_named_continuation_outputs() {
+        let program = parse(
+            r#"
+            contract Channel {
+              params { owner: PublicKey }
+              spend advance(sig: Signature) {
+                require sig.verify(owner);
+                require input_count == 1 && output_count == 2;
+                require continuation("state", output(1));
+              }
+            }
+            "#,
+        )
+        .expect("parse");
+        let model = build_application_model(&program);
+        let transition = &model.contracts[0].transitions[0];
+
+        assert_eq!(transition.transaction_shape.exact_input_count, Some(1));
+        assert_eq!(transition.transaction_shape.exact_output_count, Some(2));
+        assert!(!transition.transaction_shape.additional_inputs_permitted);
+        assert!(!transition.transaction_shape.additional_outputs_permitted);
+        assert_eq!(transition.transaction_shape.referenced_outputs, vec![1]);
+        assert_eq!(transition.continuation.kind, ContinuationKind::NamedOutput);
+        assert_eq!(transition.continuation.successor_outputs, vec![1]);
+        assert_eq!(
+            transition.continuation.named_successor_outputs[0].name,
+            "state"
+        );
+        assert!(transition
+            .constraints
+            .iter()
+            .any(|constraint| constraint.kind == ConstraintKind::TransactionShape));
     }
 }

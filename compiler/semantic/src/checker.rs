@@ -179,6 +179,8 @@ impl<'source> Checker<'source> {
     fn check_spend(&mut self, contract: &Contract, spend: &Spend, contract_scope: &Scope) {
         let mut scope = contract_scope.clone();
         let mut local_names = HashSet::new();
+        let mut shape_facts = ShapeFacts::default();
+        let mut continuation_names = HashSet::new();
 
         for param in &spend.params {
             if contract_scope.contains(&param.name.name) {
@@ -216,6 +218,8 @@ impl<'source> Checker<'source> {
                     if !matches!(ty, Some(TypeName::Bool)) {
                         self.error(expr.span(), "`require` expression must be Bool");
                     }
+                    self.collect_shape_facts(expr, &mut shape_facts);
+                    self.collect_continuation_names(expr, &mut continuation_names);
                 }
                 Stmt::Return { expr, .. } => {
                     self.infer_expr(expr, &scope);
@@ -239,6 +243,8 @@ impl<'source> Checker<'source> {
                 "`covenant_id` requires `finality_depth` > 0",
             );
         }
+
+        self.check_shape_facts(&shape_facts);
     }
 
     fn infer_expr(&mut self, expr: &Expr, scope: &Scope) -> Option<TypeName> {
@@ -304,6 +310,7 @@ impl<'source> Checker<'source> {
             "block" => Some(TypeName::BlockHeight),
             "covenant_id" => Some(TypeName::CovenantID),
             "sequencing" => Some(TypeName::Hash),
+            "input_count" | "output_count" => Some(TypeName::Amount),
             "input" | "output" | "multisig" | "zk_verify" | "sha256" | "blake2b" | "hash160" => {
                 Some(TypeName::Bool)
             }
@@ -337,6 +344,10 @@ impl<'source> Checker<'source> {
             match ident.name.as_str() {
                 "input" => return self.check_index_call(args, ident.span, TypeName::Input),
                 "output" => return self.check_index_call(args, ident.span, TypeName::Output),
+                "continuation" => {
+                    self.check_continuation(args, ident.span);
+                    return Some(TypeName::Bool);
+                }
                 "zk_verify" => {
                     if args.len() != 1 {
                         self.error(ident.span, "`zk_verify` requires one proof argument");
@@ -371,13 +382,53 @@ impl<'source> Checker<'source> {
     fn check_index_call(&mut self, args: &[Expr], span: Span, ty: TypeName) -> Option<TypeName> {
         if args.len() != 1 {
             self.error(span, "input/output requires one integer index");
-        } else if !matches!(args[0], Expr::Integer { .. }) {
-            self.error(
-                args[0].span(),
-                "input/output index must be a non-negative integer literal",
-            );
+        } else {
+            match args[0] {
+                Expr::Integer { value, .. } if value <= u64::from(u32::MAX) => {}
+                Expr::Integer { .. } => {
+                    self.error(args[0].span(), "input/output index exceeds u32 range");
+                }
+                _ => {
+                    self.error(
+                        args[0].span(),
+                        "input/output index must be a non-negative integer literal",
+                    );
+                }
+            }
         }
         Some(ty)
+    }
+
+    fn check_continuation(&mut self, args: &[Expr], span: Span) {
+        if args.len() != 2 {
+            self.error(span, "`continuation` requires a name and output(index)");
+            return;
+        }
+
+        match &args[0] {
+            Expr::String { value, span } if is_valid_continuation_name(value) => {
+                if value.trim() != value {
+                    self.error(
+                        *span,
+                        "`continuation` name must not have leading or trailing space",
+                    );
+                }
+            }
+            Expr::String { span, .. } => {
+                self.error(
+                    *span,
+                    "`continuation` name must be a non-empty identifier label",
+                );
+            }
+            other => self.error(other.span(), "`continuation` name must be a string literal"),
+        }
+
+        if output_call_index(&args[1]).is_none() {
+            self.error(
+                args[1].span(),
+                "`continuation` second argument must be output(index)",
+            );
+        }
     }
 
     fn check_multisig(&mut self, args: &[Expr], span: Span, scope: &Scope) {
@@ -450,6 +501,228 @@ impl<'source> Checker<'source> {
             message: message.into(),
         });
     }
+
+    fn collect_shape_facts(&mut self, expr: &Expr, facts: &mut ShapeFacts) {
+        collect_exact_counts_from_conjunction(expr, facts, self);
+        collect_index_references(expr, facts);
+    }
+
+    fn collect_continuation_names(&mut self, expr: &Expr, names: &mut HashSet<String>) {
+        if let Some((name, span)) = continuation_name(expr) {
+            if !names.insert(name.clone()) {
+                self.error(span, format!("duplicate continuation name `{name}`"));
+            }
+        }
+
+        match expr {
+            Expr::Array { elements, .. } => {
+                for element in elements {
+                    self.collect_continuation_names(element, names);
+                }
+            }
+            Expr::Unary { expr, .. } => self.collect_continuation_names(expr, names),
+            Expr::Binary { left, right, .. } => {
+                self.collect_continuation_names(left, names);
+                self.collect_continuation_names(right, names);
+            }
+            Expr::Call { callee, args, .. } => {
+                self.collect_continuation_names(callee, names);
+                for arg in args {
+                    self.collect_continuation_names(arg, names);
+                }
+            }
+            Expr::Field { object, .. } => self.collect_continuation_names(object, names),
+            Expr::Ident(_) | Expr::Integer { .. } | Expr::String { .. } | Expr::Bool { .. } => {}
+        }
+    }
+
+    fn check_shape_facts(&mut self, facts: &ShapeFacts) {
+        check_count_facts(self, "input_count", &facts.inputs);
+        check_count_facts(self, "output_count", &facts.outputs);
+    }
+}
+
+#[derive(Debug, Default)]
+struct ShapeFacts {
+    inputs: CountFacts,
+    outputs: CountFacts,
+}
+
+#[derive(Debug, Default)]
+struct CountFacts {
+    exact: Option<(u64, Span)>,
+    max_index: Option<(u64, Span)>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CountSubject {
+    Input,
+    Output,
+}
+
+fn collect_exact_counts_from_conjunction(
+    expr: &Expr,
+    facts: &mut ShapeFacts,
+    checker: &mut Checker<'_>,
+) {
+    if let Expr::Binary {
+        left,
+        op: BinaryOp::And,
+        right,
+        ..
+    } = expr
+    {
+        collect_exact_counts_from_conjunction(left, facts, checker);
+        collect_exact_counts_from_conjunction(right, facts, checker);
+        return;
+    }
+
+    let Some((subject, value, span)) = exact_count_constraint(expr) else {
+        return;
+    };
+    let facts = match subject {
+        CountSubject::Input => &mut facts.inputs,
+        CountSubject::Output => &mut facts.outputs,
+    };
+    if value > u64::from(u32::MAX) {
+        checker.error(span, "exact transaction count exceeds u32 range");
+    }
+    if let Some((existing, _)) = facts.exact {
+        if existing != value {
+            checker.error(span, "conflicting exact transaction count constraints");
+        }
+    } else {
+        facts.exact = Some((value, span));
+    }
+}
+
+fn exact_count_constraint(expr: &Expr) -> Option<(CountSubject, u64, Span)> {
+    let Expr::Binary {
+        left,
+        op: BinaryOp::Equal,
+        right,
+        ..
+    } = expr
+    else {
+        return None;
+    };
+
+    if let (Some(subject), Expr::Integer { value, span }) = (count_subject(left), &**right) {
+        return Some((subject, *value, *span));
+    }
+    if let (Expr::Integer { value, span }, Some(subject)) = (&**left, count_subject(right)) {
+        return Some((subject, *value, *span));
+    }
+    None
+}
+
+fn count_subject(expr: &Expr) -> Option<CountSubject> {
+    let Expr::Ident(ident) = expr else {
+        return None;
+    };
+    match ident.name.as_str() {
+        "input_count" => Some(CountSubject::Input),
+        "output_count" => Some(CountSubject::Output),
+        _ => None,
+    }
+}
+
+fn collect_index_references(expr: &Expr, facts: &mut ShapeFacts) {
+    if let Expr::Call { callee, args, .. } = expr {
+        if let Expr::Ident(ident) = &**callee {
+            let facts = match ident.name.as_str() {
+                "input" => Some(&mut facts.inputs),
+                "output" => Some(&mut facts.outputs),
+                _ => None,
+            };
+            if let (Some(facts), Some(Expr::Integer { value, span })) = (facts, args.first()) {
+                match facts.max_index {
+                    Some((current, _)) if current >= *value => {}
+                    _ => facts.max_index = Some((*value, *span)),
+                }
+            }
+        }
+    }
+
+    match expr {
+        Expr::Array { elements, .. } => {
+            for element in elements {
+                collect_index_references(element, facts);
+            }
+        }
+        Expr::Unary { expr, .. } => collect_index_references(expr, facts),
+        Expr::Binary { left, right, .. } => {
+            collect_index_references(left, facts);
+            collect_index_references(right, facts);
+        }
+        Expr::Call { callee, args, .. } => {
+            collect_index_references(callee, facts);
+            for arg in args {
+                collect_index_references(arg, facts);
+            }
+        }
+        Expr::Field { object, .. } => collect_index_references(object, facts),
+        Expr::Ident(_) | Expr::Integer { .. } | Expr::String { .. } | Expr::Bool { .. } => {}
+    }
+}
+
+fn check_count_facts(checker: &mut Checker<'_>, label: &str, facts: &CountFacts) {
+    let Some((exact, _)) = facts.exact else {
+        return;
+    };
+    let Some((max_index, max_span)) = facts.max_index else {
+        return;
+    };
+    if exact <= max_index {
+        checker.error(
+            max_span,
+            format!("`{label}` must exceed the highest referenced index"),
+        );
+    }
+}
+
+fn continuation_name(expr: &Expr) -> Option<(String, Span)> {
+    let Expr::Call { callee, args, .. } = expr else {
+        return None;
+    };
+    let Expr::Ident(ident) = &**callee else {
+        return None;
+    };
+    if ident.name != "continuation" {
+        return None;
+    }
+    let Some(Expr::String { value, span }) = args.first() else {
+        return None;
+    };
+    Some((value.clone(), *span))
+}
+
+fn output_call_index(expr: &Expr) -> Option<u32> {
+    let Expr::Call { callee, args, .. } = expr else {
+        return None;
+    };
+    let Expr::Ident(ident) = &**callee else {
+        return None;
+    };
+    if ident.name != "output" {
+        return None;
+    }
+    if args.len() != 1 {
+        return None;
+    }
+    let Some(Expr::Integer { value, .. }) = args.first() else {
+        return None;
+    };
+    u32::try_from(*value).ok()
+}
+
+fn is_valid_continuation_name(value: &str) -> bool {
+    let mut chars = value.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    (first == '_' || first.is_ascii_alphabetic())
+        && chars.all(|ch| ch == '_' || ch == '-' || ch.is_ascii_alphanumeric())
 }
 
 fn spend_uses_name(spend: &Spend, name: &str) -> bool {
@@ -498,7 +771,7 @@ fn collect_kip_requirements(program: &Program) -> Vec<u16> {
 fn collect_expr_kips(expr: &Expr, kips: &mut HashSet<u16>) {
     match expr {
         Expr::Ident(ident) => match ident.name.as_str() {
-            "input" | "output" => {
+            "input" | "output" | "input_count" | "output_count" => {
                 kips.insert(10);
             }
             "covenant_id" => {
@@ -576,5 +849,68 @@ mod tests {
             .errors
             .iter()
             .any(|error| error.message == "`multisig` k cannot exceed number of keys"));
+    }
+
+    #[test]
+    fn accepts_exact_counts_and_named_continuation() {
+        let analysis = analyze(
+            r#"
+            contract Shape {
+              params { owner: PublicKey }
+              spend advance(sig: Signature) {
+                require sig.verify(owner);
+                require input_count == 1 && output_count == 2;
+                require continuation("state", output(1));
+                require output(1).script == owner;
+              }
+            }
+            "#,
+        )
+        .expect("transaction shape syntax is valid");
+
+        assert!(analysis.kip_requirements.contains(&10));
+    }
+
+    #[test]
+    fn rejects_exact_count_below_referenced_index() {
+        let result = analyze(
+            r#"
+            contract BadShape {
+              params { owner: PublicKey }
+              spend s(sig: Signature) {
+                require sig.verify(owner);
+                require input_count == 1;
+                require input(1).value >= 0;
+              }
+            }
+            "#,
+        )
+        .expect_err("referenced input exceeds exact count");
+
+        assert!(result.errors.iter().any(|error| {
+            error.message == "`input_count` must exceed the highest referenced index"
+        }));
+    }
+
+    #[test]
+    fn rejects_duplicate_continuation_names() {
+        let result = analyze(
+            r#"
+            contract BadContinuation {
+              params { owner: PublicKey }
+              spend s(sig: Signature) {
+                require sig.verify(owner);
+                require continuation("state", output(0));
+                require continuation("state", output(1));
+              }
+            }
+            "#,
+        )
+        .expect_err("duplicate continuation name");
+
+        assert!(result
+            .errors
+            .iter()
+            .any(|error| error.message == "duplicate continuation name `state`"));
     }
 }

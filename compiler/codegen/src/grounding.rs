@@ -172,6 +172,21 @@ pub fn builtin_records() -> Vec<GroundingRecord> {
             "docs/kaspa-source-audit.md",
             "output(n).value/script lower to KIP-10 OpTxOutputAmount/OpTxOutputSpk",
         ),
+        verified_builtin(
+            "input_count",
+            "docs/kaspa-source-audit.md",
+            "input_count lowers to KIP-10 OpTxInputCount",
+        ),
+        verified_builtin(
+            "output_count",
+            "docs/kaspa-source-audit.md",
+            "output_count lowers to KIP-10 OpTxOutputCount",
+        ),
+        verified_builtin(
+            "continuation",
+            "compiler/ir/src/gen.rs",
+            "continuation(name, output(n)) records a named successor output and lowers to an output-count existence check",
+        ),
         gated_builtin(
             "block",
             "block.height/time syntax is recognized; parameterized lock values are still emitted as script-template data",

@@ -318,6 +318,8 @@ impl fmt::Display for OutputField {
 pub struct ContinuationModel {
     pub kind: ContinuationKind,
     pub successor_outputs: Vec<u32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub named_successor_outputs: Vec<NamedContinuationOutput>,
     pub note: String,
 }
 
@@ -326,8 +328,16 @@ pub struct ContinuationModel {
 #[serde(rename_all = "kebab-case")]
 pub enum ContinuationKind {
     Unspecified,
+    NamedOutput,
     OutputScriptBound,
     CovenantLineageBound,
+}
+
+/// A source-declared successor output name.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NamedContinuationOutput {
+    pub name: String,
+    pub output_index: u32,
 }
 
 /// What compilation proves and what remains external.

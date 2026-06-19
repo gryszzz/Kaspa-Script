@@ -408,6 +408,7 @@
         "kind": {
           "enum": [
             "unspecified",
+            "named-output",
             "output-script-bound",
             "covenant-lineage-bound"
           ]
@@ -415,8 +416,31 @@
         "successor_outputs": {
           "$ref": "#/$defs/indexes"
         },
+        "named_successor_outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/named_continuation_output"
+          }
+        },
         "note": {
           "type": "string"
+        }
+      }
+    },
+    "named_continuation_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "output_index"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "output_index": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },

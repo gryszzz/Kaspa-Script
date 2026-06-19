@@ -964,9 +964,26 @@ fn print_kernel_preview_human(
                 semantics.transaction_shape.additional_outputs_permitted
             );
             println!(
+                "  exact inputs/outputs: {:?}/{:?}",
+                semantics.transaction_shape.exact_input_count,
+                semantics.transaction_shape.exact_output_count
+            );
+            println!(
                 "  continuation: {:?} ({})",
                 semantics.continuation.kind, semantics.continuation.note
             );
+            if !semantics.continuation.named_successor_outputs.is_empty() {
+                println!(
+                    "  named continuation outputs: {}",
+                    semantics
+                        .continuation
+                        .named_successor_outputs
+                        .iter()
+                        .map(|output| format!("{}=output({})", output.name, output.output_index))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
             println!("  constraints:");
             for constraint in &semantics.constraints {
                 println!("  - {:?}: {}", constraint.kind, constraint.expression);
@@ -1018,6 +1035,11 @@ fn print_application_model(application: &kaspascript_model::ApplicationModel) {
                 transition.transaction_shape.additional_inputs_permitted,
                 transition.transaction_shape.additional_outputs_permitted
             );
+            println!(
+                "    exact inputs/outputs: {:?}/{:?}",
+                transition.transaction_shape.exact_input_count,
+                transition.transaction_shape.exact_output_count
+            );
             for constraint in &transition.constraints {
                 println!(
                     "    require [{:?}]: {}",
@@ -1028,6 +1050,18 @@ fn print_application_model(application: &kaspascript_model::ApplicationModel) {
                 "    continuation: {:?} ({})",
                 transition.continuation.kind, transition.continuation.note
             );
+            if !transition.continuation.named_successor_outputs.is_empty() {
+                println!(
+                    "    named continuation outputs: {}",
+                    transition
+                        .continuation
+                        .named_successor_outputs
+                        .iter()
+                        .map(|output| format!("{}=output({})", output.name, output.output_index))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
             println!(
                 "    monetary: fees/change external-explicit; compiler injects outputs/recipients: {}/{}",
                 transition.monetary_policy.compiler_injects_outputs,

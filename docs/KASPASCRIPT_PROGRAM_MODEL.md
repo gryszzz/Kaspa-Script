@@ -47,10 +47,10 @@ Every `spend` becomes a transition containing:
 | `arguments` | Typed transition arguments from source. |
 | `signing_requirements` | Recognized single-signature or multisig intent. |
 | `constraints` | Every source `require`, normalized and classified. |
-| `transaction_shape` | Referenced input/output indexes and count limitations. |
+| `transaction_shape` | Referenced input/output indexes, exact input/output counts, and count limitations. |
 | `monetary_policy` | Explicit fee/change ownership and confirmation that the compiler injects no outputs or recipients. |
 | `output_bindings` | Output value, script, or covenant fields constrained by source. |
-| `continuation` | `unspecified`, `output-script-bound`, or `covenant-lineage-bound`. |
+| `continuation` | `unspecified`, `named-output`, `output-script-bound`, or `covenant-lineage-bound`. |
 
 Constraint categories are:
 
@@ -67,6 +67,31 @@ Constraint categories are:
 
 The normalized expression remains inspectable instead of being reduced to a
 human-only summary string.
+
+## Transaction Shape Syntax
+
+Exact transaction counts are declared with KIP-10 count builtins:
+
+```kaspascript
+require input_count == 1;
+require output_count == 2;
+```
+
+The application model records those values as `exact_input_count` and
+`exact_output_count`, and marks additional inputs or outputs as not permitted
+for that transition.
+
+Named continuation outputs are declared with a metadata-bearing require:
+
+```kaspascript
+require continuation("state", output(0));
+```
+
+The emitted script verifies that the named output index exists. The name is
+preserved in `continuation.named_successor_outputs` for wallets, SDKs, and
+indexers. Ownership or lineage strength still comes from ordinary source
+constraints such as `output(0).script == owner` or
+`output(0).covenant_id == covenant_id`.
 
 ## Compilation Guarantees
 

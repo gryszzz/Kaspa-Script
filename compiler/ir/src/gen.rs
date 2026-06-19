@@ -139,10 +139,12 @@ pub fn lower_program(
 fn lower_expr(expr: &Expr, out: &mut Vec<Instruction>, file: &str) -> Result<(), IrError> {
     match expr {
         Expr::Ident(ident) => {
-            out.push(Instruction::new(
-                ident.span,
-                InstructionKind::Push(Value::Symbol(ident.name.clone())),
-            ));
+            let kind = match ident.name.as_str() {
+                "input_count" => InstructionKind::InputCount,
+                "output_count" => InstructionKind::OutputCount,
+                _ => InstructionKind::Push(Value::Symbol(ident.name.clone())),
+            };
+            out.push(Instruction::new(ident.span, kind));
         }
         Expr::Integer { value, span } => {
             out.push(Instruction::new(
@@ -295,6 +297,7 @@ fn lower_call(
         match ident.name.as_str() {
             "input" => return lower_index_call(args, span, out, true, file),
             "output" => return lower_index_call(args, span, out, false, file),
+            "continuation" => return lower_continuation(args, span, out, file),
             "multisig" => return lower_multisig(args, span, out, file),
             "zk_verify" => {
                 if let Some(proof) = args.first() {
@@ -348,6 +351,48 @@ fn lower_index_call(
         InstructionKind::Push(Value::Integer(u64::from(index))),
     ));
     Ok(())
+}
+
+fn lower_continuation(
+    args: &[Expr],
+    span: Span,
+    out: &mut Vec<Instruction>,
+    file: &str,
+) -> Result<(), IrError> {
+    let Some(output_index) = args.get(1).and_then(output_call_index) else {
+        return Err(unsupported(
+            file,
+            span,
+            "continuation requires output(index)",
+        ));
+    };
+
+    out.push(Instruction::new(span, InstructionKind::OutputCount));
+    out.push(Instruction::new(
+        span,
+        InstructionKind::Push(Value::Integer(u64::from(output_index))),
+    ));
+    out.push(Instruction::new(span, InstructionKind::GreaterThan));
+    Ok(())
+}
+
+fn output_call_index(expr: &Expr) -> Option<u32> {
+    let Expr::Call { callee, args, .. } = expr else {
+        return None;
+    };
+    let Expr::Ident(root) = &**callee else {
+        return None;
+    };
+    if root.name != "output" {
+        return None;
+    }
+    if args.len() != 1 {
+        return None;
+    }
+    let Some(Expr::Integer { value, .. }) = args.first() else {
+        return None;
+    };
+    u32::try_from(*value).ok()
 }
 
 fn lower_multisig(
@@ -508,9 +553,11 @@ impl fmt::Display for IrProgram {
                 }
                 writeln!(
                     f,
-                    "    inputs: {:?}; outputs: {:?}; additional inputs/outputs permitted: {}/{}",
+                    "    inputs: {:?}; outputs: {:?}; exact inputs/outputs: {:?}/{:?}; additional inputs/outputs permitted: {}/{}",
                     transition.transaction_shape.referenced_inputs,
                     transition.transaction_shape.referenced_outputs,
+                    transition.transaction_shape.exact_input_count,
+                    transition.transaction_shape.exact_output_count,
                     transition.transaction_shape.additional_inputs_permitted,
                     transition.transaction_shape.additional_outputs_permitted
                 )?;
@@ -562,5 +609,40 @@ mod tests {
                 .map(|i| &i.kind),
             Some(InstructionKind::Verify)
         ));
+    }
+
+    #[test]
+    fn lowers_transaction_shape_builtins() {
+        let ir = lower(
+            r#"
+            contract Shape {
+              params { owner: PublicKey }
+              spend s(sig: Signature) {
+                require sig.verify(owner);
+                require input_count == 1;
+                require output_count == 2;
+                require continuation("state", output(1));
+              }
+            }
+            "#,
+        )
+        .expect("lowers");
+        let instructions = &ir.contracts[0].spends[0].instructions;
+
+        assert!(instructions
+            .iter()
+            .any(|instruction| instruction.kind == InstructionKind::InputCount));
+        assert!(instructions
+            .iter()
+            .any(|instruction| instruction.kind == InstructionKind::OutputCount));
+        assert!(instructions
+            .iter()
+            .any(|instruction| instruction.kind == InstructionKind::GreaterThan));
+        assert_eq!(
+            ir.application.contracts[0].transitions[0]
+                .transaction_shape
+                .exact_output_count,
+            Some(2)
+        );
     }
 }

@@ -1,0 +1,1415 @@
+{
+  "bytecode": [
+    5,
+    115,
+    105,
+    103,
+    95,
+    97,
+    5,
+    115,
+    105,
+    103,
+    95,
+    98,
+    82,
+    7,
+    112,
+    97,
+    114,
+    116,
+    121,
+    95,
+    97,
+    7,
+    112,
+    97,
+    114,
+    116,
+    121,
+    95,
+    98,
+    82,
+    174,
+    105,
+    179,
+    81,
+    135,
+    105,
+    180,
+    82,
+    135,
+    105,
+    180,
+    0,
+    160,
+    105,
+    10,
+    110,
+    101,
+    120,
+    116,
+    95,
+    115,
+    116,
+    97,
+    116,
+    101,
+    168,
+    10,
+    115,
+    116,
+    97,
+    116,
+    101,
+    95,
+    104,
+    97,
+    115,
+    104,
+    135,
+    105,
+    0,
+    195,
+    7,
+    112,
+    97,
+    114,
+    116,
+    121,
+    95,
+    97,
+    135,
+    105,
+    0,
+    194,
+    0,
+    190,
+    161,
+    105,
+    81,
+    195,
+    7,
+    112,
+    97,
+    114,
+    116,
+    121,
+    95,
+    98,
+    135,
+    105,
+    3,
+    115,
+    105,
+    103,
+    7,
+    112,
+    97,
+    114,
+    116,
+    121,
+    95,
+    97,
+    172,
+    105,
+    15,
+    100,
+    105,
+    115,
+    112,
+    117,
+    116,
+    101,
+    95,
+    116,
+    105,
+    109,
+    101,
+    111,
+    117,
+    116,
+    176,
+    81,
+    105,
+    179,
+    81,
+    135,
+    105,
+    180,
+    81,
+    135,
+    105,
+    0,
+    195,
+    7,
+    112,
+    97,
+    114,
+    116,
+    121,
+    95,
+    97,
+    135,
+    105,
+    0,
+    194,
+    0,
+    190,
+    161,
+    105
+  ],
+  "source_hash": [
+    109,
+    57,
+    212,
+    182,
+    233,
+    23,
+    193,
+    245,
+    181,
+    247,
+    143,
+    197,
+    226,
+    182,
+    158,
+    62,
+    251,
+    13,
+    20,
+    185,
+    127,
+    171,
+    60,
+    45,
+    33,
+    159,
+    167,
+    246,
+    225,
+    179,
+    250,
+    198
+  ],
+  "compiler_version": "0.1.0",
+  "backend": "kaspa-txscript",
+  "target": "verified-tn12",
+  "finality_depth": 12,
+  "kip_requirements": [
+    10
+  ],
+  "warnings": [],
+  "application": {
+    "schema_version": "kaspascript.application.v0",
+    "execution_model": "kaspa-utxo-state-machine",
+    "contracts": [
+      {
+        "name": "StateChannel",
+        "state": [
+          {
+            "name": "party_a",
+            "ty": "PublicKey"
+          },
+          {
+            "name": "party_b",
+            "ty": "PublicKey"
+          },
+          {
+            "name": "state_hash",
+            "ty": "Hash"
+          },
+          {
+            "name": "dispute_timeout",
+            "ty": "BlockHeight"
+          }
+        ],
+        "finality_depth": 12,
+        "transitions": [
+          {
+            "name": "advance",
+            "arguments": [
+              {
+                "name": "sig_a",
+                "ty": "Signature"
+              },
+              {
+                "name": "sig_b",
+                "ty": "Signature"
+              },
+              {
+                "name": "next_state",
+                "ty": "Bytes"
+              }
+            ],
+            "signing_requirements": [
+              {
+                "scheme": "multisig",
+                "threshold": 2,
+                "authorized_keys": [
+                  "party_a",
+                  "party_b"
+                ],
+                "signature_arguments": [
+                  "sig_a",
+                  "sig_b"
+                ]
+              }
+            ],
+            "constraints": [
+              {
+                "kind": "authorization",
+                "expression": {
+                  "kind": "call",
+                  "function": "multisig",
+                  "arguments": [
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "array",
+                      "elements": [
+                        {
+                          "kind": "symbol",
+                          "name": "party_a"
+                        },
+                        {
+                          "kind": "symbol",
+                          "name": "party_b"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "array",
+                      "elements": [
+                        {
+                          "kind": "symbol",
+                          "name": "sig_a"
+                        },
+                        {
+                          "kind": "symbol",
+                          "name": "sig_b"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "source_span": {
+                  "start": 253,
+                  "end": 300
+                }
+              },
+              {
+                "kind": "transaction-shape",
+                "expression": {
+                  "kind": "binary",
+                  "op": "equal",
+                  "left": {
+                    "kind": "symbol",
+                    "name": "input_count"
+                  },
+                  "right": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                "source_span": {
+                  "start": 314,
+                  "end": 330
+                }
+              },
+              {
+                "kind": "transaction-shape",
+                "expression": {
+                  "kind": "binary",
+                  "op": "equal",
+                  "left": {
+                    "kind": "symbol",
+                    "name": "output_count"
+                  },
+                  "right": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                "source_span": {
+                  "start": 344,
+                  "end": 361
+                }
+              },
+              {
+                "kind": "transaction-shape",
+                "expression": {
+                  "kind": "call",
+                  "function": "continuation",
+                  "arguments": [
+                    {
+                      "kind": "string",
+                      "value": "state"
+                    },
+                    {
+                      "kind": "call",
+                      "function": "output",
+                      "arguments": [
+                        {
+                          "kind": "integer",
+                          "value": 0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "source_span": {
+                  "start": 375,
+                  "end": 407
+                }
+              },
+              {
+                "kind": "hashlock",
+                "expression": {
+                  "kind": "binary",
+                  "op": "equal",
+                  "left": {
+                    "kind": "call",
+                    "function": "sha256",
+                    "arguments": [
+                      {
+                        "kind": "symbol",
+                        "name": "next_state"
+                      }
+                    ]
+                  },
+                  "right": {
+                    "kind": "symbol",
+                    "name": "state_hash"
+                  }
+                },
+                "source_span": {
+                  "start": 421,
+                  "end": 453
+                }
+              },
+              {
+                "kind": "script",
+                "expression": {
+                  "kind": "binary",
+                  "op": "equal",
+                  "left": {
+                    "kind": "field",
+                    "object": {
+                      "kind": "call",
+                      "function": "output",
+                      "arguments": [
+                        {
+                          "kind": "integer",
+                          "value": 0
+                        }
+                      ]
+                    },
+                    "field": "script"
+                  },
+                  "right": {
+                    "kind": "symbol",
+                    "name": "party_a"
+                  }
+                },
+                "source_span": {
+                  "start": 467,
+                  "end": 494
+                }
+              },
+              {
+                "kind": "value",
+                "expression": {
+                  "kind": "binary",
+                  "op": "less-equal",
+                  "left": {
+                    "kind": "field",
+                    "object": {
+                      "kind": "call",
+                      "function": "output",
+                      "arguments": [
+                        {
+                          "kind": "integer",
+                          "value": 0
+                        }
+                      ]
+                    },
+                    "field": "value"
+                  },
+                  "right": {
+                    "kind": "field",
+                    "object": {
+                      "kind": "call",
+                      "function": "input",
+                      "arguments": [
+                        {
+                          "kind": "integer",
+                          "value": 0
+                        }
+                      ]
+                    },
+                    "field": "value"
+                  }
+                },
+                "source_span": {
+                  "start": 508,
+                  "end": 541
+                }
+              },
+              {
+                "kind": "script",
+                "expression": {
+                  "kind": "binary",
+                  "op": "equal",
+                  "left": {
+                    "kind": "field",
+                    "object": {
+                      "kind": "call",
+                      "function": "output",
+                      "arguments": [
+                        {
+                          "kind": "integer",
+                          "value": 1
+                        }
+                      ]
+                    },
+                    "field": "script"
+                  },
+                  "right": {
+                    "kind": "symbol",
+                    "name": "party_b"
+                  }
+                },
+                "source_span": {
+                  "start": 555,
+                  "end": 582
+                }
+              }
+            ],
+            "transaction_shape": {
+              "referenced_inputs": [
+                0
+              ],
+              "referenced_outputs": [
+                0,
+                1
+              ],
+              "exact_input_count": 1,
+              "exact_output_count": 2,
+              "additional_inputs_permitted": false,
+              "additional_outputs_permitted": false
+            },
+            "monetary_policy": {
+              "value_constraint_count": 1,
+              "fee_handling": "external-explicit",
+              "change_handling": "external-explicit",
+              "compiler_injects_outputs": false,
+              "compiler_injects_recipients": false
+            },
+            "output_bindings": [
+              {
+                "output_index": 0,
+                "field": "script",
+                "relation": "equal",
+                "expected": {
+                  "kind": "symbol",
+                  "name": "party_a"
+                }
+              },
+              {
+                "output_index": 0,
+                "field": "value",
+                "relation": "less-equal",
+                "expected": {
+                  "kind": "field",
+                  "object": {
+                    "kind": "call",
+                    "function": "input",
+                    "arguments": [
+                      {
+                        "kind": "integer",
+                        "value": 0
+                      }
+                    ]
+                  },
+                  "field": "value"
+                }
+              },
+              {
+                "output_index": 1,
+                "field": "script",
+                "relation": "equal",
+                "expected": {
+                  "kind": "symbol",
+                  "name": "party_b"
+                }
+              }
+            ],
+            "continuation": {
+              "kind": "output-script-bound",
+              "successor_outputs": [
+                0,
+                1
+              ],
+              "named_successor_outputs": [
+                {
+                  "name": "state",
+                  "output_index": 0
+                }
+              ],
+              "note": "Source binds successor output ownership/script, but does not prove covenant lineage."
+            }
+          },
+          {
+            "name": "timeout_refund",
+            "arguments": [
+              {
+                "name": "sig",
+                "ty": "Signature"
+              }
+            ],
+            "signing_requirements": [
+              {
+                "scheme": "single-signature",
+                "threshold": 1,
+                "authorized_keys": [
+                  "party_a"
+                ],
+                "signature_arguments": [
+                  "sig"
+                ]
+              }
+            ],
+            "constraints": [
+              {
+                "kind": "authorization",
+                "expression": {
+                  "kind": "call",
+                  "function": "sig.verify",
+                  "arguments": [
+                    {
+                      "kind": "symbol",
+                      "name": "party_a"
+                    }
+                  ]
+                },
+                "source_span": {
+                  "start": 642,
+                  "end": 661
+                }
+              },
+              {
+                "kind": "timelock",
+                "expression": {
+                  "kind": "binary",
+                  "op": "greater-equal",
+                  "left": {
+                    "kind": "field",
+                    "object": {
+                      "kind": "symbol",
+                      "name": "block"
+                    },
+                    "field": "height"
+                  },
+                  "right": {
+                    "kind": "symbol",
+                    "name": "dispute_timeout"
+                  }
+                },
+                "source_span": {
+                  "start": 675,
+                  "end": 706
+                }
+              },
+              {
+                "kind": "transaction-shape",
+                "expression": {
+                  "kind": "binary",
+                  "op": "equal",
+                  "left": {
+                    "kind": "symbol",
+                    "name": "input_count"
+                  },
+                  "right": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                "source_span": {
+                  "start": 720,
+                  "end": 736
+                }
+              },
+              {
+                "kind": "transaction-shape",
+                "expression": {
+                  "kind": "binary",
+                  "op": "equal",
+                  "left": {
+                    "kind": "symbol",
+                    "name": "output_count"
+                  },
+                  "right": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                "source_span": {
+                  "start": 750,
+                  "end": 767
+                }
+              },
+              {
+                "kind": "script",
+                "expression": {
+                  "kind": "binary",
+                  "op": "equal",
+                  "left": {
+                    "kind": "field",
+                    "object": {
+                      "kind": "call",
+                      "function": "output",
+                      "arguments": [
+                        {
+                          "kind": "integer",
+                          "value": 0
+                        }
+                      ]
+                    },
+                    "field": "script"
+                  },
+                  "right": {
+                    "kind": "symbol",
+                    "name": "party_a"
+                  }
+                },
+                "source_span": {
+                  "start": 781,
+                  "end": 808
+                }
+              },
+              {
+                "kind": "value",
+                "expression": {
+                  "kind": "binary",
+                  "op": "less-equal",
+                  "left": {
+                    "kind": "field",
+                    "object": {
+                      "kind": "call",
+                      "function": "output",
+                      "arguments": [
+                        {
+                          "kind": "integer",
+                          "value": 0
+                        }
+                      ]
+                    },
+                    "field": "value"
+                  },
+                  "right": {
+                    "kind": "field",
+                    "object": {
+                      "kind": "call",
+                      "function": "input",
+                      "arguments": [
+                        {
+                          "kind": "integer",
+                          "value": 0
+                        }
+                      ]
+                    },
+                    "field": "value"
+                  }
+                },
+                "source_span": {
+                  "start": 822,
+                  "end": 855
+                }
+              }
+            ],
+            "transaction_shape": {
+              "referenced_inputs": [
+                0
+              ],
+              "referenced_outputs": [
+                0
+              ],
+              "exact_input_count": 1,
+              "exact_output_count": 1,
+              "additional_inputs_permitted": false,
+              "additional_outputs_permitted": false
+            },
+            "monetary_policy": {
+              "value_constraint_count": 1,
+              "fee_handling": "external-explicit",
+              "change_handling": "external-explicit",
+              "compiler_injects_outputs": false,
+              "compiler_injects_recipients": false
+            },
+            "output_bindings": [
+              {
+                "output_index": 0,
+                "field": "script",
+                "relation": "equal",
+                "expected": {
+                  "kind": "symbol",
+                  "name": "party_a"
+                }
+              },
+              {
+                "output_index": 0,
+                "field": "value",
+                "relation": "less-equal",
+                "expected": {
+                  "kind": "field",
+                  "object": {
+                    "kind": "call",
+                    "function": "input",
+                    "arguments": [
+                      {
+                        "kind": "integer",
+                        "value": 0
+                      }
+                    ]
+                  },
+                  "field": "value"
+                }
+              }
+            ],
+            "continuation": {
+              "kind": "output-script-bound",
+              "successor_outputs": [
+                0
+              ],
+              "note": "Source binds successor output ownership/script, but does not prove covenant lineage."
+            }
+          }
+        ]
+      }
+    ],
+    "assurances": {
+      "compiler_guarantees": [
+        {
+          "id": "checked-source",
+          "actor": "compiler",
+          "statement": "The source parsed and passed KaspaScript semantic checks."
+        },
+        {
+          "id": "deterministic-lowering",
+          "actor": "compiler",
+          "statement": "The checked program lowers deterministically to typed IR and artifact metadata."
+        },
+        {
+          "id": "explicit-monetary-effects",
+          "actor": "compiler",
+          "statement": "Compilation does not create transaction outputs, recipients, fees, or change."
+        },
+        {
+          "id": "inspectable-signing-intent",
+          "actor": "compiler",
+          "statement": "Recognized signature requirements and transaction constraints are preserved in the application model."
+        }
+      ],
+      "external_obligations": [
+        {
+          "id": "transaction-instantiation",
+          "actor": "application",
+          "statement": "Construct concrete inputs, outputs, arguments, and continuation records that satisfy every transition constraint."
+        },
+        {
+          "id": "fees-and-change",
+          "actor": "wallet",
+          "statement": "Choose and display fees, change, and every recipient explicitly before signing."
+        },
+        {
+          "id": "signature-collection",
+          "actor": "wallet",
+          "statement": "Resolve authorized keys and collect the signatures required by the selected transition."
+        },
+        {
+          "id": "network-validation",
+          "actor": "node",
+          "statement": "Validate consensus, standardness, mass, fee policy, and target-network rules."
+        },
+        {
+          "id": "lineage-and-reorgs",
+          "actor": "indexer",
+          "statement": "Track accepted UTXOs, covenant lineage, duplicate transitions, and reorg effects."
+        },
+        {
+          "id": "activation-evidence",
+          "actor": "operator",
+          "statement": "Verify release, network, KIP, and activation assumptions against current primary sources."
+        }
+      ]
+    }
+  },
+  "contracts": [
+    {
+      "name": "StateChannel",
+      "params": [
+        {
+          "name": "party_a",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "party_b",
+          "ty": "PublicKey"
+        },
+        {
+          "name": "state_hash",
+          "ty": "Hash"
+        },
+        {
+          "name": "dispute_timeout",
+          "ty": "BlockHeight"
+        }
+      ],
+      "finality_depth": 12,
+      "spends": [
+        {
+          "name": "advance",
+          "params": [
+            {
+              "name": "sig_a",
+              "ty": "Signature"
+            },
+            {
+              "name": "sig_b",
+              "ty": "Signature"
+            },
+            {
+              "name": "next_state",
+              "ty": "Bytes"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 286,
+                "end": 291
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig_a"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 293,
+                "end": 298
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig_b"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 253,
+                "end": 300
+              },
+              "kind": {
+                "Push": {
+                  "Integer": 2
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 266,
+                "end": 273
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "party_a"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 275,
+                "end": 282
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "party_b"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 253,
+                "end": 300
+              },
+              "kind": {
+                "CheckMultiSig": {
+                  "required": 2,
+                  "key_count": 2
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 245,
+                "end": 301
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 314,
+                "end": 325
+              },
+              "kind": "InputCount"
+            },
+            {
+              "span": {
+                "start": 329,
+                "end": 330
+              },
+              "kind": {
+                "Push": {
+                  "Integer": 1
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 314,
+                "end": 330
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 306,
+                "end": 331
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 344,
+                "end": 356
+              },
+              "kind": "OutputCount"
+            },
+            {
+              "span": {
+                "start": 360,
+                "end": 361
+              },
+              "kind": {
+                "Push": {
+                  "Integer": 2
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 344,
+                "end": 361
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 336,
+                "end": 362
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 375,
+                "end": 407
+              },
+              "kind": "OutputCount"
+            },
+            {
+              "span": {
+                "start": 375,
+                "end": 407
+              },
+              "kind": {
+                "Push": {
+                  "Integer": 0
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 375,
+                "end": 407
+              },
+              "kind": "GreaterThan"
+            },
+            {
+              "span": {
+                "start": 367,
+                "end": 408
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 428,
+                "end": 438
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "next_state"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 421,
+                "end": 439
+              },
+              "kind": "Sha256"
+            },
+            {
+              "span": {
+                "start": 443,
+                "end": 453
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "state_hash"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 421,
+                "end": 453
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 413,
+                "end": 454
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 467,
+                "end": 483
+              },
+              "kind": {
+                "OutputScript": 0
+              }
+            },
+            {
+              "span": {
+                "start": 487,
+                "end": 494
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "party_a"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 467,
+                "end": 494
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 459,
+                "end": 495
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 508,
+                "end": 523
+              },
+              "kind": {
+                "OutputValue": 0
+              }
+            },
+            {
+              "span": {
+                "start": 527,
+                "end": 541
+              },
+              "kind": {
+                "InputValue": 0
+              }
+            },
+            {
+              "span": {
+                "start": 508,
+                "end": 541
+              },
+              "kind": "LessThanOrEqual"
+            },
+            {
+              "span": {
+                "start": 500,
+                "end": 542
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 555,
+                "end": 571
+              },
+              "kind": {
+                "OutputScript": 1
+              }
+            },
+            {
+              "span": {
+                "start": 575,
+                "end": 582
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "party_b"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 555,
+                "end": 582
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 547,
+                "end": 583
+              },
+              "kind": "Verify"
+            }
+          ]
+        },
+        {
+          "name": "timeout_refund",
+          "params": [
+            {
+              "name": "sig",
+              "ty": "Signature"
+            }
+          ],
+          "instructions": [
+            {
+              "span": {
+                "start": 642,
+                "end": 645
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "sig"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 653,
+                "end": 660
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "party_a"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 642,
+                "end": 661
+              },
+              "kind": {
+                "CheckSig": {
+                  "key_slot": 0
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 634,
+                "end": 662
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 691,
+                "end": 706
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "dispute_timeout"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 675,
+                "end": 706
+              },
+              "kind": "CheckLockHeightFromStack"
+            },
+            {
+              "span": {
+                "start": 667,
+                "end": 707
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 720,
+                "end": 731
+              },
+              "kind": "InputCount"
+            },
+            {
+              "span": {
+                "start": 735,
+                "end": 736
+              },
+              "kind": {
+                "Push": {
+                  "Integer": 1
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 720,
+                "end": 736
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 712,
+                "end": 737
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 750,
+                "end": 762
+              },
+              "kind": "OutputCount"
+            },
+            {
+              "span": {
+                "start": 766,
+                "end": 767
+              },
+              "kind": {
+                "Push": {
+                  "Integer": 1
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 750,
+                "end": 767
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 742,
+                "end": 768
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 781,
+                "end": 797
+              },
+              "kind": {
+                "OutputScript": 0
+              }
+            },
+            {
+              "span": {
+                "start": 801,
+                "end": 808
+              },
+              "kind": {
+                "Push": {
+                  "Symbol": "party_a"
+                }
+              }
+            },
+            {
+              "span": {
+                "start": 781,
+                "end": 808
+              },
+              "kind": "Equal"
+            },
+            {
+              "span": {
+                "start": 773,
+                "end": 809
+              },
+              "kind": "Verify"
+            },
+            {
+              "span": {
+                "start": 822,
+                "end": 837
+              },
+              "kind": {
+                "OutputValue": 0
+              }
+            },
+            {
+              "span": {
+                "start": 841,
+                "end": 855
+              },
+              "kind": {
+                "InputValue": 0
+              }
+            },
+            {
+              "span": {
+                "start": 822,
+                "end": 855
+              },
+              "kind": "LessThanOrEqual"
+            },
+            {
+              "span": {
+                "start": 814,
+                "end": 856
+              },
+              "kind": "Verify"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -29,6 +29,10 @@ const CONTRACTS: &[(&str, &str)] = &[
         "dagsafe_channel.ks",
         include_str!("../../../tests/contracts/dagsafe_channel.ks"),
     ),
+    (
+        "state_channel.ks",
+        include_str!("../../../tests/contracts/state_channel.ks"),
+    ),
 ];
 
 const GOLDENS: &[(&str, &str, &str, &str, &str)] = &[
@@ -66,6 +70,13 @@ const GOLDENS: &[(&str, &str, &str, &str, &str)] = &[
         include_str!("../../../tests/golden/vault.artifact.json"),
         include_str!("../../../tests/golden/vault.expected.hex"),
         include_str!("../../../tests/golden/vault.expected.asm"),
+    ),
+    (
+        "state_channel.ks",
+        include_str!("../../../tests/contracts/state_channel.ks"),
+        include_str!("../../../tests/golden/state_channel.artifact.json"),
+        include_str!("../../../tests/golden/state_channel.expected.hex"),
+        include_str!("../../../tests/golden/state_channel.expected.asm"),
     ),
 ];
 
@@ -111,6 +122,38 @@ fn artifact_preserves_application_level_transition_semantics() {
     );
     assert!(!release.monetary_policy.compiler_injects_outputs);
     assert!(!release.monetary_policy.compiler_injects_recipients);
+}
+
+#[test]
+fn artifact_preserves_exact_counts_and_named_continuation_outputs() {
+    let source = r#"
+        contract Shape {
+          params { owner: PublicKey }
+          spend advance(sig: Signature) {
+            require sig.verify(owner);
+            require input_count == 1;
+            require output_count == 2;
+            require continuation("state", output(1));
+          }
+        }
+    "#;
+
+    let artifact = compile_file(source, "shape.ks").expect("shape");
+    let transition = artifact
+        .application
+        .transition("Shape", "advance")
+        .expect("advance model");
+    let asm = bytecode_asm(&artifact.bytecode).expect("asm");
+
+    assert_eq!(transition.transaction_shape.exact_input_count, Some(1));
+    assert_eq!(transition.transaction_shape.exact_output_count, Some(2));
+    assert_eq!(transition.continuation.kind, ContinuationKind::NamedOutput);
+    assert_eq!(
+        transition.continuation.named_successor_outputs[0].name,
+        "state"
+    );
+    assert!(asm.contains("OP_TXINPUTCOUNT"));
+    assert!(asm.contains("OP_TXOUTPUTCOUNT"));
 }
 
 #[test]

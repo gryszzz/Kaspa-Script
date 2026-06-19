@@ -1,6 +1,6 @@
 # Project Status And Completion Roadmap
 
-Updated: 2026-06-17.
+Updated: 2026-06-19.
 
 KaspaScript is now a source-gated compiler plus the first slice of a
 Kaspa-native programmability kernel.
@@ -19,6 +19,9 @@ Compiler:
   kernel packages, CLI inspection, and the SDK.
 - Source-derived signing requirements, classified constraints, transaction
   shape, output bindings, continuation posture, and monetary responsibilities.
+- Exact `input_count` / `output_count` constraints and named
+  `continuation("name", output(n))` successor outputs in the application
+  model, with KIP-10 count checks emitted by the backend.
 - Golden artifacts for the verified example contracts.
 - `verified-tn12`, `tn10-toccata`, `toccata-preview`, and `future-mainnet`
   target posture.
@@ -132,8 +135,8 @@ Until those exist, `future-mainnet` remains locked.
 2. Add wallet-preview and indexer fixtures for each production contract pattern.
 3. Add live or no-broadcast TN10 checks for the seq-commit lane-proof and
    covenant-binding fixture assumptions.
-4. Add explicit language syntax for exact input/output counts and named
-   continuation outputs.
+4. Extend wallet-preview and indexer golden fixtures to cover exact
+   input/output counts and named continuation outputs.
 
 ## Maintainer Commands
 

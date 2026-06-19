@@ -52,6 +52,9 @@ moving-master architecture watch.
 See [`TOCCATA_V2_INTEGRATION.md`](TOCCATA_V2_INTEGRATION.md) for the tagged
 release integration brief now wired into the CLI status report.
 
+For a single operator/app-builder checklist, use
+[`TOCCATA_UPGRADE_CHECKLIST.md`](TOCCATA_UPGRADE_CHECKLIST.md).
+
 ## What Toccata Adds
 
 | Area | Upstream source | Impact for KaspaScript |

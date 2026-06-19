@@ -226,6 +226,9 @@ kaspascript toccata targets
 kaspascript toccata fee --compute-grams 1000 --tx-bytes 400
 ```
 
+For operator and app-builder prep, see
+[`docs/TOCCATA_UPGRADE_CHECKLIST.md`](docs/TOCCATA_UPGRADE_CHECKLIST.md).
+
 When developing from the repository, prefix commands with:
 
 ```bash

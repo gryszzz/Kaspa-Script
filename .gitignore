@@ -1,3 +1,4 @@
 /target/
+/compatibility/toccata-v2/target/
 **/*.rs.bk
 .DS_Store

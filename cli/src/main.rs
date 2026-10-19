@@ -627,13 +627,21 @@ fn toccata_status_report() -> Value {
 fn toccata_upgrade_profile() -> Value {
     json!({
         "name": "Toccata",
+        "checked_at": "2026-10-19T23:21:28Z",
+        "evidence_scope": "dated public-source snapshot; recheck before deployment",
         "rusty_kaspa_release": {
             "repo": "https://github.com/kaspanet/rusty-kaspa",
-            "tag": "v2.0.1",
-            "name": "Mainnet Toccata Release - v2.0.1",
-            "published_at": "2026-06-15T19:14:22Z",
-            "commit": "cfafeb4c093fa37a303f1b9f19c58f986b870ce3",
-            "upgrade_note": "drop-in update for v2.0.0 nodes and Toccata upgrade version for pre-Toccata 1.x nodes",
+            "tag": "v2.1.0",
+            "name": "Rusty Kaspa v2.1.0",
+            "published_at": "2026-09-22T13:55:36Z",
+            "commit": "01b532e8b553523216471682649693af92f0fd16",
+            "upgrade_note": "post-Toccata security, protocol 11, and standalone ZK SDK release; SDK/application compatibility remains separately tested",
+        },
+        "silverscript_release": {
+            "tag": "v1.0.0",
+            "commit": "3ed973335b59269293564805cc2c58a14595ec03",
+            "url": "https://github.com/kaspanet/silverscript/releases/tag/v1.0.0",
+            "kaspa_script_interoperability": "isolated native engine tests; not shared language or artifact compatibility",
         },
         "baseline_toccata_release": {
             "tag": "v2.0.0",
@@ -642,45 +650,49 @@ fn toccata_upgrade_profile() -> Value {
             "role": "baseline release that announced the mainnet activation DAA score",
         },
         "node_upgrade_guide": {
-            "url": "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md",
+            "url": "https://github.com/kaspanet/rusty-kaspa/blob/v2.1.0/docs/toccata-guide.md",
             "database_upgrade": "one-way; downgrade requires resync",
             "recommended_rehearsal_network": "testnet-10",
         },
         "release_assets": [
             {
-                "name": "kaspa-wasm32-sdk-v2.0.1.zip",
-                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.1/kaspa-wasm32-sdk-v2.0.1.zip",
+                "name": "kaspa-wasm32-sdk-v2.1.0.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.1.0/kaspa-wasm32-sdk-v2.1.0.zip",
             },
             {
-                "name": "rusty-kaspa-v2.0.1-linux-amd64.zip",
-                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.1/rusty-kaspa-v2.0.1-linux-amd64.zip",
+                "name": "rusty-kaspa-v2.1.0-linux-amd64.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.1.0/rusty-kaspa-v2.1.0-linux-amd64.zip",
             },
             {
-                "name": "rusty-kaspa-v2.0.1-osx.zip",
-                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.1/rusty-kaspa-v2.0.1-osx.zip",
+                "name": "rusty-kaspa-v2.1.0-osx.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.1.0/rusty-kaspa-v2.1.0-osx.zip",
             },
             {
-                "name": "rusty-kaspa-v2.0.1-win64.zip",
-                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.0.1/rusty-kaspa-v2.0.1-win64.zip",
+                "name": "rusty-kaspa-v2.1.0-win64.zip",
+                "url": "https://github.com/kaspanet/rusty-kaspa/releases/download/v2.1.0/rusty-kaspa-v2.1.0-win64.zip",
             },
         ],
         "maintenance_changes": [
-            "seq-commit state and lane-proof RPC support",
-            "wallet/core and Wasm SMT sync progress notifications",
-            "SMT database inspection tooling",
-            "transaction-generation tooling for user-lane workflows",
-            "covenant binding handling refinements across client and wallet components",
-            "Wasm client transaction v0 deserialization fix",
+            "P2P protocol 11 and chunked IBD with protocol 10 compatibility",
+            "P2P wire limits and Stratum bridge security hardening",
+            "standalone kaspa-txscript-zk-sdk crate",
+            "arithmetic safety audit and post-Toccata consensus cleanup",
+            "RPC covenant preservation and checked integer conversions",
+            "Wasm sighash mapping and BIP-32 key equality fixes",
         ],
         "mainnet_activation": {
             "daa_score": 474_165_565u64,
             "estimated_utc": "2026-06-30T16:15:00Z",
-            "status": "scheduled-not-independently-verified",
+            "status": "protocol-active-in-dated-snapshot",
+            "observed_network": "kaspa-mainnet",
+            "observed_daa_score": 570_318_708u64,
+            "source": "https://api.kaspa.org/info/blockdag",
             "kaspa_script_readiness": "blocked-for-production-mainnet",
         },
         "p2p_protocol": {
             "required_version": 10,
-            "restriction_window": "24h-before-activation",
+            "current_version": 11,
+            "compatibility": "protocol 11 negotiates protocol 10 with older peers",
         },
         "node_requirements": {
             "minimum": {
@@ -753,13 +765,13 @@ fn toccata_upgrade_profile() -> Value {
             },
         ],
         "integrator_actions": [
-            "Upgrade nodes to rusty-kaspa v2.0.1 before the scheduled activation window.",
+            "Review rusty-kaspa v2.1.0 security and compatibility changes before upgrading.",
             "Run full wallet, explorer, miner, pool, and indexer rehearsal on Testnet-10.",
             "Add compatibility coverage for seq-commit lane-proof RPCs and covenant binding refinements.",
             "Update gRPC/protobuf integrations for transaction version 1 covenant and compute_commit fields.",
             "Use node fee estimation when available; otherwise apply the Toccata minimum standard fee formula.",
             "Prefer storage_mass/storageMass in new JSON and protobuf integrations; treat mass as deprecated compatibility only.",
-            "Keep KaspaScript future-mainnet packages blocked until activation evidence is independently verified.",
+            "Keep KaspaScript future-mainnet packages blocked until contract lowering, wallet/indexer support, and fee behavior are independently verified.",
         ],
     })
 }
@@ -1575,7 +1587,15 @@ mod tests {
         );
         assert_eq!(
             report["upgrade"]["rusty_kaspa_release"]["tag"],
-            Value::String("v2.0.1".to_owned())
+            Value::String("v2.1.0".to_owned())
+        );
+        assert_eq!(
+            report["upgrade"]["mainnet_activation"]["status"],
+            Value::String("protocol-active-in-dated-snapshot".to_owned())
+        );
+        assert_eq!(
+            report["upgrade"]["mainnet_activation"]["observed_network"],
+            Value::String("kaspa-mainnet".to_owned())
         );
         assert_eq!(
             report["upgrade"]["baseline_toccata_release"]["tag"],
@@ -1584,7 +1604,7 @@ mod tests {
         assert_eq!(
             report["upgrade"]["node_upgrade_guide"]["url"],
             Value::String(
-                "https://github.com/kaspanet/rusty-kaspa/blob/v2.0.1/docs/toccata-guide.md"
+                "https://github.com/kaspanet/rusty-kaspa/blob/v2.1.0/docs/toccata-guide.md"
                     .to_owned()
             )
         );

@@ -132,6 +132,18 @@ pub fn compile_instruction_sequence(instructions: &[Instruction]) -> Result<Vec<
     Ok(bytecode)
 }
 
+/// Instantiates a non-empty spend body as an executable script. Require
+/// expressions consume their booleans with VERIFY; successful execution still
+/// needs a final true stack value for Kaspa's script engine.
+pub fn compile_spend_script(instructions: &[Instruction]) -> Result<Vec<u8>, CodegenError> {
+    if instructions.is_empty() {
+        return Err(CodegenError::EmptyBytecode);
+    }
+    let mut bytecode = compile_instruction_sequence(instructions)?;
+    bytecode.push(OP_1);
+    Ok(bytecode)
+}
+
 fn collect_grounding(
     record: &crate::grounding::GroundingRecord,
     target: Target,
@@ -307,6 +319,23 @@ fn encode_data(bytes: &[u8], span: Span, out: &mut Vec<u8>) -> Result<(), Codege
 mod tests {
     use super::*;
     use kaspascript_ir::{IrContract, IrSpend};
+
+    #[test]
+    fn spend_instantiation_closes_verified_body_and_rejects_empty_body() {
+        let span = Span::new(0, 1);
+        let instructions = vec![
+            Instruction::new(span, InstructionKind::Push(Value::Bool(true))),
+            Instruction::new(span, InstructionKind::Verify),
+        ];
+        assert_eq!(
+            compile_spend_script(&instructions).unwrap(),
+            vec![OP_1, OP_VERIFY, OP_1]
+        );
+        assert!(matches!(
+            compile_spend_script(&[]),
+            Err(CodegenError::EmptyBytecode)
+        ));
+    }
 
     #[test]
     fn emits_kaspa_canonical_pushes() {

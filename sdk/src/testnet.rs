@@ -39,7 +39,7 @@ use kaspa_txscript::{
 use kaspa_wallet_core::tx::mass::{MassCalculator, MAXIMUM_STANDARD_TRANSACTION_MASS};
 use kaspa_wallet_core::utxo::NetworkParams;
 use kaspa_wrpc_client::{KaspaRpcClient, WrpcEncoding};
-use kaspascript_codegen::backends::toccata::compile_instruction_sequence;
+use kaspascript_codegen::backends::toccata::compile_spend_script;
 use kaspascript_codegen::{
     bytecode_hex, compile_file, verify_artifact, ArtifactContract, ArtifactParam, ArtifactSpend,
     CompiledArtifact,
@@ -1215,7 +1215,7 @@ pub fn instantiate_contract(
         }
     }
 
-    let redeem_script = compile_instruction_sequence(&transformed)
+    let redeem_script = compile_spend_script(&transformed)
         .map_err(|error| TestnetError::Compile(error.to_string()))?;
     let script_public_key = pay_to_script_hash_script(&redeem_script);
     let locking_address = extract_script_pub_key_address(&script_public_key, Prefix::Testnet)

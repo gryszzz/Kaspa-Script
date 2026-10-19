@@ -284,6 +284,12 @@ Read the deeper design:
 
 ## Current Status
 
+October 2026 compatibility lane: an isolated native SDK companion in
+[`compatibility/toccata-v2`](compatibility/toccata-v2) targets Rusty Kaspa
+v2.1.0 with real v1 transaction/RPC types and offline script validation. Its
+optional interoperability checks use released Silverscript v1.0.0. This does
+not promote the legacy SDK, preview compiler, or mainnet readiness gates.
+
 KaspaScript is an active developer-preview project with a verified compiler
 subset and deterministic tooling.
 

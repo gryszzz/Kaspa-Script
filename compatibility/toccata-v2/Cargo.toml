@@ -1,0 +1,26 @@
+[package]
+name = "kaspascript-toccata-native"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+publish = false
+
+[workspace]
+
+[dependencies]
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+kaspa-rpc-core = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+serde_json = "1.0"
+thiserror = "1.0"
+silverscript-lang = { git = "https://github.com/kaspanet/silverscript", rev = "3ed973335b59269293564805cc2c58a14595ec03", optional = true }
+
+[features]
+silverscript = ["dep:silverscript-lang"]
+
+[dev-dependencies]
+secp256k1 = { version = "0.29.1", features = ["global-context"] }
+kaspascript-codegen = { path = "../../compiler/codegen" }
+
+[profile.dev]
+debug = 0

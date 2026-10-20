@@ -1,5 +1,22 @@
 # Toccata Crate Compatibility Spike
 
+## October 2026 Native Integration
+
+The isolated `compatibility/toccata-v2` companion crate now pins Rusty Kaspa
+`v2.1.0` commit `01b532e8b553523216471682649693af92f0fd16`. It builds actual
+native v1 transactions with typed compute budgets, storage mass, and covenant
+bindings; it checks explicit fees, duplicate inputs, overflow, and TN10 intent.
+Native script validation and RPC round trips use upstream types directly.
+
+The optional `silverscript` feature pins released Silverscript v1.0.0 at
+`3ed973335b59269293564805cc2c58a14595ec03` and tests emitted bytecode across
+the compiler/node revision boundary. See
+[`compatibility/toccata-v2/README.md`](../compatibility/toccata-v2/README.md).
+
+This lane is independent of the legacy SDK feature below. Offline native-engine
+success is not live TN10 acceptance or production readiness. No gate is removed
+by updating a source pin. The remaining content records the June spike.
+
 Prepared: 2026-06-05. Updated: 2026-06-17.
 
 This spike checks whether the Kaspa crates used by the SDK can move from the

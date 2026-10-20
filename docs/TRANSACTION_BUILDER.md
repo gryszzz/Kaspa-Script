@@ -1,5 +1,10 @@
 # KaspaScript Transaction Builder
 
+The isolated native Toccata companion in `compatibility/toccata-v2` targets
+Rusty Kaspa v2.1.0. See its README for typed TN10 construction, native engine
+validation, RPC round trips, and compiler interoperability checks. The legacy
+feature described below still uses the historical 0.15.0 SDK dependency lane.
+
 KaspaScript’s testnet transaction builder is feature-gated behind:
 
 ```bash
@@ -24,6 +29,17 @@ It uses Rusty Kaspa crates for transaction structure, script generation, signatu
 For TN12, the builder records a warning and uses the closest source-available testnet mass params. The node remains the final accept/reject authority.
 
 ## Contract Instantiation
+
+The legacy single-spend SDK rejects contracts with multiple spend paths. It
+cannot commit all of those paths to one P2SH lock and must not silently omit
+recovery. The experimental buyer/seller escrow uses the separate native
+two-path builder; see [Buyer/Seller Escrow](BUYER_SELLER_ESCROW.md).
+
+Per-spend IR is a fragment. `compile_spend_script` closes a non-empty body
+with a successful stack result after all `VERIFY` checks; it rejects an empty
+body. Artifact bytecode alone does not instantiate parameters or select a
+spend. Positive and underpayment controls run instantiated KaspaScript and
+Silverscript scripts in the v2.1.0 native engine.
 
 Compiled artifacts now include contract ABI and per-spend IR. The builder:
 

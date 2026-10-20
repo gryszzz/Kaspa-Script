@@ -65,6 +65,12 @@ Wallet · SDK · Indexer · Node · Application
 
 ## Quick Start
 
+For the experimental two-party script with no arbiter, see
+[Buyer/Seller Escrow](docs/BUYER_SELLER_ESCROW.md). Its native TN10 builder
+commits cooperative release and timeout refund into one P2SH lock. Wallet
+integration and live funded acceptance remain unverified; do not fund the
+public fixture keys.
+
 ### Prerequisites
 
 - Rust 1.80 or newer
@@ -283,6 +289,12 @@ Read the deeper design:
 - [Kernel Package Schema](docs/KERNEL_PACKAGE_SCHEMA.md)
 
 ## Current Status
+
+October 2026 compatibility lane: an isolated native SDK companion in
+[`compatibility/toccata-v2`](compatibility/toccata-v2) targets Rusty Kaspa
+v2.1.0 with real v1 transaction/RPC types and offline script validation. Its
+optional interoperability checks use released Silverscript v1.0.0. This does
+not promote the legacy SDK, preview compiler, or mainnet readiness gates.
 
 KaspaScript is an active developer-preview project with a verified compiler
 subset and deterministic tooling.

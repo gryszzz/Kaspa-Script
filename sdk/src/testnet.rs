@@ -39,7 +39,7 @@ use kaspa_txscript::{
 use kaspa_wallet_core::tx::mass::{MassCalculator, MAXIMUM_STANDARD_TRANSACTION_MASS};
 use kaspa_wallet_core::utxo::NetworkParams;
 use kaspa_wrpc_client::{KaspaRpcClient, WrpcEncoding};
-use kaspascript_codegen::backends::toccata::compile_instruction_sequence;
+use kaspascript_codegen::backends::toccata::compile_spend_script;
 use kaspascript_codegen::{
     bytecode_hex, compile_file, verify_artifact, ArtifactContract, ArtifactParam, ArtifactSpend,
     CompiledArtifact,
@@ -1174,6 +1174,11 @@ pub fn instantiate_contract(
     target: TestnetTarget,
 ) -> Result<ContractInstantiation, TestnetError> {
     let contract = find_contract(artifact, contract_name)?;
+    if contract.spends.len() != 1 {
+        return Err(TestnetError::Unsupported(
+            "legacy single-spend instantiation cannot preserve multiple paths in one locking script; use a reviewed native dispatcher".to_owned(),
+        ));
+    }
     let spend = find_spend(contract, spend_name)?;
     validate_param_bindings(&contract.params, &contract_params)?;
 
@@ -1215,7 +1220,7 @@ pub fn instantiate_contract(
         }
     }
 
-    let redeem_script = compile_instruction_sequence(&transformed)
+    let redeem_script = compile_spend_script(&transformed)
         .map_err(|error| TestnetError::Compile(error.to_string()))?;
     let script_public_key = pay_to_script_hash_script(&redeem_script);
     let locking_address = extract_script_pub_key_address(&script_public_key, Prefix::Testnet)
@@ -2154,6 +2159,28 @@ mod tests {
             .locking_address
             .to_string()
             .starts_with("kaspatest:"));
+    }
+
+    #[test]
+    fn legacy_instantiation_cannot_silently_remove_escrow_refund_paths() {
+        for (name, source) in [
+            ("Escrow", include_str!("../../tests/contracts/escrow.ks")),
+            (
+                "BuyerSellerEscrow",
+                include_str!("../../contracts/buyer_seller_escrow.ks"),
+            ),
+        ] {
+            let plan = ContractDeploymentPlan::from_source(name, "escrow.ks", source)
+                .expect("source compiles");
+            let result = instantiate_contract(
+                &plan.artifact,
+                name,
+                "release",
+                BTreeMap::new(),
+                TestnetTarget::Tn10,
+            );
+            assert!(matches!(result, Err(TestnetError::Unsupported(_))));
+        }
     }
 
     #[test]

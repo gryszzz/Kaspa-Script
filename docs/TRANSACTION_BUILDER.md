@@ -30,6 +30,11 @@ For TN12, the builder records a warning and uses the closest source-available te
 
 ## Contract Instantiation
 
+The legacy single-spend SDK rejects contracts with multiple spend paths. It
+cannot commit all of those paths to one P2SH lock and must not silently omit
+recovery. The experimental buyer/seller escrow uses the separate native
+two-path builder; see [Buyer/Seller Escrow](BUYER_SELLER_ESCROW.md).
+
 Per-spend IR is a fragment. `compile_spend_script` closes a non-empty body
 with a successful stack result after all `VERIFY` checks; it rejects an empty
 body. Artifact bytecode alone does not instantiate parameters or select a

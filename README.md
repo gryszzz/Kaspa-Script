@@ -65,6 +65,12 @@ Wallet · SDK · Indexer · Node · Application
 
 ## Quick Start
 
+For the experimental two-party script with no arbiter, see
+[Buyer/Seller Escrow](docs/BUYER_SELLER_ESCROW.md). Its native TN10 builder
+commits cooperative release and timeout refund into one P2SH lock. Wallet
+integration and live funded acceptance remain unverified; do not fund the
+public fixture keys.
+
 ### Prerequisites
 
 - Rust 1.80 or newer

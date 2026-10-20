@@ -2,10 +2,10 @@ name: Native Toccata compatibility
 
 on:
   pull_request:
-    paths: ["compatibility/toccata-v2/**", "compiler/**", "sdk/**", ".github/workflows/toccata-compatibility.yml"]
+    paths: ["compatibility/toccata-v2/**", "contracts/**", "compiler/**", "sdk/**", ".github/workflows/toccata-compatibility.yml"]
   push:
     branches: [main]
-    paths: ["compatibility/toccata-v2/**", "compiler/**", "sdk/**", ".github/workflows/toccata-compatibility.yml"]
+    paths: ["compatibility/toccata-v2/**", "contracts/**", "compiler/**", "sdk/**", ".github/workflows/toccata-compatibility.yml"]
   workflow_dispatch:
 
 permissions:
@@ -20,5 +20,5 @@ jobs:
         with:
           components: rustfmt, clippy
       - run: cargo fmt --manifest-path compatibility/toccata-v2/Cargo.toml -- --check
-      - run: cargo test --manifest-path compatibility/toccata-v2/Cargo.toml --locked --features silverscript
-      - run: cargo clippy --manifest-path compatibility/toccata-v2/Cargo.toml --locked --all-targets --features silverscript -- -D warnings
+      - run: cargo test --manifest-path compatibility/toccata-v2/Cargo.toml --locked --all-features
+      - run: cargo clippy --manifest-path compatibility/toccata-v2/Cargo.toml --locked --all-targets --all-features -- -D warnings

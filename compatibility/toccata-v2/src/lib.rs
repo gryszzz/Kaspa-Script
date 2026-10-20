@@ -1,5 +1,8 @@
 //! Pinned native Toccata construction and offline script validation for TN10.
-//! No keys, RPC connections, signing, or broadcasting are performed here.
+//! No secret keys, signing, or broadcasting are performed here. The escrow
+//! reader can query an existing RPC client without submission authority.
+
+pub mod escrow;
 
 use std::collections::HashSet;
 

@@ -276,6 +276,12 @@ fn encode_indexed(opcode: u8, index: u32, out: &mut Vec<u8>) -> Result<(), Codeg
 }
 
 fn encode_u64(value: u64, span: Span, out: &mut Vec<u8>) -> Result<(), CodegenError> {
+    if value > i64::MAX as u64 {
+        return Err(CodegenError::ValueTooLarge {
+            span,
+            message: "positive script number exceeds the native signed 64-bit range".to_owned(),
+        });
+    }
     if value == 0 {
         out.push(OP_FALSE);
         return Ok(());
@@ -290,7 +296,12 @@ fn encode_u64(value: u64, span: Span, out: &mut Vec<u8>) -> Result<(), CodegenEr
         .iter()
         .rposition(|byte| *byte != 0)
         .map_or(0, |index| index + 1);
-    encode_data(&bytes[..trimmed_size], span, out)
+    let mut encoded = bytes[..trimmed_size].to_vec();
+    // Script integers reserve the high bit for the sign, unlike raw LE u64.
+    if encoded.last().is_some_and(|byte| byte & 0x80 != 0) {
+        encoded.push(0);
+    }
+    encode_data(&encoded, span, out)
 }
 
 fn encode_data(bytes: &[u8], span: Span, out: &mut Vec<u8>) -> Result<(), CodegenError> {
@@ -319,6 +330,23 @@ fn encode_data(bytes: &[u8], span: Span, out: &mut Vec<u8>) -> Result<(), Codege
 mod tests {
     use super::*;
     use kaspascript_ir::{IrContract, IrSpend};
+
+    #[test]
+    fn positive_script_numbers_preserve_the_sign_boundary() {
+        let span = Span::new(0, 1);
+        for (value, expected) in [
+            (127, vec![1, 0x7f]),
+            (128, vec![2, 0x80, 0]),
+            (255, vec![2, 0xff, 0]),
+            (256, vec![2, 0, 1]),
+            (32768, vec![3, 0, 0x80, 0]),
+        ] {
+            let mut encoded = Vec::new();
+            encode_u64(value, span, &mut encoded).unwrap();
+            assert_eq!(encoded, expected);
+        }
+        assert!(encode_u64(u64::MAX, span, &mut Vec::new()).is_err());
+    }
 
     #[test]
     fn spend_instantiation_closes_verified_body_and_rejects_empty_body() {

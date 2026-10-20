@@ -3,7 +3,8 @@
 This isolated companion crate constructs real Rusty Kaspa v1 transactions using
 the exact v2.1.0 release commit. It preserves native compute budgets, storage
 mass, covenant bindings, authorizing input, genesis IDs, and RPC serialization.
-It provides no key storage, signing, connection, or broadcast operation.
+It provides no secret-key storage, signing, or broadcast operation. The optional
+escrow example connects to a caller-selected node for read-only inspection.
 
 `Tn10Plan` requires explicit inputs, every recipient/change output, an exact
 integer-sompi fee, and network identity `kaspa-testnet-10`. The caller must
@@ -39,3 +40,16 @@ The signed fixture covers genesis, continuation, native exit, modified-payment
 rejection, replay rejection in a local UTXO ledger, and deterministic fixture
 rollback/reapply. It uses a public deterministic fixture key. The library itself
 never handles signing keys. The ledger is a test harness, not a DAG indexer.
+
+## Buyer/Seller Escrow
+
+`escrow::BuyerSellerEscrow` compiles the repository's
+`contracts/buyer_seller_escrow.ks` into one P2SH lock containing cooperative
+buyer-and-seller release and buyer timeout refund. It has no arbiter or agent
+key. Payout, exact input/output counts and fee cap are script constraints.
+
+The optional `rpc-client` feature enables a read-only `escrow` example for
+public terms, node inspection and unsigned spend previews. It never reads
+wallet secrets, signs, funds or submits. See
+[the agreement, risks and commands](../../docs/BUYER_SELLER_ESCROW.md).
+Native fixture success is not a live funded TN10 lifecycle or an audit.
